@@ -11,7 +11,6 @@ interface IStakingGetter {
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
     function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
-    function getUserTotalDeposit(address account) external view returns (uint256);
 
     function getPending(uint256 streamId, address account) 
         external
@@ -32,5 +31,12 @@ interface IStakingGetter {
             uint256 tau,
             StreamStatus status
         );
+
+    function getAllLocks(address account)  external view  returns (LockedBalance[] memory);
+    function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId)
+        external
+        view
+        
+        returns (uint256) ;
     
 }

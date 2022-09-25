@@ -13,7 +13,7 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
     }
 
     function getLockInfo(address account, uint256 lockId) external view override returns (LockedBalance memory) {
-        require(lockId <= locks[account].length, "getLockInfo: LockId out of index");
+        require(lockId <= locks[account].length, "out of index");
         return locks[account][lockId - 1];
     }
 
@@ -21,21 +21,25 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
         return users[account].pendings[streamId];
     }
 
-    /// @dev gets the total user deposit
-    /// @param account the user address
-    /// @return user total deposit in (Main Token)
-    function getUserTotalDeposit(address account)
+    function getAllLocks(address account)  external view override returns (LockedBalance[] memory) {
+        return locks[account];
+    }
+
+    function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId)
         external
         view
         override
-        returns (uint256)
+        returns (uint256) 
     {
-        uint totalDeposit = 0;
-        for(uint i = 0;i<locks[account].length;i++){
-            totalDeposit += locks[account][i].amountOfMAINTkn;
-        }
-        return totalDeposit;
+        require(lockId <= locks[account].length, "out of index");
+        uint256 latestRps = _getLatestRewardsPerShare(streamId);
+        User storage userAccount = users[account];
+        LockedBalance storage lock = locks[account][lockId-1];
+        uint256 userRpsPerLock = userAccount.rpsDuringLastClaimForLock[lockId][streamId];
+        uint256 userSharesOfLock = lock.positionStreamShares;
+        return ((latestRps - userRpsPerLock) * userSharesOfLock)/RPS_MULTIPLIER;
     }
+    
 
 
     /// @dev gets the user's stream pending reward

@@ -151,6 +151,11 @@ describe("Staking Test", () => {
             "VaultPackage"
         );
 
+        stakingGetterService = await artifacts.initializeInterfaceAt(
+            "StakingGettersHelper",
+            "StakingGettersHelper"
+        )
+
         mainTknToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
@@ -363,7 +368,7 @@ describe("Staking Test", () => {
             
             console.log(".........Unlocking lock position - 1 of Staker_1.......")
             await stakingService.unlock(1, {from : staker_1});
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_1,2),
@@ -388,7 +393,7 @@ describe("Staking Test", () => {
             
             const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
             amountOfVMAINTknLock3.should.be.bignumber.equal(differenceInBalance.toString())
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
             // The last lock possition should no longer be accesible
             await shouldRevert(
                 stakingService.getLockInfo(staker_2,1),
@@ -400,7 +405,7 @@ describe("Staking Test", () => {
         
         it("Should unlock completely locked positions for user - staker_3", async() => {
             await stakingService.unlock(1, {from: staker_3});
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_3,1),
@@ -646,49 +651,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
 
-        // it('Should update rewards when unlocking lock position 2, for staker_3', async() =>{
-
-        //     // A warning to be included in the front end:
-        //     //  Rewards need to be claimed before a possition is unlocked, so that stakers don't lose reward tokens.
-        //     const streamId = 1
-        //     const lockId = 2
-        //     let timestamp = await _getTimeStamp();
-        //     let mineToTimestamp = 100
-
-        //     //lockId 3 rewards claimed
-        //     await blockchain.mineBlock(timestamp + mineToTimestamp);
-        //     await stakingService.claimRewards(streamId,lockId,{from:staker_3});
-            
-        //     await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-        //     await stakingService.withdraw(streamId, {from: staker_3})
-
-        //     //-- main logic --  starts from here:
-        //     timestamp = await _getTimeStamp();
-        //     mineToTimestamp = 1* 24 * 60 * 60
-        //     await blockchain.mineBlock(timestamp + mineToTimestamp);
-
-        //     //lockId 3 rewards claimed
-        //     await stakingService.claimRewards(streamId,lockId,{from:staker_3});
-        //     let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
-        //     console.log("pending rewards for lock Id 3 at first claim",_convertToEtherBalance(pendingRewards));
-
-        //     mineToTimestamp = 100
-        //     await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-        //     //lockId 3 all rewards for streamId 2 withdrawn
-        //     await stakingService.withdraw(streamId, {from: staker_3})
-        //     await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-        //     //lockId is unlocked:
-        //     await stakingService.unlock(lockId, {from : staker_3, gas: 600000});
-        //     await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-
-        //     //so Now, the previous lockId 4 is lockId 3:
-        //     await stakingService.claimRewards(streamId,lockId,{from:staker_3});
-        //     pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
-        //     console.log("pending rewards for lockId 2 (previously 3) after unlocking:",_convertToEtherBalance(pendingRewards));
-        //     await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-
-            
-        // })
+      
 
         it("Should get all unlocked main token for staker - 3", async() => {
             //  When we unlock, the main token should be sent to stream 0, with users stream id.  
@@ -761,16 +724,12 @@ describe("Staking Test", () => {
             const totalMAINTknShares = await stakingService.totalMAINTknShares();
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
 
-            // console.log("----- After all the locks are completely unlocked ------")
-            // console.log("totalAmountOfStakedMAINTkn: ", totalAmountOfStakedMAINTkn.toString());
-            // console.log("totalMAINTknShares: ", totalMAINTknShares.toString());
-            // console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
+         
 
             assert.equal(totalAmountOfStakedMAINTkn.toString(),"0")
             assert.equal(totalMAINTknShares.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
         })
-        // The following tests are just to check individual test cases
         it("Should apply penalty to early withdrawal", async() => {
             const lockId = 1
             const streamId = 0
@@ -785,7 +744,7 @@ describe("Staking Test", () => {
             pendingStakedMAINTkn = await stakingService.getUsersPendingRewards(staker_3,streamId)
             console.log("Pending user accounts with early withdrawal: ",_convertToEtherBalance(pendingStakedMAINTkn.toString()))
 
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_3,lockId),
@@ -838,31 +797,17 @@ describe("Staking Test", () => {
             assert(totalPenaltyBalance.toString(),"0")
         })
 
-        it('Paused contract should not make lock position', async() => {
-            const toPauseFlag = 1
-
-            await stakingService.adminPause(toPauseFlag, { from: SYSTEM_ACC})
-            const lockingPeriod = 20 * 24 * 60 * 60
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-            const errorMessage = "paused contract"
-            await shouldRevert(
-                stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn}),
-                errTypes.revert,  
-                errorMessage
-            );
+        it('display all addresses', async() => {
+            console.log("Staking Contract Address: ", stakingService.address)
+            console.log("Main Token Address: ", mainTknToken.address)
+            console.log("VE MAIN Token Address: ", veMainToken.address)
+            console.log("Stakin Getters Address: ", stakingGetterService.address)
+            console.log("Stream Reward Token Address: ", streamReward1Address)
         })
 
-        it('Unpaused contract should  make lock position', async() => {
-            const toUnPauseFlag = 0
+       
 
-            await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
-            const lockingPeriod = 20 * 24 * 60 * 60
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-        })
+        
     })
 });
    

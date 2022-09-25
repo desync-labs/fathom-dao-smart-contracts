@@ -371,7 +371,7 @@ describe("Staking Test", () => {
             const amountOfVMAINTknLock3 = result.amountOfveMAINTkn.toString()
 
             await stakingService.unlock(1, {from : staker_1});
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_1,3),
@@ -395,7 +395,7 @@ describe("Staking Test", () => {
             
             const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
             amountOfVMAINTknLock3.should.be.bignumber.equal(differenceInBalance.toString())
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
             // The last lock possition should no longer be accesible
             await shouldRevert(
                 stakingService.getLockInfo(staker_2,1),
@@ -409,7 +409,7 @@ describe("Staking Test", () => {
 
         it("Should unlock completely locked positions for user - staker_3", async() => {
             await stakingService.unlock(1, {from: staker_3});
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_3,1),
@@ -424,7 +424,7 @@ describe("Staking Test", () => {
 
         it("Should unlock completely locked positions for user - staker_4", async() => {
             await stakingService.unlock(1, {from: staker_4});
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_4,1),
@@ -854,7 +854,7 @@ describe("Staking Test", () => {
             pendingStakedMAINTkn = await stakingService.getUsersPendingRewards(staker_3,streamId)
             console.log("Pending user accounts with early withdrawal: ",_convertToEtherBalance(pendingStakedMAINTkn.toString()))
 
-            const errorMessage = "getLockInfo: LockId out of index";
+            const errorMessage = "out of index";
 
             await shouldRevert(
                 stakingService.getLockInfo(staker_3,lockId),
