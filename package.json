@@ -19,7 +19,8 @@
     "migrate-reset-ropsten": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployRopsten",
     "migrate-reset-ac-mainnet": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACMainnet",
     "migrate-reset-ac-kovan": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACKovan",
-    "migrate-reset-ac-ropsten": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACRopsten"
+    "migrate-reset-ac-ropsten": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACRopsten",
+    "migrate-reset-dao-goerli": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployDAOGoerli"
   },
   "author": "",
   "license": "",

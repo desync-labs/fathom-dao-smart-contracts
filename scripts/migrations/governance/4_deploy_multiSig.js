@@ -11,7 +11,7 @@ const owners = ["0x4C5F0f90a2D4b518aFba11E22AC9b8F6B031d204",
 module.exports =  async function(deployer) {
     let promises = [
 
-        deployer.deploy(MultiSigWallet, owners, "2", TimelockController_address, { gas: 120000000 }),
+        deployer.deploy(MultiSigWallet, owners, "2", TimelockController_address, { gas: 30000000 }),
     ];
 
     await Promise.all(promises);
