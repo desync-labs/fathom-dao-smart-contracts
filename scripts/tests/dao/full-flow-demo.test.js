@@ -227,13 +227,13 @@ describe("DAO Demo", () => {
 
         mainTknToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
-
+        //TODO:
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
 
         veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
         
         await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
-
+        //TODO:
         minter_role = await veMainToken.MINTER_ROLE();
         await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
@@ -244,11 +244,12 @@ describe("DAO Demo", () => {
         await mainTknToken.transfer(staker_1,sumToTransfer, {from: SYSTEM_ACC})
         await mainTknToken.transfer(staker_2,sumToTransfer, {from: SYSTEM_ACC})
        // await mainTknToken.transfer(stream_manager, sumForProposer, {from: SYSTEM_ACC})
-
+    //TODO
        await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
        const twentyPercentOfMAINTknTotalSupply = web3.utils.toWei('200000', 'ether');
 
        vault_test_address = vaultService.address;
+       ///here
         await mainTknToken.transfer(vault_test_address, twentyPercentOfMAINTknTotalSupply, {from: SYSTEM_ACC})
 
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
@@ -267,6 +268,8 @@ describe("DAO Demo", () => {
             startTime + 3 * oneYear,
             startTime + 4 * oneYear,
         ]
+
+        //TODO:
         await vaultService.addSupportedToken(mainTknTokenAddress)
         await vaultService.addSupportedToken(streamReward1Address)
         

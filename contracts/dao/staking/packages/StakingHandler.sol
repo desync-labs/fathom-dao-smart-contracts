@@ -353,4 +353,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         treasury = _treasury;
         emit TreasuryAddressSet(oldTreasury, treasury);
     }
+
+    function setVOTETokenAddress(
+        address _voteToken 
+    ) external override onlyRole(GOVERNANCE_ROLE){
+        //address oldVOTEToken = veMAINTkn;
+        veMAINTkn = _voteToken;
+       // emit TreasuryAddressSet(oldTreasury, treasury);
+    }
 }

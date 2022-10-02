@@ -109,23 +109,23 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
             "Invalid Max Deposit"
         );
         // scheduleTimes[0] == proposal expiration time
-        require(scheduleTimes[0] > block.timestamp, "Invalid expiration");
+        require(scheduleTimes[0] > block.timestamp, "bad expiration");
         require(
             scheduleTimes.length == scheduleRewards.length,
-            "Invalid Schedules"
+            "bad Schedules"
         );
         require(scheduleTimes.length >= 2, "Schedules short");
-        require(tau != 0, "Invalid Tau");
+        require(tau != 0, "bad Tau");
         for (uint256 i = 1; i < scheduleTimes.length; i++) {
-            require(scheduleTimes[i] > scheduleTimes[i - 1], "Invalid times");
+            require(scheduleTimes[i] > scheduleTimes[i - 1], "bad times");
             require(
                 scheduleRewards[i] <= scheduleRewards[i - 1],
-                "Invalid Rewards"
+                "bad Rewards"
             );
         }
         require(
             scheduleRewards[scheduleRewards.length - 1] == 0,
-            "Invalid End Rewards"
+            "bad End Rewards"
         );
     }
 
@@ -135,7 +135,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
      * @return rewards released since last update.
      */
     function _getRewardsAmount(uint256 streamId, uint256 lastUpdate) internal view returns (uint256) {
-        require(lastUpdate <= block.timestamp, "Invalid last Update");
+        require(lastUpdate <= block.timestamp, "bad last Update");
         if (lastUpdate == block.timestamp) return 0; // No more rewards since last update
         uint256 streamStart = streams[streamId].schedule.time[0];
         if (block.timestamp <= streamStart) return 0; // Stream didn't start
@@ -216,8 +216,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     ) internal view returns (uint256 startIndex, uint256 endIndex) {
         Schedule storage schedule = streams[streamId].schedule;
         uint256 scheduleTimeLength = schedule.time.length;
-        require(scheduleTimeLength > 0, "schedules is not right");
-        require(end > start, "Invalid Reward Query Period");
+        require(scheduleTimeLength > 0, "bad schedules");
+        require(end > start, "bad Reward Query Period");
         require(start >= schedule.time[0], "Query Before start");
         require(end <= schedule.time[scheduleTimeLength - 1], "query after end");
         for (uint256 i = 1; i < scheduleTimeLength; i++) {

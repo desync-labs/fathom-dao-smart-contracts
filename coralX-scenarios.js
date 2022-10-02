@@ -47,6 +47,22 @@ module.exports = {
     ['execute', '--path', 'scripts/configurations/3_composer.js', '--network', 'ropsten'],
     ['execute', '--path', 'scripts/custom/white-list-setup.js', '--network', 'ropsten'],
   ],
+
+  deployDAOGoerli: [
+    ['execute', '--path', 'scripts/migrations/governance', '--network', 'goerli'],
+  ],
+
+  deployDAOApothem: [
+    ['execute', '--path', 'scripts/migrations/governance', '--network', 'apothem'],
+  ],
+
+  deployStakingApothem: [
+    //['execute', '--path', 'scripts/migrations/governance/5_deploy_staking_packages.js', '--network', 'apothem'],
+   ['execute', '--path', 'scripts/migrations/staking/1_deploy_staking_getters.js', '--network', 'apothem'],
+  ],
+
+  
+
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/governance'],
