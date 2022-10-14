@@ -26,4 +26,19 @@ interface IStakingGetterHelper{
         view
         returns (uint256);
 
+    function getStreamClaimableAmount(uint256 streamId, address account)
+        external
+        view
+        returns (uint256);
+
+    function getUserTotalVotes(address account)
+        external
+        view
+        returns (uint256);
+
+    function getFeesForEarlyUnlock(uint256 lockId, address account) 
+        external 
+        view
+        returns (uint256);
+
 }

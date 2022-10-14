@@ -19,6 +19,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     bytes32 public constant STREAM_MANAGER_ROLE =
         keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+
     
     /**
     * @dev initialize the contract and deploys the first stream of rewards(MAINTkn)
@@ -191,7 +192,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
         stream.status = StreamStatus.INACTIVE;
         uint256 releaseRewardAmount = stream.rewardDepositAmount - stream.rewardClaimedAmount;
-        uint256 rewardTreasury = _getVaultBalance(stream.rewardToken);
+        uint256 rewardTreasury = IERC20(stream.rewardToken).balanceOf(vault);
 
         IVault(vault).payRewards(
             streamFundReceiver,
@@ -232,37 +233,23 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
      * @param lockId The lockId to unlock completely
      */
     function unlock(uint256 lockId) external override nonReentrant pausable(1) {
-        require(lockId != 0, "lockId 0");
-        require(lockId <= locks[msg.sender].length, "invalid lockid");
-
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfMAINTkn > 0, "no lock amount");
+        _isItUnlockable(lockId);
         require(lock.end <= block.timestamp, "lock not open");
-        require(lock.owner == msg.sender, "bad owner");
-
         _before();
-        //_moveAllRewardsToPending(msg.sender, lockId);
-        uint256 stakeValue = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
-
-        _unlock(lockId, stakeValue, stakeValue, lock, msg.sender);
+        _unlock(lockId, msg.sender);
     }
 
     /**
      * @dev This funciton allows for earlier withdrawal but with penalty
      * @param lockId The lock id to unlock early
      */
-    function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1) {
-        require(earlyWithdrawalFlag == true, "no early withdraw");
-        require(lockId != 0, "lockId 0");
-        require(lockId <= locks[msg.sender].length, "invalid lockid");
+    function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1){
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfMAINTkn > 0, "no lock amount");
+        _isItUnlockable(lockId);
         require(lock.end > block.timestamp, "lock opened");
-        require(lock.owner == msg.sender, "bad owner");
         _before();
-        //_moveAllRewardsToPending(msg.sender, lockId);
-        uint256 stakeValue = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
-        _earlyUnlock(lockId, stakeValue, stakeValue, lock, msg.sender);
+        _earlyUnlock(lockId, msg.sender);
     }
 
     /**
@@ -291,7 +278,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         _before();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
     }
-
 
     /**
      * @dev withdraw amount in the pending pool. User should wait for
@@ -333,32 +319,33 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     function setMaxLockPositions(
         uint8 _maxLockPositions
     ) external override {
-        uint256 oldMaxLockPositions = maxLockPositions;
         maxLockPositions = _maxLockPositions;
-        emit MaxLockPositionsSet(oldMaxLockPositions, _maxLockPositions);
     }
 
     function setEarlyWithdrawalFlag(
         bool _flag
     ) external override onlyRole(GOVERNANCE_ROLE){
-        bool oldFlag = earlyWithdrawalFlag;
         earlyWithdrawalFlag = _flag;
-        emit EarlyWithdrawalFlagSet(oldFlag, _flag);
     }
 
     function setTreasuryAddress(
         address _treasury 
     ) external override onlyRole(GOVERNANCE_ROLE){
-        address oldTreasury = treasury;
         treasury = _treasury;
-        emit TreasuryAddressSet(oldTreasury, treasury);
     }
 
     function setVOTETokenAddress(
         address _voteToken 
     ) external override onlyRole(GOVERNANCE_ROLE){
-        //address oldVOTEToken = veMAINTkn;
         veMAINTkn = _voteToken;
-       // emit TreasuryAddressSet(oldTreasury, treasury);
     }
+
+    function _isItUnlockable(uint256 lockId) internal view  {
+        require(lockId != 0, "lockId 0");
+        require(lockId <= locks[msg.sender].length, "invalid lockid");
+        LockedBalance storage lock = locks[msg.sender][lockId - 1];
+        require(lock.amountOfMAINTkn > 0, "no lock amount");
+        require(lock.owner == msg.sender, "bad owner");
+    }
+    
 }

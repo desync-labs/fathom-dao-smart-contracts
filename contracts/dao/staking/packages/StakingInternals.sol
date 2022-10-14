@@ -8,13 +8,10 @@ import "../../../dao/governance/token/ERC20/IERC20.sol";
 import "../../governance/interfaces/IVeMainToken.sol";
 import "./RewardsInternals.sol";
 import "../interfaces/IStakingEvents.sol";
-import "../../../common/libraries/BytesHelper.sol";
 import "../vault/interfaces/IVault.sol";
 import "../library/BoringMath.sol";
 contract StakingInternals is StakingStorage, RewardsInternals {
     // solhint-disable not-rely-on-time
-    using BytesHelper for *;
-
     /**
      * @dev internal function to initialize the staking contracts.
      */
@@ -82,24 +79,21 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @notice If the lock position is completely unlocked then the last lock is swapped with current locked
      * and last lock is popped off.
      * @param lockId the lock id of the locked position to unlock
-     * @param amount the amount of MAINTkn Tokens to unlock
-     * @param stakeValue the total Stake Value that a lock position has. Used for partial unlocking
-     * @param updateLock the lockedBalance to unlock
      * @param account The address of owner of the lock
      */
     function _unlock(
         uint256 lockId,
-        uint256 amount,
-        uint256 stakeValue,
-        LockedBalance storage updateLock,
         address account
     ) internal {
 
         User storage userAccount = users[account];
+        LockedBalance storage updateLock = locks[account][lockId - 1];
+        uint256 stakeValue = (totalAmountOfStakedMAINTkn * updateLock.mainTknShares) / totalMAINTknShares;
+
         uint256 nLockedVeMainTkn = updateLock.amountOfveMAINTkn;
         
         _updateGovnWeightUnlock(updateLock, userAccount);
-        _unstake(amount, updateLock, stakeValue, lockId, account);
+        _unstake(updateLock, stakeValue, lockId, account);
 
         /// @notice This is for dust mitigation, so that even if the
         //  user does not hae enough veMAINTkn, it is still able to burn and unlock
@@ -157,14 +151,12 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     /// `_before()` must be called before `_unstake` to update streams rps
     /**
      * @dev Unstakes the amount that you want to unstake and reapplies the shares to remaining stake value
-     * @param amount The amount to unstake
      * @param updateLock The storage reference to the lock which gets updated
      * @param stakeValue The total stake of the lock position
      * @param lockId The lock id of the lock position
      * @param account The account whose lock position is to be unstaked
      */
     function _unstake(
-        uint256 amount,
         LockedBalance storage updateLock,
         uint256 stakeValue,
         uint256 lockId,
@@ -176,9 +168,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         totalStreamShares -=  updateLock.positionStreamShares;
         totalMAINTknShares -= updateLock.mainTknShares;
 
-        userAccount.pendings[0] += amount;
+        userAccount.pendings[0] += stakeValue;
         userAccount.releaseTime[0] = block.timestamp + streams[0].tau;
-        emit Unstaked(account, amount, lockId);
+        emit Unstaked(account, stakeValue, lockId);
 
         _removeLockPosition(userAccount, account, lockId);
     }
@@ -190,20 +182,16 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      @notice The penalty is decreased from the pendings of MAINTkn stream
      @notice Early unlock completely unlocks your whole position and vote tokens
      @param lockId The lock id of lock position to early unlock
-     @param amount The total amount of whole lock position
-     @param stakeValue The total stake value of whole lock position (stakeValue = amount here)
-     @param lock The storage lock that is unlocked and updated
      @param account The account whose lock position is unlocked early
      */
     function _earlyUnlock(
         uint256 lockId,
-        uint256 amount,
-        uint256 stakeValue,
-        LockedBalance storage lock,
         address account
     ) internal {
+        LockedBalance storage lock = locks[account][lockId - 1];
         uint256 lockEnd = lock.end;
-        _unlock(lockId, amount, stakeValue, lock, account);
+        uint256 amount = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
+        _unlock(lockId, account);
 
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
 
@@ -312,7 +300,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards
         uint256 shares = amountOfMAINTknShares + (voteShareCoef * nVeMainTkn) / 1000;
-
         uint256 slopeStart = streams[0].schedule.time[0] + ONE_MONTH;
         uint256 slopeEnd = slopeStart + ONE_YEAR;
         if (timestamp <= slopeStart) return shares * weight.maxWeightShares;
@@ -343,10 +330,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         }
 
         return _amountOfShares;
-    }
-
-    function _getVaultBalance(address token) internal view returns (uint256) {
-        return IERC20(token).balanceOf(vault);
     }
 
     /**

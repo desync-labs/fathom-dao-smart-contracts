@@ -356,6 +356,7 @@ describe("Staking Test", () => {
             let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
+        
 
 
         
