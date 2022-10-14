@@ -122,9 +122,11 @@ contract StakingGettersHelper  is IStakingGetterHelper{
     {
         LockedBalance[] memory locks = IStakingHelper(stakingContract).getAllLocks(account);
         require(lockId <= locks.length, "out of index");
+        LockedBalance memory lock = locks[lockId - 1];
+        require(lock.end > block.timestamp, "lock opened, no penalty");
         uint256 totalAmountOfStakedMAINTkn = IStakingHelper(stakingContract).totalAmountOfStakedMAINTkn();
         uint256 totalMAINTknShares = IStakingHelper(stakingContract).totalMAINTknShares();
-        LockedBalance memory lock = locks[lockId - 1];
+        
         uint256 amount = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
         uint256 lockEnd = lock.end;
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);

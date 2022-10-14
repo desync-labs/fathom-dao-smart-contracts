@@ -151,6 +151,11 @@ describe("Staking Test", () => {
             "VaultPackage"
         );
 
+        stakingGetterService = await artifacts.initializeInterfaceAt(
+            "StakingGettersHelper",
+            "StakingGettersHelper"
+        )
+
         mainTknToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
@@ -357,10 +362,16 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
+        it("Should get correct staked amount from staking getter service", async() => {
+            let result = await stakingGetterService.getUserTotalDeposit(staker_1);
+            let shouldBeTotal = (new web3.utils.BN(sumToDeposit)).mul(new web3.utils.BN(3));
 
+            assert(result.toString(), shouldBeTotal.toString())
+            
+        })
 
         
-        // it("Should completely unlock LockId = 1 - staker_1, and swap with last lock position _3", async() => {
+        
         it("Should completely unlock LockId = 1 - staker_1, replace LockId 1 with LockId 3 in the locks array for staker_1", async() => {
             // The lock array for staker_1 should reduce in length by 1 on the backend.
             const timestamp = await _getTimeStamp();
@@ -672,7 +683,10 @@ describe("Staking Test", () => {
             let timestamp = await _getTimeStamp();
             let mineToTimestamp = 1* 24 * 60 * 60
             await blockchain.mineBlock(timestamp + mineToTimestamp);
-            const lockId = 2
+            const lockId = 2    
+            const claimableRewards = await stakingService.getStreamClaimableAmountPerLock(2, staker_3, lockId);
+            console.log("Claimable rewards: ", _convertToEtherBalance(claimableRewards.toString()))
+            
             let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
@@ -688,6 +702,7 @@ describe("Staking Test", () => {
             let mineToTimestamp = 1* 24 * 60 * 60
             await blockchain.mineBlock(timestamp + mineToTimestamp);
             const lockId = 2
+            
             let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
@@ -784,10 +799,12 @@ describe("Staking Test", () => {
             unlockTime = await _getTimeStamp() + lockingPeriod;
             await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(60 * 60 + await _getTimeStamp())
-
+            const penalty = await stakingGetterService.getFeesForEarlyUnlock(lockId, staker_3);
+            console.log("penalty for staker if he early unlocks now", _convertToEtherBalance(penalty.toString()))
             await stakingService.earlyUnlock(lockId, {from: staker_3})
 
             pendingStakedMAINTkn = await stakingService.getUsersPendingRewards(staker_3,streamId)
+            
             console.log("Pending user accounts with early withdrawal: (approx. 70% of 100 MAINTkn, due to punishment)",_convertToEtherBalance(pendingStakedMAINTkn.toString()))
 
         })
@@ -880,7 +897,6 @@ describe("Staking Test", () => {
             await mainTknToken.transfer(accounts[9],sumToTransfer, {from: SYSTEM_ACC})
             const sumToApprove = web3.utils.toWei('20000','ether');
 
-            await mainTknToken.approve(stakingService.address, sumToApprove, {from: SYSTEM_ACC})
             await mainTknToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
             const lockingPeriod = 365 * 24 * 60 * 60
             const unlockTime = await _getTimeStamp() + lockingPeriod;
@@ -892,6 +908,11 @@ describe("Staking Test", () => {
             const actualNVMAINTkn = web3.utils.toBN(eventArgs[1])
             console.log("Is 20000 VOTE TOKEN REleased? ", _convertToEtherBalance(actualNVMAINTkn.toString()))    
 
+        })
+
+        it("Should get correct user total votes from staking getter service", async() => {
+            let result = await stakingGetterService.getUserTotalVotes(accounts[9])
+            console.log("accounts[9] vote balance from staking getter service", _convertToEtherBalance(result.toString()),"VOTES")
         })
 
         it('Should withdraw penalty to treasury', async() =>{
