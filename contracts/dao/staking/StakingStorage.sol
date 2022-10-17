@@ -21,11 +21,11 @@ contract StakingStorage is IStakingStorage {
     uint256 internal touchedAt;
 
     ///@notice The below three are used for autocompounding feature and weighted shares
-    uint256 public override totalAmountOfStakedMAINTkn;
-    uint256 public override totalMAINTknShares;
+    uint256 public override totalAmountOfStakedFTHM;
+    uint256 public override totalFTHMShares;
     uint256 public override totalStreamShares;
-    ///@notice veMAINTkn -> vote Token
-    uint256 public override totalAmountOfveMAINTkn;
+    ///@notice veFTHM -> vote Token
+    uint256 public override totalAmountOfveFTHM;
 
     uint256 internal totalPenaltyReleased;
     uint256 public override totalPenaltyBalance;
@@ -39,8 +39,8 @@ contract StakingStorage is IStakingStorage {
     ///_voteLockWeight the weight that determines the amount of vote tokens to release
     uint256 internal voteLockWeight;
 
-    address public mainTkn;
-    address public veMAINTkn;
+    address public FTHM;
+    address public veFTHM;
 
     address public vault;
 

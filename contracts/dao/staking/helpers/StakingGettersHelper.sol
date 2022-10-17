@@ -38,9 +38,9 @@ contract StakingGettersHelper  is IStakingGetterHelper{
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
         return(
-            lock.amountOfMAINTkn,
-            lock.amountOfveMAINTkn,
-            lock.mainTknShares,
+            lock.amountOfFTHM,
+            lock.amountOfveFTHM,
+            lock.FTHMShares,
             lock.positionStreamShares,
             lock.end,
             lock.owner
@@ -64,7 +64,7 @@ contract StakingGettersHelper  is IStakingGetterHelper{
         }
         uint totalDeposit = 0;
         for(uint lockId = 1;lockId<=locks.length;lockId++){
-            totalDeposit += locks[lockId - 1].amountOfMAINTkn;
+            totalDeposit += locks[lockId - 1].amountOfFTHM;
         }
         return totalDeposit;
     }
@@ -109,7 +109,7 @@ contract StakingGettersHelper  is IStakingGetterHelper{
         }
         uint totalVotes = 0;
         for(uint lockId = 1;lockId<=locks.length;lockId++){
-            totalVotes += locks[lockId - 1].amountOfveMAINTkn;
+            totalVotes += locks[lockId - 1].amountOfveFTHM;
         }
         return totalVotes;
     }
@@ -124,10 +124,10 @@ contract StakingGettersHelper  is IStakingGetterHelper{
         require(lockId <= locks.length, "out of index");
         LockedBalance memory lock = locks[lockId - 1];
         require(lock.end > block.timestamp, "lock opened, no penalty");
-        uint256 totalAmountOfStakedMAINTkn = IStakingHelper(stakingContract).totalAmountOfStakedMAINTkn();
-        uint256 totalMAINTknShares = IStakingHelper(stakingContract).totalMAINTknShares();
+        uint256 totalAmountOfStakedFTHM = IStakingHelper(stakingContract).totalAmountOfStakedFTHM();
+        uint256 totalFTHMShares = IStakingHelper(stakingContract).totalFTHMShares();
         
-        uint256 amount = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
+        uint256 amount = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
         uint256 lockEnd = lock.end;
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
         uint256 penalty = (weighingCoef * amount) / 100000;

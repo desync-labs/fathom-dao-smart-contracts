@@ -17,8 +17,8 @@ struct Schedule {
 
 struct User {
 
-    uint128 veMAINTknBalance;
-    uint128 veMAINTknReleased;
+    uint128 veFTHMBalance;
+    uint128 veFTHMReleased;
     mapping(uint256 => uint256) pendings; // The amount of tokens pending release for user per stream
     mapping(uint256 => uint256) releaseTime; // The release moment per stream
     mapping(uint256 => mapping(uint256 => uint256)) rpsDuringLastClaimForLock;
@@ -33,16 +33,16 @@ struct Weight {
 }
 
 struct LockedBalance {
-    uint128 amountOfMAINTkn;
-    uint128 amountOfveMAINTkn;
-    uint128 mainTknShares;
+    uint128 amountOfFTHM;
+    uint128 amountOfveFTHM;
+    uint128 FTHMShares;
     uint128 positionStreamShares;
     uint64 end;
     address owner;
 }
 struct Stream {
     address owner; // stream owned by the ERC-20 reward token owner
-    address manager; // stream manager handled by MAINTkn stream manager role
+    address manager; // stream manager handled by FTHM stream manager role
     address rewardToken;
     uint256 rewardDepositAmount;
     uint256 rewardClaimedAmount;

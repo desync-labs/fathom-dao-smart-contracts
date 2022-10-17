@@ -4,13 +4,13 @@
 pragma solidity ^0.8.13;
 
 interface IStakingStorage {
-    function totalMAINTknShares() external view returns (uint256);
+    function totalFTHMShares() external view returns (uint256);
 
     function totalStreamShares() external view returns (uint256);
 
-    function totalAmountOfveMAINTkn() external view returns (uint256);
+    function totalAmountOfveFTHM() external view returns (uint256);
 
-    function totalAmountOfStakedMAINTkn() external view returns (uint256);
+    function totalAmountOfStakedFTHM() external view returns (uint256);
 
     function totalPenaltyBalance() external view returns (uint256);
 }

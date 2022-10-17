@@ -28,7 +28,7 @@ const T_TOKEN_TO_MINT = "100000000000000000000000";
 
 // ================================================================================================
 // FROM SUBIK JIs STAKING TEST CODE:
-// const ERC20TokenMAINTkn = artifacts.require("./registry-layer/tokens-factory/tokens/ERC-20/ERC20Token.sol");
+// const ERC20TokenFTHM = artifacts.require("./registry-layer/tokens-factory/tokens/ERC-20/ERC20Token.sol");
 // const IERC20 = artifacts.require("./common/interfaces/erc20/IERC20.sol");
 
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
@@ -133,7 +133,7 @@ describe('Proposal flow', () => {
             "VaultPackage"
         );
         
-        mainTknToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
         await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
@@ -141,9 +141,9 @@ describe('Proposal flow', () => {
         await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
         veMainTokenAddress = veMainToken.address;
-        mainTknTokenAddress = mainTknToken.address;
+        FTHMTokenAddress = FTHMToken.address;
 
-        await vaultService.addSupportedToken(mainTknTokenAddress);
+        await vaultService.addSupportedToken(FTHMTokenAddress);
 
         lockingVoteWeight = 365 * 24 * 60 * 60;
         maxNumberOfLocks = 10;
@@ -169,7 +169,7 @@ describe('Proposal flow', () => {
         
         await stakingService.initializeStaking(
             vault_test_address,
-            mainTknTokenAddress,
+            FTHMTokenAddress,
             veMainTokenAddress,
             weightObject,
             stream_owner,
@@ -263,9 +263,9 @@ describe('Proposal flow', () => {
 
         const _stakeMainGetVe = async (_account) => {
 
-            await mainTknToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
+            await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
 
-            await mainTknToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
 
             await blockchain.increaseTime(20);
 
@@ -629,9 +629,9 @@ describe('Proposal flow', () => {
 
             const _stakeMainGetVe = async (_account) => {
 
-                await mainTknToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
+                await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
     
-                await mainTknToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+                await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
     
                 await blockchain.increaseTime(20);
     

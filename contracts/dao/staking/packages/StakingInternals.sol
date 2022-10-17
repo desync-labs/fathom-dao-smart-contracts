@@ -16,22 +16,22 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @dev internal function to initialize the staking contracts.
      */
     function _initializeStaking(
-        address _mainTkn,
-        address voteMAINTkn,
+        address _FTHM,
+        address voteFTHM,
         Weight memory _weight,
         address _vault,
         uint256 _voteShareCoef,
         uint256 _voteLockWeight,
         uint256 _maxLockPositions
     ) internal {
-        require(_mainTkn != address(0x00), "main addr zero");
-        require(voteMAINTkn != address(0x00), "vote addr zero");
+        require(_FTHM != address(0x00), "main addr zero");
+        require(voteFTHM != address(0x00), "vote addr zero");
         require(_vault != address(0x00), "vaultAddr zero");
 
         require(_weight.maxWeightShares > _weight.minWeightShares, "invalid share wts");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "invalid penalty wts");
-        mainTkn = _mainTkn;
-        veMAINTkn = voteMAINTkn;
+        FTHM = _FTHM;
+        veFTHM = voteFTHM;
         weight = _weight;
         vault = _vault;
         voteShareCoef = _voteShareCoef;
@@ -53,18 +53,18 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     ) internal {
         //@notice: newLock.end is always greater than block.timestamp
         uint256 lockPeriod = _newLocked.end - block.timestamp;
-        uint256 nVeMainTkn = _updateGovnWeightLock(amount, lockPeriod, account);
-        _newLocked.amountOfveMAINTkn += BoringMath.to128(nVeMainTkn);
+        uint256 nVeFTHM = _updateGovnWeightLock(amount, lockPeriod, account);
+        _newLocked.amountOfveFTHM += BoringMath.to128(nVeFTHM);
         if (amount > 0) {
-            _newLocked.amountOfMAINTkn += BoringMath.to128(amount);
+            _newLocked.amountOfFTHM += BoringMath.to128(amount);
         }
         locks[account].push(_newLocked);
         //+1 index
         uint256 newLockId = locks[account].length;
-        _stake(account, amount, nVeMainTkn, newLockId);
+        _stake(account, amount, nVeFTHM, newLockId);
         
-        if (nVeMainTkn > 0) {
-            IVeMainToken(veMAINTkn).mint(account, nVeMainTkn);
+        if (nVeFTHM > 0) {
+            IVeMainToken(veFTHM).mint(account, nVeFTHM);
         }
     }
 
@@ -88,21 +88,21 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
-        uint256 stakeValue = (totalAmountOfStakedMAINTkn * updateLock.mainTknShares) / totalMAINTknShares;
+        uint256 stakeValue = (totalAmountOfStakedFTHM * updateLock.FTHMShares) / totalFTHMShares;
 
-        uint256 nLockedVeMainTkn = updateLock.amountOfveMAINTkn;
+        uint256 nLockedVeFTHM = updateLock.amountOfveFTHM;
         
         _updateGovnWeightUnlock(updateLock, userAccount);
         _unstake(updateLock, stakeValue, lockId, account);
 
         /// @notice This is for dust mitigation, so that even if the
-        //  user does not hae enough veMAINTkn, it is still able to burn and unlock
+        //  user does not hae enough veFTHM, it is still able to burn and unlock
         //  takes a bit of gas
-        uint256 balance = IERC20(veMAINTkn).balanceOf(account);
-        if (balance < nLockedVeMainTkn) {
-            nLockedVeMainTkn = balance;
+        uint256 balance = IERC20(veFTHM).balanceOf(account);
+        if (balance < nLockedVeFTHM) {
+            nLockedVeFTHM = balance;
         }
-        IVeMainToken(veMAINTkn).burn(account, nLockedVeMainTkn);
+        IVeMainToken(veFTHM).burn(account, nLockedVeFTHM);
     }
 
     /**
@@ -113,36 +113,36 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @notice the amount of stream shares you receive depends upon when in the timeline you have staked
      * @param account The account for which the lock position is staked
      * @param amount The amount of lock position to stake
-     * @param nVeMainTkn The amount of vote tokens released
+     * @param nVeFTHM The amount of vote tokens released
      * @param lockId The lock id of the lock position
      */ 
     function _stake(
         address account,
         uint256 amount,
-        uint256 nVeMainTkn,
+        uint256 nVeFTHM,
         uint256 lockId
     ) internal {
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
 
-        uint256 amountOfMAINTknShares = _caclulateAutoCompoundingShares(amount);
+        uint256 amountOfFTHMShares = _caclulateAutoCompoundingShares(amount);
 
-        totalAmountOfStakedMAINTkn += amount;
-        totalMAINTknShares += amountOfMAINTknShares;
+        totalAmountOfStakedFTHM += amount;
+        totalFTHMShares += amountOfFTHMShares;
 
-        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfMAINTknShares, nVeMainTkn, block.timestamp);
+        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfFTHMShares, nVeFTHM, block.timestamp);
 
         totalStreamShares += weightedAmountOfSharesPerStream;
 
         lock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
-        lock.mainTknShares += BoringMath.to128(amountOfMAINTknShares);
+        lock.FTHMShares += BoringMath.to128(amountOfFTHMShares);
 
         uint256 streamsLength = streams.length;
         for (uint256 i = 1; i < streamsLength; i++) {
             userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
         }
 
-        emit Staked(account, weightedAmountOfSharesPerStream, nVeMainTkn, lockId);
+        emit Staked(account, weightedAmountOfSharesPerStream, nVeFTHM, lockId);
     }
 
     /// WARNING: rewards are not claimed during unstake.
@@ -164,9 +164,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     ) internal {
         User storage userAccount = users[account];
 
-        totalAmountOfStakedMAINTkn -= stakeValue;
+        totalAmountOfStakedFTHM -= stakeValue;
         totalStreamShares -=  updateLock.positionStreamShares;
-        totalMAINTknShares -= updateLock.mainTknShares;
+        totalFTHMShares -= updateLock.FTHMShares;
 
         userAccount.pendings[0] += stakeValue;
         userAccount.releaseTime[0] = block.timestamp + streams[0].tau;
@@ -179,7 +179,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      @dev Used to unlock a position early with penalty
      @dev This unlocks and unstakes the position completely and then applies penalty
      @notice The weighing function decreases based upon the remaining time left in the lock
-     @notice The penalty is decreased from the pendings of MAINTkn stream
+     @notice The penalty is decreased from the pendings of FTHM stream
      @notice Early unlock completely unlocks your whole position and vote tokens
      @param lockId The lock id of lock position to early unlock
      @param account The account whose lock position is unlocked early
@@ -190,7 +190,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     ) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
         uint256 lockEnd = lock.end;
-        uint256 amount = (totalAmountOfStakedMAINTkn * lock.mainTknShares) / totalMAINTknShares;
+        uint256 amount = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
         _unlock(lockId, account);
 
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
@@ -217,11 +217,11 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         address account
     ) internal returns (uint256) {
         User storage userAccount = users[account];
-        uint256 nVeMainTkn = _calculateGovnToken(amount, lockingPeriod); //maxVoteTokens;
-        userAccount.veMAINTknBalance += BoringMath.to128(nVeMainTkn);
-        totalAmountOfveMAINTkn += nVeMainTkn;
+        uint256 nVeFTHM = _calculateGovnToken(amount, lockingPeriod); //maxVoteTokens;
+        userAccount.veFTHMBalance += BoringMath.to128(nVeFTHM);
+        totalAmountOfveFTHM += nVeFTHM;
 
-        return nVeMainTkn;
+        return nVeFTHM;
     }
 
     /**
@@ -230,18 +230,18 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @notice sets remaining balance for the user account
      */
     function _updateGovnWeightUnlock(LockedBalance storage updateLock, User storage userAccount) internal {
-        uint256 nVeMainTkn = updateLock.amountOfveMAINTkn;
+        uint256 nVeFTHM = updateLock.amountOfveFTHM;
         ///@notice if you unstake, early or partial or complete,
         ///        the number of vote tokens for lock position is set to zero
-        updateLock.amountOfveMAINTkn = 0;
-        totalAmountOfveMAINTkn -= nVeMainTkn;
-        uint256 remainingvMAINTknBalance = 0;
+        updateLock.amountOfveFTHM = 0;
+        totalAmountOfveFTHM -= nVeFTHM;
+        uint256 remainingvFTHMBalance = 0;
 
         //this check to not overflow:
-        if (userAccount.veMAINTknBalance > nVeMainTkn) {
-            remainingvMAINTknBalance = userAccount.veMAINTknBalance - nVeMainTkn;
+        if (userAccount.veFTHMBalance > nVeFTHM) {
+            remainingvFTHMBalance = userAccount.veFTHMBalance - nVeFTHM;
         }
-        userAccount.veMAINTknBalance = BoringMath.to128(remainingvMAINTknBalance);
+        userAccount.veFTHMBalance = BoringMath.to128(remainingvFTHMBalance);
     }
 
 
@@ -281,25 +281,25 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 pendingPenalty = totalPenaltyBalance;
         totalPenaltyBalance = 0;
         totalPenaltyReleased += pendingPenalty;
-        IVault(vault).payRewards(accountTo, mainTkn, pendingPenalty);
+        IVault(vault).payRewards(accountTo, FTHM, pendingPenalty);
     }
 
 
     /**
      * @dev calculate the weighted stream shares at given timeshamp.
-     * @param amountOfMAINTknShares The amount of Shares a user has
-     * @param nVeMainTkn The amount of Vote token for which shares will be calculated
+     * @param amountOfFTHMShares The amount of Shares a user has
+     * @param nVeFTHM The amount of Vote token for which shares will be calculated
      * @param timestamp the timestamp refering to the current or older timestamp
      */
     function _weightedShares(
-        uint256 amountOfMAINTknShares,
-        uint256 nVeMainTkn,
+        uint256 amountOfFTHMShares,
+        uint256 nVeFTHM,
         uint256 timestamp
     ) internal view returns (uint256) {
-        ///@notice Shares accomodate vote the amount of  MainTknShares and vote Tokens to be released
+        ///@notice Shares accomodate vote the amount of  FTHMShares and vote Tokens to be released
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards
-        uint256 shares = amountOfMAINTknShares + (voteShareCoef * nVeMainTkn) / 1000;
+        uint256 shares = amountOfFTHMShares + (voteShareCoef * nVeFTHM) / 1000;
         uint256 slopeStart = streams[0].schedule.time[0] + ONE_MONTH;
         uint256 slopeEnd = slopeStart + ONE_YEAR;
         if (timestamp <= slopeStart) return shares * weight.maxWeightShares;
@@ -313,18 +313,18 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
     /**
      * @dev calculate auto compounding shares
-     * @notice totalAmountOfStakedMAINTkn => increases when Main tokens are rewarded.(_before())
+     * @notice totalAmountOfStakedFTHM => increases when Main tokens are rewarded.(_before())
      * @notice thus amount of shares for new user, decreases.
      * @notice creating compound affect for users already staking.
      */
     function _caclulateAutoCompoundingShares(uint256 amount) internal view returns (uint256) {
         uint256 _amountOfShares = 0;
-        if (totalMAINTknShares == 0) {
+        if (totalFTHMShares == 0) {
             _amountOfShares = amount;
         } else {
-            uint256 numerator = amount * totalMAINTknShares;
-            _amountOfShares = numerator / totalAmountOfStakedMAINTkn;
-            if (_amountOfShares * totalAmountOfStakedMAINTkn < numerator) {
+            uint256 numerator = amount * totalFTHMShares;
+            _amountOfShares = numerator / totalAmountOfStakedFTHM;
+            if (_amountOfShares * totalAmountOfStakedFTHM < numerator) {
                 _amountOfShares += 1;
             }
         }
@@ -355,9 +355,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @dev calculate the governance tokens to release
      * @notice
      */
-    function _calculateGovnToken(uint256 amount, uint256 lockingPeriod) internal view returns (uint256 nVeMainTkn) {
+    function _calculateGovnToken(uint256 amount, uint256 lockingPeriod) internal view returns (uint256 nVeFTHM) {
         //voteWeight = 365 * 24 * 60 * 60;
-        nVeMainTkn = (amount * lockingPeriod * POINT_MULTIPLIER) / voteLockWeight / POINT_MULTIPLIER;
-        return nVeMainTkn;
+        nVeFTHM = (amount * lockingPeriod * POINT_MULTIPLIER) / voteLockWeight / POINT_MULTIPLIER;
+        return nVeFTHM;
     }
 }

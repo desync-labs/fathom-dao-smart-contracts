@@ -22,15 +22,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
 
     
     /**
-    * @dev initialize the contract and deploys the first stream of rewards(MAINTkn)
+    * @dev initialize the contract and deploys the first stream of rewards(FTHM)
     * @dev initializable only once due to stakingInitialised flag
     * @notice By calling this function, the deployer of this contract must
-    * make sure that the MAINTkn Rewards amount was deposited to the treasury contract
-    * before initializing of the default MAINTkn Stream
-    * @param _vault The Vault address to store MAINTkn and rewards tokens
-    * @param _mainTkn token contract address
+    * make sure that the FTHM Rewards amount was deposited to the treasury contract
+    * before initializing of the default FTHM Stream
+    * @param _vault The Vault address to store FTHM and rewards tokens
+    * @param _FTHM token contract address
     * @param _weight Weighting coefficient for shares and penalties
-    * @param streamOwner the owner and manager of the MAINTkn stream
+    * @param streamOwner the owner and manager of the FTHM stream
     * @param scheduleTimes init schedules times
     * @param scheduleRewards init schedule rewards
     * @param tau release time constant per stream
@@ -40,8 +40,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     */
     function initializeStaking(
         address _vault,
-        address _mainTkn,
-        address _veMAINTkn,
+        address _FTHM,
+        address _veFTHM,
         Weight memory _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,
@@ -54,15 +54,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         require(!stakingInitialised, "Already intiailised");
         _validateStreamParameters(
             streamOwner,
-            _mainTkn,
+            _FTHM,
             scheduleRewards[0],
             scheduleRewards[0],
             scheduleTimes,
             scheduleRewards,
             tau
         );
-        _initializeStaking(_mainTkn, _veMAINTkn, _weight, _vault, _voteShareCoef, _voteLockWeight, _maxLocks);
-        require(IVault(vault).isSupportedToken(_mainTkn), "Unsupported token");
+        _initializeStaking(_FTHM, _veFTHM, _weight, _vault, _voteShareCoef, _voteLockWeight, _maxLocks);
+        require(IVault(vault).isSupportedToken(_FTHM), "Unsupported token");
         pausableInit(0);
         _grantRole(STREAM_MANAGER_ROLE, msg.sender);
         _grantRole(GOVERNANCE_ROLE, msg.sender);
@@ -72,7 +72,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
             Stream({
                 owner: streamOwner,
                 manager: streamOwner,
-                rewardToken: mainTkn,
+                rewardToken: FTHM,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
                 rewardDepositAmount: 0,
@@ -85,8 +85,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         );
         earlyWithdrawalFlag = true;
         stakingInitialised = true;
-        emit StreamProposed(streamId, streamOwner, _mainTkn, scheduleRewards[0]);
-        emit StreamCreated(streamId, streamOwner, _mainTkn, scheduleRewards[0]);
+        emit StreamProposed(streamId, streamOwner, _FTHM, scheduleRewards[0]);
+        emit StreamCreated(streamId, streamOwner, _FTHM, scheduleRewards[0]);
     }
 
     
@@ -95,7 +95,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
      * Whitelisting of the stream provides the option for the stream
      * owner (presumably the issuing party of a specific token) to
      * deposit some ERC-20 tokens on the staking contract and potentially
-     * get in return some MAINTkn tokens immediately. 
+     * get in return some FTHM tokens immediately. 
      * @notice Manager of Vault must call
      * @param streamOwner only this account will be able to launch a stream
      * @param rewardToken the address of the ERC-20 tokens to be deposited in the stream
@@ -125,7 +125,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
             scheduleRewards,
             tau
         );
-        // check mainTkn token address is supportedToken in the treasury
+        // check FTHM token address is supportedToken in the treasury
         require(IVault(vault).isSupportedToken(rewardToken), "Unsupport Token");
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         uint256 streamId = streams.length;
@@ -216,15 +216,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
 
         _before();
         LockedBalance memory _newLock = LockedBalance({
-            amountOfMAINTkn: 0,
-            amountOfveMAINTkn: 0,
-            mainTknShares: 0,
+            amountOfFTHM: 0,
+            amountOfveFTHM: 0,
+            FTHMShares: 0,
             positionStreamShares: 0,
             end: BoringMath.to64(unlockTime),
             owner: msg.sender
         });
         _lock(msg.sender, _newLock, amount);
-        IERC20(mainTkn).transferFrom(msg.sender, address(vault), amount);
+        IERC20(FTHM).transferFrom(msg.sender, address(vault), amount);
     }
 
     /**
@@ -337,14 +337,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     function setVOTETokenAddress(
         address _voteToken 
     ) external override onlyRole(GOVERNANCE_ROLE){
-        veMAINTkn = _voteToken;
+        veFTHM = _voteToken;
     }
 
     function _isItUnlockable(uint256 lockId) internal view  {
         require(lockId != 0, "lockId 0");
         require(lockId <= locks[msg.sender].length, "invalid lockid");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfMAINTkn > 0, "no lock amount");
+        require(lock.amountOfFTHM > 0, "no lock amount");
         require(lock.owner == msg.sender, "bad owner");
     }
     

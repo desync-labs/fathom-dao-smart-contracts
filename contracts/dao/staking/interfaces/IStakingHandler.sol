@@ -19,8 +19,8 @@ interface IStakingHandler {
 
     function initializeStaking(
         address _vault,
-        address _mainTkn,
-        address _veMAINTkn,
+        address _FTHM,
+        address _veFTHM,
         Weight memory _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,
@@ -34,7 +34,7 @@ interface IStakingHandler {
     function removeStream(uint256 streamId, address streamFundReceiver) external;
 
     /// @notice Create a new lock.
-    /// @dev This will crate a new lock and deposit MAINTkn to MAINTknStaking
+    /// @dev This will crate a new lock and deposit FTHM to FTHMStaking
     /// calls releaseGovernanceToken(uint256 amount, uint256 _unlockTime)
     function createLock(uint256 amount, uint256 unlockTime) external;
 
