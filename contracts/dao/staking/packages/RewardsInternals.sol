@@ -32,10 +32,10 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         uint256 lockId
     ) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
-        require(streamId != 0, "REWARDS_COMPOUND");
-        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive or proposed");
+        require(streamId != 0, "compound");
+        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];
-        require(lock.FTHMShares != 0, "Lock No Stake");
+        require(lock.FTHMShares != 0, "No Stake");
         uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) *
             lock.positionStreamShares) / RPS_MULTIPLIER;
 
@@ -61,7 +61,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
 
     function _moveAllLockPositionRewardsToPending(address account, uint256 streamId) internal {
         require(streamId != 0, "auto-compound");
-        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive or proposed");
+        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         LockedBalance[] memory locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
         require(locksLength > 0, "no lock position");
@@ -99,8 +99,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         uint256[] memory scheduleRewards,
         uint256 tau
     ) internal view {
-        require(streamOwner != address(0), "Invalid Owner");
-        require(rewardToken != address(0), "Invalid Reward Token");
+        require(streamOwner != address(0), "bad owner");
+        require(rewardToken != address(0), "bad reward token");
         require(maxDepositAmount > 0, "Zero Max Deposit");
         require(minDepositAmount > 0, "Zero Min Deposit");
         require(minDepositAmount <= maxDepositAmount, "Invalid Min Deposit");
@@ -217,8 +217,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         Schedule storage schedule = streams[streamId].schedule;
         uint256 scheduleTimeLength = schedule.time.length;
         require(scheduleTimeLength > 0, "bad schedules");
-        require(end > start, "bad Reward Query Period");
-        require(start >= schedule.time[0], "Query Before start");
+        require(end > start, "bad query period");
+        require(start >= schedule.time[0], "query before start");
         require(end <= schedule.time[scheduleTimeLength - 1], "query after end");
         for (uint256 i = 1; i < scheduleTimeLength; i++) {
             if (start < schedule.time[i]) {
@@ -237,7 +237,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
                 }
             }
         }
-        require(startIndex <= endIndex, "Invalid index");
+        require(startIndex <= endIndex, "invalid index");
     }
 
     /**

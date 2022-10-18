@@ -28,7 +28,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     * make sure that the FTHM Rewards amount was deposited to the treasury contract
     * before initializing of the default FTHM Stream
     * @param _vault The Vault address to store FTHM and rewards tokens
-    * @param _FTHM token contract address
+    * @param _fthmToken token contract address
     * @param _weight Weighting coefficient for shares and penalties
     * @param streamOwner the owner and manager of the FTHM stream
     * @param scheduleTimes init schedules times
@@ -40,7 +40,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     */
     function initializeStaking(
         address _vault,
-        address _FTHM,
+        address _fthmToken,
         address _veFTHM,
         Weight memory _weight,
         address streamOwner,
@@ -54,15 +54,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         require(!stakingInitialised, "Already intiailised");
         _validateStreamParameters(
             streamOwner,
-            _FTHM,
+            _fthmToken,
             scheduleRewards[0],
             scheduleRewards[0],
             scheduleTimes,
             scheduleRewards,
             tau
         );
-        _initializeStaking(_FTHM, _veFTHM, _weight, _vault, _voteShareCoef, _voteLockWeight, _maxLocks);
-        require(IVault(vault).isSupportedToken(_FTHM), "Unsupported token");
+        _initializeStaking(_fthmToken, _veFTHM, _weight, _vault, _voteShareCoef, _voteLockWeight, _maxLocks);
+        require(IVault(vault).isSupportedToken(_fthmToken), "Unsupported token");
         pausableInit(0);
         _grantRole(STREAM_MANAGER_ROLE, msg.sender);
         _grantRole(GOVERNANCE_ROLE, msg.sender);
@@ -72,7 +72,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
             Stream({
                 owner: streamOwner,
                 manager: streamOwner,
-                rewardToken: FTHM,
+                rewardToken: fthmToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
                 rewardDepositAmount: 0,
@@ -85,8 +85,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         );
         earlyWithdrawalFlag = true;
         stakingInitialised = true;
-        emit StreamProposed(streamId, streamOwner, _FTHM, scheduleRewards[0]);
-        emit StreamCreated(streamId, streamOwner, _FTHM, scheduleRewards[0]);
+        emit StreamProposed(streamId, streamOwner, fthmToken, scheduleRewards[0]);
+        emit StreamCreated(streamId, streamOwner, fthmToken, scheduleRewards[0]);
     }
 
     
@@ -224,7 +224,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
             owner: msg.sender
         });
         _lock(msg.sender, _newLock, amount);
-        IERC20(FTHM).transferFrom(msg.sender, address(vault), amount);
+        IERC20(fthmToken).transferFrom(msg.sender, address(vault), amount);
     }
 
     /**

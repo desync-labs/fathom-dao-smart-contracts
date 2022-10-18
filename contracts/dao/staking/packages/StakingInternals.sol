@@ -12,11 +12,12 @@ import "../vault/interfaces/IVault.sol";
 import "../library/BoringMath.sol";
 contract StakingInternals is StakingStorage, RewardsInternals {
     // solhint-disable not-rely-on-time
+    
     /**
      * @dev internal function to initialize the staking contracts.
      */
     function _initializeStaking(
-        address _FTHM,
+        address _fthmToken,
         address voteFTHM,
         Weight memory _weight,
         address _vault,
@@ -24,13 +25,13 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 _voteLockWeight,
         uint256 _maxLockPositions
     ) internal {
-        require(_FTHM != address(0x00), "main addr zero");
+        require(_fthmToken != address(0x00), "main addr zero");
         require(voteFTHM != address(0x00), "vote addr zero");
         require(_vault != address(0x00), "vaultAddr zero");
 
         require(_weight.maxWeightShares > _weight.minWeightShares, "invalid share wts");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "invalid penalty wts");
-        FTHM = _FTHM;
+        fthmToken = _fthmToken;
         veFTHM = voteFTHM;
         weight = _weight;
         vault = _vault;
@@ -88,6 +89,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
+        onlyValidSharesAmount(updateLock);
         uint256 stakeValue = (totalAmountOfStakedFTHM * updateLock.FTHMShares) / totalFTHMShares;
 
         uint256 nLockedVeFTHM = updateLock.amountOfveFTHM;
@@ -281,7 +283,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 pendingPenalty = totalPenaltyBalance;
         totalPenaltyBalance = 0;
         totalPenaltyReleased += pendingPenalty;
-        IVault(vault).payRewards(accountTo, FTHM, pendingPenalty);
+        IVault(vault).payRewards(accountTo, fthmToken, pendingPenalty);
     }
 
 
@@ -359,5 +361,10 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         //voteWeight = 365 * 24 * 60 * 60;
         nVeFTHM = (amount * lockingPeriod * POINT_MULTIPLIER) / voteLockWeight / POINT_MULTIPLIER;
         return nVeFTHM;
+    }
+
+    function onlyValidSharesAmount(LockedBalance memory lock) internal view{
+        require(totalFTHMShares != 0, "Zero FTHM Shares");
+        require(lock.FTHMShares != 0, "Zero Lock Shares");
     }
 }

@@ -39,7 +39,7 @@ contract StakingStorage is IStakingStorage {
     ///_voteLockWeight the weight that determines the amount of vote tokens to release
     uint256 internal voteLockWeight;
 
-    address public FTHM;
+    address public fthmToken;
     address public veFTHM;
 
     address public vault;
