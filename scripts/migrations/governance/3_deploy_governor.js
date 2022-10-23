@@ -15,7 +15,7 @@ module.exports =  async function(deployer) {
             "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9", 
             "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86"], 
             "2", 
-            { gas: 120000000 }),
+            { gas: 12000000 }),
     ];
 
     await Promise.all(promises);

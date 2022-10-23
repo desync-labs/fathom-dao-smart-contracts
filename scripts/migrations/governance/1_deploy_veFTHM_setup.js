@@ -6,10 +6,10 @@ const MainToken = artifacts.require("./dao/treasury/MainToken.sol");
 
 module.exports =  async function(deployer) {
     let promises = [
-        deployer.deploy(TimelockController, { gas: 25000000 }),
-        deployer.deploy(VeMainToken, { gas: 25000000}),
-        deployer.deploy(Box, { gas: 25000000 }),
-        deployer.deploy(MainToken, { gas: 25000000 }),
+        deployer.deploy(TimelockController, { gas: 12000000 }),
+        deployer.deploy(VeMainToken, { gas: 12000000}),
+        deployer.deploy(Box, { gas: 12000000 }),
+        deployer.deploy(MainToken, { gas: 12000000 }),
     ];
 
     await Promise.all(promises);
