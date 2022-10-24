@@ -4,6 +4,7 @@
 
 pragma solidity ^0.8.0;
 
+import "./utils/GovernorStructs.sol";
 import "./utils/introspection/ERC165.sol";
 
 /**
@@ -158,15 +159,25 @@ abstract contract IGovernor is IERC165 {
 
 
     /**
+     * @dev returns a proposals descriptions given an index, it will return the 
+     *      last |numProposals| proposals  proposalIds, details and statusses
+     */
+    function getProposals(uint _numIndexes) public view virtual 
+        returns (string[] memory, string[] memory, string[] memory);
+
+    
+    /**
+     * @dev returns a proposals description given a proposal Id
+     */
+    function getDescription(uint _proposalId)public view virtual returns(string memory);
+
+
+
+    /**
      * @dev returns all proposal Ids
      */
     function getProposalIds() public view virtual returns(uint[] memory);
     
-
-    /**
-     * @dev returns a proposals description given a proposalId
-     */
-    function getDescription(uint256 proposalId) public view virtual returns(string memory);
 
     /**
      * @notice module:core
