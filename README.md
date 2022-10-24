@@ -1,6 +1,7 @@
 # Fathom DAO Smart Contracts
 
 Fathom project staking, governance and treasury smart contracts for EVM compatible chains.
+[Protocol description](./docs/PROTOCOL.md)
 
 ## Package version requirements for your machine:
 
