@@ -10,9 +10,10 @@ import "./RewardsInternals.sol";
 import "../interfaces/IStakingEvents.sol";
 import "../vault/interfaces/IVault.sol";
 import "../library/BoringMath.sol";
+
 contract StakingInternals is StakingStorage, RewardsInternals {
     // solhint-disable not-rely-on-time
-    
+
     /**
      * @dev internal function to initialize the staking contracts.
      */
@@ -63,7 +64,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         //+1 index
         uint256 newLockId = locks[account].length;
         _stake(account, amount, nVeFTHM, newLockId);
-        
+
         if (nVeFTHM > 0) {
             IVeMainToken(veFTHM).mint(account, nVeFTHM);
         }
@@ -82,18 +83,14 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @param lockId the lock id of the locked position to unlock
      * @param account The address of owner of the lock
      */
-    function _unlock(
-        uint256 lockId,
-        address account
-    ) internal {
-
+    function _unlock(uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         onlyValidSharesAmount(updateLock);
         uint256 stakeValue = (totalAmountOfStakedFTHM * updateLock.FTHMShares) / totalFTHMShares;
 
         uint256 nLockedVeFTHM = updateLock.amountOfveFTHM;
-        
+
         _updateGovnWeightUnlock(updateLock, userAccount);
         _unstake(updateLock, stakeValue, lockId, account);
 
@@ -117,7 +114,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @param amount The amount of lock position to stake
      * @param nVeFTHM The amount of vote tokens released
      * @param lockId The lock id of the lock position
-     */ 
+     */
     function _stake(
         address account,
         uint256 amount,
@@ -167,7 +164,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         User storage userAccount = users[account];
 
         totalAmountOfStakedFTHM -= stakeValue;
-        totalStreamShares -=  updateLock.positionStreamShares;
+        totalStreamShares -= updateLock.positionStreamShares;
         totalFTHMShares -= updateLock.FTHMShares;
 
         userAccount.pendings[0] += stakeValue;
@@ -186,10 +183,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      @param lockId The lock id of lock position to early unlock
      @param account The account whose lock position is unlocked early
      */
-    function _earlyUnlock(
-        uint256 lockId,
-        address account
-    ) internal {
+    function _earlyUnlock(uint256 lockId, address account) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
         uint256 lockEnd = lock.end;
         uint256 amount = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
@@ -246,7 +240,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         userAccount.veFTHMBalance = BoringMath.to128(remainingvFTHMBalance);
     }
 
-
     function _removeLockPosition(
         User storage userAccount,
         address account,
@@ -285,7 +278,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         totalPenaltyReleased += pendingPenalty;
         IVault(vault).payRewards(accountTo, fthmToken, pendingPenalty);
     }
-
 
     /**
      * @dev calculate the weighted stream shares at given timeshamp.
@@ -363,7 +355,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         return nVeFTHM;
     }
 
-    function onlyValidSharesAmount(LockedBalance memory lock) internal view{
+    function onlyValidSharesAmount(LockedBalance memory lock) internal view {
         require(totalFTHMShares != 0, "Zero FTHM Shares");
         require(lock.FTHMShares != 0, "Zero Lock Shares");
     }

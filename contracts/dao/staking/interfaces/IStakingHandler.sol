@@ -61,8 +61,8 @@ interface IStakingHandler {
     function withdrawAll() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
+
     function claimAllLockRewardsForStream(uint256 streamId) external;
-    function setVOTETokenAddress(
-        address _voteToken 
-    ) external;
+
+    function setVOTETokenAddress(address _voteToken) external;
 }

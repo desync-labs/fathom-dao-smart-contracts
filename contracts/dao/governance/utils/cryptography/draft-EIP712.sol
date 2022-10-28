@@ -37,8 +37,6 @@ abstract contract EIP712 {
     bytes32 private immutable _HASHED_VERSION;
     bytes32 private immutable _TYPE_HASH;
 
-
-
     /* solhint-enable var-name-mixedcase */
 
     /**
@@ -67,7 +65,6 @@ abstract contract EIP712 {
         _TYPE_HASH = typeHash;
     }
 
-
     function getChainID() internal view returns (uint256) {
         uint256 id;
         assembly {
@@ -75,7 +72,6 @@ abstract contract EIP712 {
         }
         return id;
     }
-
 
     /**
      * @dev Returns the domain separator for the current chain.

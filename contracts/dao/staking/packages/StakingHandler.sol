@@ -11,16 +11,18 @@ import "../utils/ReentrancyGuard.sol";
 import "../utils/AdminPausable.sol";
 import "../interfaces/IStakingSetter.sol";
 
-
 // solhint-disable not-rely-on-time
-contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, StakingInternals, ReentrancyGuard, 
-                            AdminPausable {
-
-    bytes32 public constant STREAM_MANAGER_ROLE =
-        keccak256("STREAM_MANAGER_ROLE");
+contract StakingHandlers is
+    StakingStorage,
+    IStakingHandler,
+    IStakingSetter,
+    StakingInternals,
+    ReentrancyGuard,
+    AdminPausable
+{
+    bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
 
-    
     /**
     * @dev initialize the contract and deploys the first stream of rewards(FTHM)
     * @dev initializable only once due to stakingInitialised flag
@@ -89,7 +91,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         emit StreamCreated(streamId, streamOwner, fthmToken, scheduleRewards[0]);
     }
 
-    
     /**
      * @dev An admin of the staking contract can whitelist (propose) a stream.
      * Whitelisting of the stream provides the option for the stream
@@ -115,7 +116,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau
-    ) external override onlyRole(STREAM_MANAGER_ROLE){
+    ) external override onlyRole(STREAM_MANAGER_ROLE) {
         _validateStreamParameters(
             streamOwner,
             rewardToken,
@@ -174,7 +175,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     }
 
     //STREAM_MANAGER_ROLE
-    function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE){
+    function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "stream nt proposed");
         // cancel pa proposal
@@ -186,7 +187,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
     // STREAM_MANAGER_ROLE
     /// @dev removes a stream (only default admin role)
     /// @param streamId stream index
-    function removeStream(uint256 streamId, address streamFundReceiver) external override onlyRole(STREAM_MANAGER_ROLE){
+    function removeStream(uint256 streamId, address streamFundReceiver)
+        external
+        override
+        onlyRole(STREAM_MANAGER_ROLE)
+    {
         require(streamId != 0, "Stream 0");
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
@@ -244,7 +249,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
      * @dev This funciton allows for earlier withdrawal but with penalty
      * @param lockId The lock id to unlock early
      */
-    function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1){
+    function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1) {
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         _isItUnlockable(lockId);
         require(lock.end > block.timestamp, "lock opened");
@@ -304,48 +309,37 @@ contract StakingHandlers is StakingStorage, IStakingHandler, IStakingSetter, Sta
         }
     }
 
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE){
+    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE) {
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
     }
 
-    function setGovernanceContract(
-        address _govnContract
-    ) external override onlyRole(GOVERNANCE_ROLE){
+    function setGovernanceContract(address _govnContract) external override onlyRole(GOVERNANCE_ROLE) {
         _grantRole(GOVERNANCE_ROLE, _govnContract);
         govnContract = _govnContract;
     }
 
-    function setMaxLockPositions(
-        uint8 _maxLockPositions
-    ) external override {
+    function setMaxLockPositions(uint8 _maxLockPositions) external override {
         maxLockPositions = _maxLockPositions;
     }
 
-    function setEarlyWithdrawalFlag(
-        bool _flag
-    ) external override onlyRole(GOVERNANCE_ROLE){
+    function setEarlyWithdrawalFlag(bool _flag) external override onlyRole(GOVERNANCE_ROLE) {
         earlyWithdrawalFlag = _flag;
     }
 
-    function setTreasuryAddress(
-        address _treasury 
-    ) external override onlyRole(GOVERNANCE_ROLE){
+    function setTreasuryAddress(address _treasury) external override onlyRole(GOVERNANCE_ROLE) {
         treasury = _treasury;
     }
 
-    function setVOTETokenAddress(
-        address _voteToken 
-    ) external override onlyRole(GOVERNANCE_ROLE){
+    function setVOTETokenAddress(address _voteToken) external override onlyRole(GOVERNANCE_ROLE) {
         veFTHM = _voteToken;
     }
 
-    function _isItUnlockable(uint256 lockId) internal view  {
+    function _isItUnlockable(uint256 lockId) internal view {
         require(lockId != 0, "lockId 0");
         require(lockId <= locks[msg.sender].length, "invalid lockid");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfFTHM > 0, "no lock amount");
         require(lock.owner == msg.sender, "bad owner");
     }
-    
 }

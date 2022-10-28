@@ -47,6 +47,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         streams[streamId].rewardClaimedAmount += reward;
         emit Pending(streamId, account, userAccount.pendings[streamId]);
     }
+
     /**
      * @dev move all the streams rewards for a user to the pending tokens
      * @param account is the staker address
@@ -65,11 +66,10 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         LockedBalance[] memory locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
         require(locksLength > 0, "no lock position");
-        for (uint256 i = 1; i <= locksLength; i++){
+        for (uint256 i = 1; i <= locksLength; i++) {
             _moveRewardsToPending(account, streamId, i);
-        } 
+        }
     }
-   
 
     /**
      * @dev This is always called before locking, unlocking, claiming rewards
@@ -104,29 +104,17 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         require(maxDepositAmount > 0, "Zero Max Deposit");
         require(minDepositAmount > 0, "Zero Min Deposit");
         require(minDepositAmount <= maxDepositAmount, "Invalid Min Deposit");
-        require(
-            maxDepositAmount == scheduleRewards[0],
-            "Invalid Max Deposit"
-        );
+        require(maxDepositAmount == scheduleRewards[0], "Invalid Max Deposit");
         // scheduleTimes[0] == proposal expiration time
         require(scheduleTimes[0] > block.timestamp, "bad expiration");
-        require(
-            scheduleTimes.length == scheduleRewards.length,
-            "bad Schedules"
-        );
+        require(scheduleTimes.length == scheduleRewards.length, "bad Schedules");
         require(scheduleTimes.length >= 2, "Schedules short");
         require(tau != 0, "bad Tau");
         for (uint256 i = 1; i < scheduleTimes.length; i++) {
             require(scheduleTimes[i] > scheduleTimes[i - 1], "bad times");
-            require(
-                scheduleRewards[i] <= scheduleRewards[i - 1],
-                "bad Rewards"
-            );
+            require(scheduleRewards[i] <= scheduleRewards[i - 1], "bad Rewards");
         }
-        require(
-            scheduleRewards[scheduleRewards.length - 1] == 0,
-            "bad End Rewards"
-        );
+        require(scheduleRewards[scheduleRewards.length - 1] == 0, "bad End Rewards");
     }
 
     /**

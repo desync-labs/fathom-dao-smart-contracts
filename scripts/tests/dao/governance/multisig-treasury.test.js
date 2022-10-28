@@ -81,7 +81,6 @@ describe('MultiSig Wallet', () => {
             }]
         }, ['1']);
 
-
         // Mint tokens to treasury
         await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
     });

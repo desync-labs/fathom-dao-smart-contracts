@@ -17,7 +17,8 @@ contract MultiSigWallet is IMultiSigWallet {
         uint numConfirmations;
     }
 
-    /*
+    /**
+     *  @dev
      *  Constants
      */
     uint public constant MAX_OWNER_COUNT = 50;
@@ -27,13 +28,11 @@ contract MultiSigWallet is IMultiSigWallet {
     mapping(address => bool) public isOwner;
     uint public numConfirmationsRequired;
 
-    // mapping from tx index => owner => bool
     mapping(uint => mapping(address => bool)) public isConfirmed;
-
-    // an array of transactions
     Transaction[] public transactions;
 
-    /*
+    /**
+     *  @dev
      *  Modifiers
      */
     modifier onlyOwnerOrGov() {

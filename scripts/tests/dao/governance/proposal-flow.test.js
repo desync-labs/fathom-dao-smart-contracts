@@ -25,7 +25,6 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const T_TOKEN_TO_MINT = "100000000000000000000000";
 
 
-
 // ================================================================================================
 // FROM SUBIK JIs STAKING TEST CODE:
 // const ERC20TokenFTHM = artifacts.require("./registry-layer/tokens-factory/tokens/ERC-20/ERC20Token.sol");
@@ -104,7 +103,6 @@ describe('Proposal flow', () => {
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
-
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         proposer_role = await timelockController.PROPOSER_ROLE();
@@ -279,8 +277,6 @@ describe('Proposal flow', () => {
             await _stakeMainGetVe(STAKER_1);
             await _stakeMainGetVe(STAKER_2);
 
-
-
             // Wait 1 block
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
@@ -324,7 +320,6 @@ describe('Proposal flow', () => {
                 errorMessage
             );
         });
-
 
         it('Propose a change to the boxs store value', async() => {
 
@@ -645,6 +640,9 @@ describe('Proposal flow', () => {
 
             await _stakeMainGetVe(accounts[9]);
             await _stakeMainGetVe(accounts[9]);
+
+            console.log(mainTokenGovernor.address);
+            console.log(mainTokenGovernor.address);
         });
 
         

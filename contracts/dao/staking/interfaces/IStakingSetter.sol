@@ -10,7 +10,5 @@ interface IStakingSetter {
 
     function setTreasuryAddress(address _treasury) external;
 
-    function setGovernanceContract(
-        address _govnContract
-    ) external;
+    function setGovernanceContract(address _govnContract) external;
 }

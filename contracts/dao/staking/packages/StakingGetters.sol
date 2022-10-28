@@ -21,40 +21,31 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
         return users[account].pendings[streamId];
     }
 
-    function getAllLocks(address account)  external view override returns (LockedBalance[] memory) {
+    function getAllLocks(address account) external view override returns (LockedBalance[] memory) {
         return locks[account];
     }
 
-    function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId)
-        external
-        view
-        override
-        returns (uint256) 
-    {
+    function getStreamClaimableAmountPerLock(
+        uint256 streamId,
+        address account,
+        uint256 lockId
+    ) external view override returns (uint256) {
         require(lockId <= locks[account].length, "out of index");
         uint256 latestRps = _getLatestRewardsPerShare(streamId);
         User storage userAccount = users[account];
-        LockedBalance storage lock = locks[account][lockId-1];
+        LockedBalance storage lock = locks[account][lockId - 1];
         uint256 userRpsPerLock = userAccount.rpsDuringLastClaimForLock[lockId][streamId];
         uint256 userSharesOfLock = lock.positionStreamShares;
-        return ((latestRps - userRpsPerLock) * userSharesOfLock)/RPS_MULTIPLIER;
+        return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
-    
-
 
     /// @dev gets the user's stream pending reward
     /// @param streamId stream index
     /// @param account user account
     /// @return user.pendings[streamId]
-    function getPending(uint256 streamId, address account) 
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getPending(uint256 streamId, address account) external view override returns (uint256) {
         return users[account].pendings[streamId];
-    } 
-
+    }
 
     /// @dev get the stream data
     /// @notice this function doesn't return the stream
@@ -88,5 +79,4 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
             stream.status
         );
     }
-
 }

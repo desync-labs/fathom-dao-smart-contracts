@@ -44,27 +44,25 @@ library BoringMath {
     }
 
     function to48(uint256 a) internal pure returns (uint48 c) {
-        require(a <= type(uint48).max,"to48: not safe");
+        require(a <= type(uint48).max, "to48: not safe");
         c = uint48(a);
     }
 
     function to32(uint256 a) internal pure returns (uint32 c) {
-        require(a <= type(uint32).max,"to32: not safe");
+        require(a <= type(uint32).max, "to32: not safe");
         c = uint32(a);
     }
 
     function to16(uint256 a) internal pure returns (uint16 c) {
-        require(a <= type(uint16).max,"to16:not safe");
+        require(a <= type(uint16).max, "to16:not safe");
         c = uint16(a);
     }
 
     function to8(uint256 a) internal pure returns (uint8 c) {
-        require(a <= type(uint8).max,"to8: not safe");
+        require(a <= type(uint8).max, "to8: not safe");
         c = uint8(a);
     }
-
 }
-
 
 /// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint224.
 library BoringMath224 {
@@ -87,7 +85,6 @@ library BoringMath208 {
         require((c = a - b) <= a, "BoringMath: Underflow");
     }
 }
-
 
 /// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint128.
 library BoringMath128 {

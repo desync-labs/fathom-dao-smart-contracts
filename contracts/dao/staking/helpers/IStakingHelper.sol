@@ -9,6 +9,4 @@ import "../interfaces/IStakingStorage.sol";
 import "../interfaces/IStakingSetter.sol";
 import "../utils/interfaces/IAdminPausable.sol";
 
-interface IStakingHelper is IStakingGetter, IStakingHandler, IStakingStorage, IStakingSetter, IAdminPausable {
-
-}
+interface IStakingHelper is IStakingGetter, IStakingHandler, IStakingStorage, IStakingSetter, IAdminPausable {}

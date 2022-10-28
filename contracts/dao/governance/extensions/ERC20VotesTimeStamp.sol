@@ -1,8 +1,8 @@
-// // SPDX-License-Identifier: MIT
-// // Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/extensions/ERC20Votes.sol)
-// // Copyright Fathom 2022
+// SPDX-License-Identifier: MIT
+// Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/extensions/ERC20Votes.sol)
+// Copyright Fathom 2022
 
-// pragma solidity ^0.8.0;
+pragma solidity ^0.8.0;
 
 // import "./draft-ERC20Permit.sol";
 // import "../../../../../common/libraries/Math.sol";
@@ -11,7 +11,8 @@
 // import "../../../utils/cryptography/ECDSA.sol";
 
 // /**
-//  * @dev Extension of ERC20 to support Compound-like voting and delegation. This version is more generic than Compound's,
+//  * @dev Extension of ERC20 to support Compound-like voting and delegation. This version is more generic
+//  than Compound's,
 //  * and supports token supply up to 2^224^ - 1, while COMP is limited to 2^96^ - 1.
 //  *
 //  * NOTE: If exact COMP compatibility is required, use the {ERC20VotesComp} variant of this module.
@@ -116,7 +117,6 @@
 
 //     // ----------------------- Modification to ERC20-Votes from
 
-
 //     function getPriorVotes(address account, uint256 timestamp) public view returns (uint256 votes) {
 //         // solhint-disable-next-line
 //         require(block.timestamp > timestamp, "NOT_YET_DETERMINED");
@@ -158,9 +158,6 @@
 
 //         }
 //     }
-
-
-
 
 //     /**
 //      * @dev Retrieve the `totalSupply` at the end of `blockNumber`. Note, this value is the sum of all balances.
@@ -251,7 +248,6 @@
 //     //     }
 //     // }
 
-
 //     // function _moveDelegates(address srcRep, address dstRep, uint256 amount) internal {
 //     function _moveVotingPower(address srcRep, address dstRep, uint256 amount) internal {
 //         unchecked {
@@ -310,8 +306,6 @@
 //     //         );
 //     //     }
 //     // }
-
-
 
 //     /**
 //      * @dev Lookup a value in a list of (sorted) checkpoints.

@@ -7,7 +7,7 @@ pragma solidity ^0.8.13;
 import "./interfaces/IAdminPausable.sol";
 import "../../governance/access/AccessControl.sol";
 
-contract AdminPausable is IAdminPausable,AccessControl {
+contract AdminPausable is IAdminPausable, AccessControl {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     address public admin;
     uint256 public paused;
@@ -23,10 +23,7 @@ contract AdminPausable is IAdminPausable,AccessControl {
     /// @param flags flags variable is used for pausing this contract.
     function adminPause(uint256 flags) external override {
         // pause role can pause the contract, however only default admin role can unpause
-        require(
-            (paused & flags) == paused || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
-            "only admin can unpause"
-        );
+        require((paused & flags) == paused || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "only admin can unpause");
         paused = flags;
     }
 

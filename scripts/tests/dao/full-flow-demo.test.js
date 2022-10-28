@@ -759,10 +759,6 @@ describe("DAO Demo", () => {
 
         });
 
-        it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
-
-        });
-
 
         it('Queue the second proposal', async() => {
             await mainTokenGovernor.queue(      
@@ -817,11 +813,6 @@ describe("DAO Demo", () => {
             const staker_9Balance = await FTHMToken.balanceOf(staker_9);
             console.log(".........The balance of the recipient after release of treasury funds is",_convertToEtherBalance(staker_9Balance.toString()))
 
-        });
-
-        
+        });        
     });
-
-    
-
 })

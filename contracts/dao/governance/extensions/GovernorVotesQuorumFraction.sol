@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-// Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
+// Original Copyright OpenZeppelin Contracts (last updated v4.5.0) +
+//              (governance/extensions/GovernorVotesQuorumFraction.sol)
 // Copyright Fathom 2022
 
 pragma solidity ^0.8.0;

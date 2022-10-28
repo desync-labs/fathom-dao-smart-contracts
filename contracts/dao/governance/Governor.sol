@@ -34,14 +34,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     using BytesHelper for *;
     using Timers for Timers.BlockNumber;
 
-    // struct ProposalCore {
-    //     Timers.BlockNumber voteStart;
-    //     Timers.BlockNumber voteEnd;
-    //     bool executed;
-    //     bool canceled;
-    //     string description;
-    // }
-
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH =
         keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
@@ -270,12 +262,19 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     // TODO: Remove
     /**
-     * @dev returns a proposals descriptions given an index, it will return the 
+     * @dev returns a proposals descriptions given an index, it will return the
      *      last |numProposals| proposals  proposalIds, details and statusses
      */
-    function getProposals(uint _numIndexes) public view override 
-        returns (string[] memory, string[] memory, string[] memory) {
-
+    function getProposals(uint _numIndexes)
+        public
+        view
+        override
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         uint len = proposalIds.length;
 
         if (len == 0) {
@@ -283,7 +282,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
             string[] memory b;
             string[] memory c;
             return (a, b, c);
-        }else if(_numIndexes > len){
+        } else if (_numIndexes > len) {
             _numIndexes = len;
         }
 
@@ -291,8 +290,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     // TODO: Remove
-    function _getProposals1(uint _numIndexes) internal view returns (string[] memory, string[] memory, string[] memory) {
-
+    function _getProposals1(uint _numIndexes)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory _statusses = new string[](_numIndexes);
         string[] memory _descriptionsArray = new string[](_numIndexes);
         string[] memory _proposalIds = new string[](_numIndexes);
@@ -306,14 +312,17 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         }
 
         while (indexCounter >= 0) {
-
             uint _currentPropId = proposalIds[counter - 1];
             _proposalIds[indexCounter] = string(_currentPropId.toString());
             _descriptionsArray[indexCounter] = _descriptions[_currentPropId];
-            _statusses[indexCounter ] = (uint8(state(_currentPropId))).toString();
+            _statusses[indexCounter] = (uint8(state(_currentPropId))).toString();
 
-            if (counter - 1 == 0){break;}
-            if (indexCounter == 0){break;}
+            if (counter - 1 == 0) {
+                break;
+            }
+            if (indexCounter == 0) {
+                break;
+            }
 
             counter--;
             indexCounter--;
@@ -326,15 +335,14 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     /**
      * @dev returns all proposal Ids
      */
-    function getProposalIds()public view override returns(uint[] memory){
+    function getProposalIds() public view override returns (uint[] memory) {
         return proposalIds;
     }
 
-    // TODO: Remove
     /**
      * @dev returns a proposals description given a proposal Id
      */
-    function getDescription(uint _proposalId)public view override returns(string memory){
+    function getDescription(uint _proposalId) public view override returns (string memory) {
         return _descriptions[_proposalId];
     }
 
@@ -602,35 +610,48 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return weight;
     }
 
-    // TODO:  Remove 
+    // TODO:  Remove
 
-    function _getProposalsAll(uint len) internal view returns (string[] memory, string[] memory, string[] memory) {
-
+    function _getProposalsAll(uint len)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory _statusses = new string[](len);
         string[] memory _descriptionsArray = new string[](len);
         string[] memory _proposalIds = new string[](len);
 
         uint i = len - 1;
-        while(i >= 0) {
+        while (i >= 0) {
             uint _proposalId = proposalIds[i];
             _proposalIds[i] = _proposalId.toString();
             _descriptionsArray[i] = _descriptions[_proposalId];
             _statusses[i] = (uint8(state(_proposalId))).toString();
 
-            if (i == 0) {break;}
+            if (i == 0) {
+                break;
+            }
             i--;
         }
 
         return (_proposalIds, _descriptionsArray, _statusses);
     }
 
-    // TODO:  Remove 
+    // TODO:  Remove
 
-    function _getProposals(uint _numIndexes, uint len) internal view 
-        returns (string[] memory, string[] memory, string[] memory) {
-
-        
-
+    function _getProposals(uint _numIndexes, uint len)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory _statusses = new string[](_numIndexes);
         string[] memory _descriptionsArray = new string[](_numIndexes);
         string[] memory _proposalIds = new string[](_numIndexes);
@@ -638,14 +659,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         // uint _lb = len - _numIndexes;
         uint i = _numIndexes;
 
-        while(i > 0) {
-
+        while (i > 0) {
             uint _proposalId = proposalIds[len - 1 - i];
-            _proposalIds[i-1] = _proposalId.toString();
-            _descriptionsArray[i-1] = _descriptions[_proposalId];
-            _statusses[i-1] = (uint8(state(_proposalId))).toString();
+            _proposalIds[i - 1] = _proposalId.toString();
+            _descriptionsArray[i - 1] = _descriptions[_proposalId];
+            _statusses[i - 1] = (uint8(state(_proposalId))).toString();
 
-            if (i == 0) {break;}
+            if (i == 0) {
+                break;
+            }
             i--;
         }
 

@@ -14,6 +14,7 @@
     "lint": "solhint 'contracts/**/*.sol'",
     "pre-release": "npm run prettier && npm run lint && npm run test-with-timeout",
     "migrate-reset": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run migrateAndConfigureForTests",
+    "stablecoin-gov": "coralX scenario --run stablecoinGovUpdatePools",
     "migrate-reset-goerli": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployGoerli",
     "migrate-reset-apothem": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-xdc": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC"
@@ -32,6 +33,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.18",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "0.0.5",
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "ethers": "^5.7.0"
   }
 }

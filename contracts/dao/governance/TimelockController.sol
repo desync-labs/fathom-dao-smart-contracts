@@ -158,36 +158,6 @@ contract TimelockController is AccessControl, ITimelockController {
         emit MinDelayChange(0, minDelay);
     }
 
-    // /**
-    //  * @notice Initialize smart contract
-    //  * @param rulesEngine Rules engine address
-    //  * @param complianceOracle Compliance Oracle address
-    //  * @param updatesRepository Updates repository address
-    //  */
-    // function initialize(
-    //     // address rulesEngine,
-    //     // address complianceOracle,
-    //     // address updatesRepository
-    // ) external override {
-    //     // require(msg.sender == _initializationOwnerAddress, "Initialization is available only for initialization owner");
-    //     // delete _initializationOwnerAddress;
-
-    //     // require(rulesEngine != address(0x00), "Rules Engine address is empty");
-    //     // require(complianceOracle != address(0x00), "Compliance Oracle address is empty");
-    //     // require(updatesRepository != address(0x00), "Updates repository address is empty");
-
-    //     // _rulesEngineAddress = rulesEngine;
-    //     // _complianceOracleAddress = complianceOracle;
-    //     // _updatesRepositoryAddress = updatesRepository;
-
-    //     // address package = _methodsImplementations[msg.sig];
-    //     // _methodsImplementations[msg.sig] = address(0x00);
-
-    //     // _initializeMethods(package);
-
-    //     // IComplianceOracle(complianceOracle).registerOwner(msg.sender);
-    // }
-
     /**
      * @dev Contract might receive/hold ETH as part of the maintenance process.
      */

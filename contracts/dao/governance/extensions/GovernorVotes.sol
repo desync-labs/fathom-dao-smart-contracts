@@ -21,6 +21,7 @@ abstract contract GovernorVotes is Governor {
     }
 
     /**
+     * @dev
      * Read the voting weight from the token's built in snapshot mechanism (see {Governor-_getVotes}).
      */
     function _getVotes(

@@ -37,9 +37,8 @@ contract VaultPackage is IVault, IVaultEvents {
     /// whitelisted here
     /// @param _token stream ERC20 token address
     function addSupportedToken(
-        address _token //pausable(1)
-    ) external override // onlyRole(TREASURY_MANAGER_ROLE)
-    {
+        address _token //pausable(1) // onlyRole(TREASURY_MANAGER_ROLE)
+    ) external override {
         require(!isSupportedToken[_token], "TOKEN_ALREADY_EXISTS");
         isSupportedToken[_token] = true;
         emit TokenAdded(_token, msg.sender, block.timestamp);
@@ -48,9 +47,8 @@ contract VaultPackage is IVault, IVaultEvents {
     /// @notice removed token as a supproted rewards token by Treasury
     /// @param _token stream ERC20 token address
     function removeSupportedToken(
-        address _token // pausable(1)
-    ) external override //onlyRole(TREASURY_MANAGER_ROLE)
-    {
+        address _token // pausable(1) //onlyRole(TREASURY_MANAGER_ROLE)
+    ) external override {
         require(isSupportedToken[_token], "TOKEN_DOES_NOT_EXIST");
         isSupportedToken[_token] = false;
         emit TokenRemoved(_token, msg.sender, block.timestamp);

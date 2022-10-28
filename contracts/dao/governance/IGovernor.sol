@@ -157,27 +157,29 @@ abstract contract IGovernor is IERC165 {
         bytes32 s
     ) public virtual returns (uint256 balance);
 
-
     /**
-     * @dev returns a proposals descriptions given an index, it will return the 
+     * @dev returns a proposals descriptions given an index, it will return the
      *      last |numProposals| proposals  proposalIds, details and statusses
      */
-    function getProposals(uint _numIndexes) public view virtual 
-        returns (string[] memory, string[] memory, string[] memory);
+    function getProposals(uint _numIndexes)
+        public
+        view
+        virtual
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        );
 
-    
     /**
      * @dev returns a proposals description given a proposal Id
      */
-    function getDescription(uint _proposalId)public view virtual returns(string memory);
-
-
+    function getDescription(uint _proposalId) public view virtual returns (string memory);
 
     /**
      * @dev returns all proposal Ids
      */
-    function getProposalIds() public view virtual returns(uint[] memory);
-    
+    function getProposalIds() public view virtual returns (uint[] memory);
 
     /**
      * @notice module:core
