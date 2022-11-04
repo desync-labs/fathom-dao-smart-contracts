@@ -15,13 +15,15 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 // Token variables
 const T_TOKEN_TO_MINT = "10000000000000000000000";
 const AMOUNT_OUT_TREASURY = "1000";
+const oneYr = 365 * 24 * 60 * 60;
 
-
+const BENEFICIARY = accounts[0];
 
 describe('MultiSig Wallet', () => {
 
     let mainToken
     let multiSigWallet
+    let fthmTokenTimelock
 
     let encoded_transfer_function
     let encoded_remove_owner_function
@@ -29,6 +31,7 @@ describe('MultiSig Wallet', () => {
     let txIndex1
     let txIndex2
     let txIndex3
+    let txIndex4
     let initial_owners
     let owners_after_removal
     let owners_after_addition
@@ -39,6 +42,7 @@ describe('MultiSig Wallet', () => {
 
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
+        fthmTokenTimelock = await artifacts.initializeInterfaceAt("FTHMTokenTimelock", "FTHMTokenTimelock");
 
 
         // encoded transfer function call for the main token.
@@ -52,7 +56,8 @@ describe('MultiSig Wallet', () => {
                 type: 'uint256',
                 name: 'amount'
             }]
-        }, [accounts[5], AMOUNT_OUT_TREASURY]);
+        }, [fthmTokenTimelock.address, AMOUNT_OUT_TREASURY]);
+
 
         encoded_remove_owner_function = web3.eth.abi.encodeFunctionCall({
             name: 'removeOwner',
@@ -200,6 +205,80 @@ describe('MultiSig Wallet', () => {
         });
 
     });
+
+    
+
+
+    describe("Token distribution with 1 year cliff", async() => {
+
+
+        it('Create transaction to release funds from MultiSig treasury to FTHMTokenTimelock', async() => {
+
+            const result = await multiSigWallet.submitTransaction(
+                mainToken.address, 
+                EMPTY_BYTES, 
+                encoded_transfer_function, 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        });
+
+        
+        it('Confirm and Execute the release of funds from MultiSig treasury to FTHMTokenTimelock', async() => {
+            
+            // Here the acocunts which have been designated a "Signer" role for the governor 
+            //      need to confirm each transaction before it can be executed.
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+            // Execute:
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+
+            expect((await mainToken.balanceOf(fthmTokenTimelock.address, {"from": accounts[0]})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+        });
+
+
+        it('Shoud revert when trying to claim tokens too early', async() => {
+            let errorMessage = "TokenTimelock: current time is before release time";
+            initial_owners = await multiSigWallet.getOwners();
+
+            await shouldRevert(
+                fthmTokenTimelock.release( {"from": BENEFICIARY}),
+                errTypes.revert,
+                errorMessage
+            );
+        });
+
+        
+        it('Shoud revert when trying to claim tokens too early', async() => {
+            let errorMessage = "TokenTimelock: current time is before release time";
+            initial_owners = await multiSigWallet.getOwners();
+
+            await shouldRevert(
+                fthmTokenTimelock.release( {"from": BENEFICIARY}),
+                errTypes.revert,
+                errorMessage
+            );
+        });
+
+        
+        
+        it('Shoud release funds to beneficiary', async() => {
+
+            expect((await mainToken.balanceOf(BENEFICIARY, 
+                {"from": BENEFICIARY})).toString()).to.equal("0");
+            
+            await blockchain.increaseTime(oneYr);
+
+            await fthmTokenTimelock.release( {"from": BENEFICIARY});
+
+            expect((await mainToken.balanceOf(BENEFICIARY, 
+                {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+                
+        });
+
+    });
+
+    
 });
 
 

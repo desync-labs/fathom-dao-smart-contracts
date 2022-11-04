@@ -161,6 +161,7 @@ describe('Token Creation Through Governance', () => {
         ]
 
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
+        
         vault_test_address = vaultService.address;
 
         const scheduleTimes = [

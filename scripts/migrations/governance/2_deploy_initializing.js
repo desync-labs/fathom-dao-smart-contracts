@@ -2,9 +2,7 @@
 const TimelockController = artifacts.require('./dao/governance/TimelockController.sol');
 
 // interfaces
-const ITimelockController = artifacts.require('./dao/governance/ITimelockController.sol');
-
-
+const ITimelockController = artifacts.require('./dao/governance/interfaces/ITimelockController.sol');
 
 
 module.exports = async function(deployer) {

@@ -12,7 +12,7 @@ import "./utils/structs/DoubleEndedQueue.sol";
 import "./utils/Address.sol";
 import "./utils/Context.sol";
 import "./utils/GovernorStructs.sol";
-import "./IGovernor.sol";
+import "./interfaces/IGovernor.sol";
 import "./utils/Strings.sol";
 import "../../common/libraries/BytesHelper.sol";
 

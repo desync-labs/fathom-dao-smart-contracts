@@ -38,8 +38,6 @@ const _encodeConfirmation = async (_proposalId) => {
 
 // ================================================================================================
 // FROM SUBIK JIs STAKING TEST CODE:
-// const ERC20TokenFTHM = artifacts.require("./registry-layer/tokens-factory/tokens/ERC-20/ERC20Token.sol");
-// const IERC20 = artifacts.require("./common/interfaces/erc20/IERC20.sol");
 
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');

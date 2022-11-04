@@ -3,11 +3,10 @@
 
 pragma solidity ^0.8.13;
 
-import "../governance/utils/TokenTimelock.sol";
+import "../governance/TokenTimelock.sol";
 
-contract SimpleTokenTimelock is TokenTimelock {
+contract FTHMTokenTimelock is TokenTimelock {
     constructor(IERC20 token, address beneficiary, uint256 releaseTime)
         TokenTimelock(token, beneficiary, releaseTime)
     {}
-
 }

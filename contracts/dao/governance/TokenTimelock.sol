@@ -4,7 +4,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./SafeERC20.sol";
+import "./utils/SafeERC20.sol";
+import "./interfaces/ITokenTimelock.sol";
 
 /**
  * @dev A token holder contract that will allow a beneficiary to extract the
@@ -13,7 +14,7 @@ import "./SafeERC20.sol";
  * Useful for simple vesting schedules like "advisors get all of their tokens
  * after 1 year".
  */
-contract TokenTimelock {
+contract TokenTimelock is ITokenTimelock {
     using SafeERC20 for IERC20;
 
     // ERC20 basic token contract being held
@@ -35,38 +36,20 @@ contract TokenTimelock {
         address beneficiary_,
         uint256 releaseTime_
     ) {
+        // solhint-disable-next-line
         require(releaseTime_ > block.timestamp, "TokenTimelock: release time is before current time");
         _token = token_;
         _beneficiary = beneficiary_;
         _releaseTime = releaseTime_;
     }
 
-    /**
-     * @dev Returns the token being held.
-     */
-    function token() public view virtual returns (IERC20) {
-        return _token;
-    }
-
-    /**
-     * @dev Returns the beneficiary that will receive the tokens.
-     */
-    function beneficiary() public view virtual returns (address) {
-        return _beneficiary;
-    }
-
-    /**
-     * @dev Returns the time when the tokens are released in seconds since Unix epoch (i.e. Unix timestamp).
-     */
-    function releaseTime() public view virtual returns (uint256) {
-        return _releaseTime;
-    }
 
     /**
      * @dev Transfers tokens held by the timelock to the beneficiary. Will only succeed if invoked after the release
      * time.
      */
-    function release() public virtual {
+    function release() public override {
+        // solhint-disable-next-line
         require(block.timestamp >= releaseTime(), "TokenTimelock: current time is before release time");
 
         uint256 amount = token().balanceOf(address(this));
@@ -74,4 +57,26 @@ contract TokenTimelock {
 
         token().safeTransfer(beneficiary(), amount);
     }
+
+    /**
+     * @dev Returns the token being held.
+     */
+    function token() public view override returns (IERC20) {
+        return _token;
+    }
+
+    /**
+     * @dev Returns the beneficiary that will receive the tokens.
+     */
+    function beneficiary() public view override returns (address) {
+        return _beneficiary;
+    }
+
+    /**
+     * @dev Returns the time when the tokens are released in seconds since Unix epoch (i.e. Unix timestamp).
+     */
+    function releaseTime() public view override returns (uint256) {
+        return _releaseTime;
+    }
+
 }
