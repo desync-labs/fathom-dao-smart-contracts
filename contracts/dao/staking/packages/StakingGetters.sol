@@ -11,12 +11,7 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
     function getLatestRewardsPerShare(uint256 streamId) external view override returns (uint256) {
         return _getLatestRewardsPerShare(streamId);
     }
-
-    function getLockInfo(address account, uint256 lockId) external view override returns (LockedBalance memory) {
-        require(lockId <= locks[account].length, "out of index");
-        return locks[account][lockId - 1];
-    }
-
+    
     function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }
@@ -38,7 +33,7 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
         uint256 userSharesOfLock = lock.positionStreamShares;
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
-
+    
     /// @dev gets the user's stream pending reward
     /// @param streamId stream index
     /// @param account user account

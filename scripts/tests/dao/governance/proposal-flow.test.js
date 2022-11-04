@@ -137,14 +137,18 @@ describe('Proposal flow', () => {
             );
 
         stakingService = await artifacts.initializeInterfaceAt(
-            "IStaking",
+            "StakingPackage",
             "StakingPackage"
         );
 
         vaultService = await artifacts.initializeInterfaceAt(
-            "IVault",
+            "VaultPackage",
             "VaultPackage"
         );
+
+        await vaultService.initVault();
+        const admin_role = await vaultService.ADMIN_ROLE();
+        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
         FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
 
@@ -282,7 +286,7 @@ describe('Proposal flow', () => {
 
             await blockchain.increaseTime(20);
 
-            let unlockTime = await _getTimeStamp() + lockingPeriod;
+            let unlockTime = lockingPeriod;
 
             await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
         }
@@ -688,7 +692,7 @@ describe('Proposal flow', () => {
     
                 await blockchain.increaseTime(20);
     
-                let unlockTime = await _getTimeStamp() + lockingPeriod;
+                let unlockTime = lockingPeriod;
     
                 await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
             }

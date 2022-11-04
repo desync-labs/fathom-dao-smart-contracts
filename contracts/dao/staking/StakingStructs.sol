@@ -39,6 +39,11 @@ struct Weight {
     uint32 penaltyWeightMultiplier;
 }
 
+struct VoteCoefficient{
+    uint32 voteShareCoef;
+    uint32 voteLockCoef;
+}
+
 struct LockedBalance {
     uint128 amountOfFTHM;
     uint128 amountOfveFTHM;

@@ -8,7 +8,7 @@ const utils = require('../../helpers/utils');
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
 
-
+var solc = require('solc')
 
 
 const maxGasForTxn = 600000
@@ -65,7 +65,7 @@ const _calculateNumberOfStreamShares = (sumToDeposit, veMainTokenCoefficient, nV
     const veMainTokenWeightBN = new web3.utils.BN(veMainTokenCoefficient); 
     const maxWeightBN = new web3.utils.BN(maxWeightShares);
     const oneThousandBN = new web3.utils.BN(1000)
-    return (sumToDepositBN.add(veMainTokenWeightBN.mul(nVFTHM).div(oneThousandBN))).mul(maxWeightBN);
+    return (sumToDepositBN.add(veMainTokenWeightBN.mul(nVFTHM).div(oneThousandBN))).mul(maxWeightBN)
 }
 
 const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
@@ -83,6 +83,13 @@ const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
+const setTreasuryAddress = async (treasury,stakingService) => {
+    const storageSlot = 8;
+    await stakingService.adminSstoreAddress(
+        storageSlot,
+        treasury
+        )
+}
 
 describe("Staking Test", () => {
 
@@ -90,6 +97,7 @@ describe("Staking Test", () => {
     const oneYear = 31556926;
     let stakingService;
     let vaultService;
+    let stakingGetterService;
     let FTHMToken;
     let veMainToken;
 
@@ -142,12 +150,12 @@ describe("Staking Test", () => {
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
         stakingService = await artifacts.initializeInterfaceAt(
-            "IStaking",
+            "StakingPackage",
             "StakingPackage"
         );
 
         vaultService = await artifacts.initializeInterfaceAt(
-            "IVault",
+            "VaultPackage",
             "VaultPackage"
         );
 
@@ -206,6 +214,11 @@ describe("Staking Test", () => {
             startTime + 3 * oneYear,
             startTime + 4 * oneYear,
         ]
+        await vaultService.initVault();
+        
+        const admin_role = await vaultService.ADMIN_ROLE();
+        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
+
         await vaultService.addSupportedToken(FTHMTokenAddress)
         await vaultService.addSupportedToken(streamReward1Address)
         await vaultService.addSupportedToken(streamReward2Address)
@@ -214,8 +227,6 @@ describe("Staking Test", () => {
             vault_test_address,
             FTHMTokenAddress,
             veMainTokenAddress,
-            
-            
             weightObject,
             stream_owner,
             scheduleTimes,
@@ -224,10 +235,12 @@ describe("Staking Test", () => {
             veMainTokenCoefficient,
             lockingVoteWeight,
             maxNumberOfLocks
-            //_flags
          )
          
-         await stakingService.setTreasuryAddress(treasury);
+         await setTreasuryAddress(
+            treasury,
+            stakingService
+        )
     });
 
     describe('Creating Locks and Unlocking before any stream reward tokens are issued, and release vote token', async() => {
@@ -240,15 +253,13 @@ describe("Staking Test", () => {
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
 
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
-            const beforeLockTimestamp = await _getTimeStamp()
+            const unlockTime = lockingPeriod;
             console.log(".........Creating a Lock Position for staker 1.........");
 
             let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
                 // later to be used in the expectedNVFTHM calculation.  
                 // This mitigates an error created from the slight change in block time.
-            lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             
             const expectedFTHMBalanceStaker1 = _calculateRemainingBalance(sumToDeposit, beforeFTHMBalance.toString())
             const afterFTHMBalance = await FTHMToken.balanceOf(staker_1);
@@ -273,11 +284,9 @@ describe("Staking Test", () => {
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60 / 2;
             
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
-            const beforeLockTimestamp = await _getTimeStamp()
+            const unlockTime = lockingPeriod;
             console.log(".........Creating a second Lock Position for staker 1.........");
             let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1, gas:maxGasForTxn});
-            lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp)
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1]);
@@ -315,7 +324,7 @@ describe("Staking Test", () => {
 
 
         it("Setup a lock position for Staker 2  and Staker 3", async() => {
-            const unlockTime = await _getTimeStamp() + 500;
+            const unlockTime =  500;
             const expectedLockId = 1
             
             const sumToDepositForAll = web3.utils.toWei('0.11', 'ether');
@@ -363,7 +372,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + mineTimestamp);
             
             
-            let result = await stakingService.getLockInfo(staker_1,2);
+            let result = await stakingGetterService.getLockInfo(staker_1,2);
             const amountOfVFTHMLock2 = result.amountOfveFTHM.toString()
             
             console.log(".........Unlocking lock position - 1 of Staker_1.......")
@@ -371,12 +380,12 @@ describe("Staking Test", () => {
             const errorMessage = "out of index";
 
             await shouldRevert(
-                stakingService.getLockInfo(staker_1,2),
+                stakingGetterService.getLockInfo(staker_1,2),
                 errTypes.revert,  
                 errorMessage
             );
 
-            result = await stakingService.getLockInfo(staker_1,1);
+            result = await stakingGetterService.getLockInfo(staker_1,1);
             assert(amountOfVFTHMLock2, result.amountOfveFTHM.toString());
 
             await blockchain.mineBlock(await _getTimeStamp() + 20);
@@ -385,7 +394,7 @@ describe("Staking Test", () => {
 
         
         it("Should unlock completely locked positions for user - staker_2", async() => {
-            let result = await stakingService.getLockInfo(staker_2,1);
+            let result = await stakingGetterService.getLockInfo(staker_2,1);
             const beforeVOTEBalance  = (await veMainToken.balanceOf(staker_2)).toString()
             await stakingService.unlock(1, {from: staker_2});
             const afterVOTEBalance  = (await veMainToken.balanceOf(staker_2)).toString()
@@ -396,7 +405,7 @@ describe("Staking Test", () => {
             const errorMessage = "out of index";
             // The last lock possition should no longer be accesible
             await shouldRevert(
-                stakingService.getLockInfo(staker_2,1),
+                stakingGetterService.getLockInfo(staker_2,1),
                 errTypes.revert,  
                 errorMessage
             );
@@ -408,7 +417,7 @@ describe("Staking Test", () => {
             const errorMessage = "out of index";
 
             await shouldRevert(
-                stakingService.getLockInfo(staker_3,1),
+                stakingGetterService.getLockInfo(staker_3,1),
                 errTypes.revert,  
                 errorMessage
             );
@@ -562,7 +571,7 @@ describe("Staking Test", () => {
         //     await stakingService.claimRewards(streamId,lockId,{from:staker_2, gas: maxGasForTxn});
             
         //     //Getting params from contracts to calculate the expected rewards:
-        //     const lockInfo = await stakingService.getLockInfo(staker_2,1)
+        //     const lockInfo = await stakingGetterService.getLockInfo(staker_2,1)
         //     const positionStreamSharesBN = new web3.utils.toBN((await lockInfo.positionStreamShares).toString())
         //     const rewardsAmountTotal = new web3.utils.toBN(RewardProposalAmountForAStream)
         //     const oneYearBN = new web3.utils.toBN(oneYear)
@@ -749,7 +758,7 @@ describe("Staking Test", () => {
         //     const errorMessage = "out of index";
 
         //     await shouldRevert(
-        //         stakingService.getLockInfo(staker_3,lockId),
+        //         stakingGetterService.getLockInfo(staker_3,lockId),
         //         errTypes.revert,  
         //         errorMessage
         //     );

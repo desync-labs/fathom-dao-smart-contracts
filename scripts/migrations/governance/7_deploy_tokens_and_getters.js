@@ -4,8 +4,6 @@ const ERC20TokenReward2 = artifacts.require("./dao/governance/token/ERC20/ERC20R
 const StakingGetters = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 
-
-
 module.exports = async function(deployer) {
     let promises = [
         deployer.deploy(ERC20MainToken, "Main Token", "MTT", web3.utils.toWei("1000000", "ether"), accounts[0], { gas: 3600000 }),

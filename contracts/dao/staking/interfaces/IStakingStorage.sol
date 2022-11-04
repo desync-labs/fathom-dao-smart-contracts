@@ -2,7 +2,7 @@
 // Copyright Fathom 2022
 
 pragma solidity ^0.8.13;
-
+import "../StakingStructs.sol";
 interface IStakingStorage {
     function totalFTHMShares() external view returns (uint256);
 
@@ -13,4 +13,5 @@ interface IStakingStorage {
     function totalAmountOfStakedFTHM() external view returns (uint256);
 
     function totalPenaltyBalance() external view returns (uint256);
+
 }

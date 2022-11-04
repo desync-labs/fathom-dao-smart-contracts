@@ -5,9 +5,8 @@
 pragma solidity ^0.8.13;
 
 import "./interfaces/IAdminPausable.sol";
-import "../../governance/access/AccessControl.sol";
-
-contract AdminPausable is IAdminPausable, AccessControl {
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+contract AdminPausable is IAdminPausable,AccessControlUpgradeable {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     address public admin;
     uint256 public paused;
@@ -26,6 +25,52 @@ contract AdminPausable is IAdminPausable, AccessControl {
         require((paused & flags) == paused || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "only admin can unpause");
         paused = flags;
     }
+    /// @dev adminSstore updates the state variable value.
+    /// only default admin role can call this function.
+    /// @param key is the storage slot of the state variable
+    /// @param value is the state variable value
+    function adminSstoreUint(uint256 key, uint256 value)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        assembly {
+            sstore(key, value)
+        }
+    }
+
+        /// @dev adminSstore updates the state variable value.
+    /// only default admin role can call this function.
+    /// @param key is the storage slot of the state variable
+    /// @param value is the state variable value
+    function adminSstoreAddress(uint256 key, address value)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        assembly {
+            sstore(key, value)
+        }
+    }
+
+    /// @dev adminSstoreWithMask similar to adminSstore except
+    /// it updates the state variable value after xor-ing this value
+    /// with the old value and the mask, so the new value should be
+    /// a result of xor(and(xor(value, oldval), mask), oldval).
+    /// Only default admin role can call this function.
+    /// @param key is the storage slot of the state variable
+    /// @param value is the state variable value
+    /// @param mask this value is used in calculating the new value
+    function adminSstoreWithMask(
+        uint256 key,
+        uint256 value,
+        uint256 mask
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        assembly {
+            let oldval := sload(key)
+            sstore(key, xor(and(xor(value, oldval), mask), oldval))
+        }
+    }
 
     function pausableInit(uint256 _flags) internal {
         require(!initialized, "already intialized");
@@ -34,4 +79,6 @@ contract AdminPausable is IAdminPausable, AccessControl {
         paused = _flags;
         initialized = true;
     }
+
+  
 }

@@ -129,6 +129,14 @@ const _encodeConfirmation = async (_proposalId) => {
                 name: '_proposalId'
             }]
         }, [_proposalId.toString()]);
+    }
+
+const setTreasuryAddress = async (treasury,stakingService) => {
+    const storageSlot = 8;
+    await stakingService.adminSstoreAddress(
+        storageSlot,
+        treasury
+        )
 }
 
 describe("DAO Demo", () => {
@@ -221,14 +229,18 @@ describe("DAO Demo", () => {
         lockingVoteWeight = 365 * 24 * 60 * 60;
 
         stakingService = await artifacts.initializeInterfaceAt(
-            "IStaking",
+            "StakingPackage",
             "StakingPackage"
         );
 
         vaultService = await artifacts.initializeInterfaceAt(
-            "IVault",
+            "VaultPackage",
             "VaultPackage"
         );
+
+        await vaultService.initVault();
+        const admin_role = await vaultService.ADMIN_ROLE();
+        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
         FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
@@ -293,7 +305,10 @@ describe("DAO Demo", () => {
             //_flags
          )
          // set treasury address
-         await stakingService.setTreasuryAddress(treasury);
+         await setTreasuryAddress(
+            treasury,
+            stakingService
+        )
 
 
         // encode the function call to change the value in box.  To be performed if the vote passes
@@ -325,7 +340,7 @@ describe("DAO Demo", () => {
             
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
+            const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
             let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
@@ -340,7 +355,7 @@ describe("DAO Demo", () => {
         it('Should create a lock possition with lockId = 2 for staker_1', async() => {
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60/2;
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
+            const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
             let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
             console.log(".........Total Staked Protocol Token Amount for Lock Position for 1/2 a year", _convertToEtherBalance(sumToDeposit));
@@ -354,8 +369,6 @@ describe("DAO Demo", () => {
 
         
         it("Should update total vote token balance.", async() => {
-            const totalAmountOfVFTHM = (await stakingService.totalAmountOfveFTHM()).toString();
-            expectedTotalAmountOfVFTHM.should.be.bignumber.equal(totalAmountOfVFTHM);
             console.log(".........Released VOTE tokens to staker 1 based upon two lock positions.",_convertToEtherBalance(expectedTotalAmountOfVFTHM), 'VOTE Tokens')
         })
 
@@ -365,7 +378,7 @@ describe("DAO Demo", () => {
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
 
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
+            const unlockTime = lockingPeriod;
             await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2});
             await blockchain.increaseTime(20);
             let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2});
@@ -414,7 +427,7 @@ describe("DAO Demo", () => {
             const streamId = 1
             await blockchain.increaseTime(20);
             let lockingPeriod = 20 * 24 * 60 * 60
-            const unlockTime = await _getTimeStamp() + lockingPeriod;
+            const unlockTime = lockingPeriod;
             
             let beforeLockTimestamp = await _getTimeStamp();
             await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2,gas: maxGasForTxn});
@@ -432,21 +445,7 @@ describe("DAO Demo", () => {
             await stakingService.claimRewards(streamId,lockId,{from:staker_2, gas: maxGasForTxn});
             
             //Getting params from contracts to calculate the expected rewards:
-            const lockInfo = await stakingService.getLockInfo(staker_2,1)
-            const positionStreamSharesBN = new web3.utils.toBN((await lockInfo.positionStreamShares).toString())
-            const rewardsAmountTotal = new web3.utils.toBN(RewardProposalAmountForAStream)
-            const oneYearBN = new web3.utils.toBN(oneYear)
-            const rewards = rewardsPeriodBN.mul(rewardsAmountTotal).div(oneYearBN)
-            totalAmountOfStreamShares = await stakingService.totalStreamShares()
-            const totalStreamShares = new web3.utils.toBN(totalAmountOfStreamShares.toString())
-            const expectedRewards = rewards.mul(positionStreamSharesBN).div(totalStreamShares).toString()
             
-            
-            console.log(".........expected Rewards the staker should get based upon stream schedules. (Calculation from Script): ",_convertToEtherBalance(expectedRewards))
-
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const pendingRewards = (await stakingService.getUsersPendingRewards(staker_2,streamId)).toString()
-            console.log(".........actual Rewards the staker should get based upon stream schedules. (From The Smart Contract):",_convertToEtherBalance(pendingRewards));
             //"rewards are based upon how much shares you have on total pool and the actual rewards schedule of the stream"
             //"Here, rewards = (amount of time passed since stream started) / (total time of stream) * (stream shares of the staker)"
 

@@ -7,7 +7,6 @@ import "../StakingStructs.sol";
 import "./IStakingGetter.sol";
 import "./IStakingHandler.sol";
 import "./IStakingStorage.sol";
-import "./IStakingSetter.sol";
 import "../utils/interfaces/IAdminPausable.sol";
 
-interface IStaking is IStakingGetter, IStakingHandler, IStakingStorage, IStakingSetter, IAdminPausable {}
+interface IStaking is IStakingGetter, IStakingHandler, IStakingStorage, IAdminPausable {}

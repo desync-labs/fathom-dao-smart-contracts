@@ -9,13 +9,11 @@ import "./StakingInternals.sol";
 import "../vault/interfaces/IVault.sol";
 import "../utils/ReentrancyGuard.sol";
 import "../utils/AdminPausable.sol";
-import "../interfaces/IStakingSetter.sol";
 
 // solhint-disable not-rely-on-time
 contract StakingHandlers is
     StakingStorage,
     IStakingHandler,
-    IStakingSetter,
     StakingInternals,
     ReentrancyGuard,
     AdminPausable
@@ -36,24 +34,21 @@ contract StakingHandlers is
     * @param scheduleTimes init schedules times
     * @param scheduleRewards init schedule rewards
     * @param tau release time constant per stream
-    * @param _voteShareCoef the weight of vote tokens during shares distribution.
-             Should be passed in proportion of 1000. ie, if you want weight of 2, have to pass 2000
-    * @param _voteLockWeight the weight that determines the amount of vote tokens to release
     */
     function initializeStaking(
         address _vault,
         address _fthmToken,
         address _veFTHM,
-        Weight memory _weight,
+        Weight calldata _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau,
         uint256 _voteShareCoef,
-        uint256 _voteLockWeight,
+        uint256 _voteLockCoef,
         uint256 _maxLocks
     ) external override {
-        require(!stakingInitialised, "Already intiailised");
+        require(!stakingInitialised, "intiailised");
         _validateStreamParameters(
             streamOwner,
             _fthmToken,
@@ -63,7 +58,7 @@ contract StakingHandlers is
             scheduleRewards,
             tau
         );
-        _initializeStaking(_fthmToken, _veFTHM, _weight, _vault, _voteShareCoef, _voteLockWeight, _maxLocks);
+        _initializeStaking(_fthmToken, _veFTHM, _weight, _vault, _maxLocks, _voteShareCoef,_voteLockCoef);
         require(IVault(vault).isSupportedToken(_fthmToken), "Unsupported token");
         pausableInit(0);
         _grantRole(STREAM_MANAGER_ROLE, msg.sender);
@@ -85,12 +80,12 @@ contract StakingHandlers is
                 rps: 0
             })
         );
+        maxLockPeriod = ONE_YEAR;
         earlyWithdrawalFlag = true;
         stakingInitialised = true;
         emit StreamProposed(streamId, streamOwner, fthmToken, scheduleRewards[0]);
         emit StreamCreated(streamId, streamOwner, fthmToken, scheduleRewards[0]);
     }
-
     /**
      * @dev An admin of the staking contract can whitelist (propose) a stream.
      * Whitelisting of the stream provides the option for the stream
@@ -177,7 +172,7 @@ contract StakingHandlers is
     //STREAM_MANAGER_ROLE
     function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "stream nt proposed");
+        require(stream.status == StreamStatus.PROPOSED, "!stream proposed");
         // cancel pa proposal
         stream.status = StreamStatus.INACTIVE;
 
@@ -211,24 +206,14 @@ contract StakingHandlers is
     /**
      * @dev Creates a new lock position with lock period of unlock time
      * @param amount the amount for a lock position
-     * @param unlockTime the locking period
+     * @param lockPeriod the locking period
      */
-    function createLock(uint256 amount, uint256 unlockTime) external override nonReentrant pausable(1) {
+    function createLock(uint256 amount, uint256 lockPeriod) external override nonReentrant pausable(1) {
         require(locks[msg.sender].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
-        require(unlockTime > block.timestamp, "bad lock time");
-        require(unlockTime <= block.timestamp + MAX_LOCK, "max 1 year");
-
+        require(lockPeriod <=  maxLockPeriod, "max lock period");
         _before();
-        LockedBalance memory _newLock = LockedBalance({
-            amountOfFTHM: 0,
-            amountOfveFTHM: 0,
-            FTHMShares: 0,
-            positionStreamShares: 0,
-            end: BoringMath.to64(unlockTime),
-            owner: msg.sender
-        });
-        _lock(msg.sender, _newLock, amount);
+        _lock(msg.sender, amount,lockPeriod);
         IERC20(fthmToken).transferFrom(msg.sender, address(vault), amount);
     }
 
@@ -242,7 +227,9 @@ contract StakingHandlers is
         _isItUnlockable(lockId);
         require(lock.end <= block.timestamp, "lock not open");
         _before();
-        _unlock(lockId, msg.sender);
+        uint256 stakeValue = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
+        _unlock(stakeValue,stakeValue,lockId,msg.sender);
+        _withdrawFTHM();
     }
 
     /**
@@ -255,6 +242,23 @@ contract StakingHandlers is
         require(lock.end > block.timestamp, "lock opened");
         _before();
         _earlyUnlock(lockId, msg.sender);
+        _withdrawFTHM();
+    }
+
+    /**
+     * @dev This function unstakes a portion of lock position
+     * @notice stakeValue is calcuated to balance the shares calculation.
+     * @param lockId The lock id to unlock partially
+     * @param amount The amount to unlock partially
+     */
+    function unstakePartially(uint256 lockId, uint256 amount) override external nonReentrant{ 
+        LockedBalance storage lock = locks[msg.sender][lockId - 1];
+        _isItUnlockable(lockId);
+        require(lock.end <= block.timestamp, "!lockopen");
+        _before();
+        uint256 stakeValue = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
+        _unlock(stakeValue,amount,lockId, msg.sender);
+        _withdrawFTHM();
     }
 
     /**
@@ -263,17 +267,17 @@ contract StakingHandlers is
      * @param lockId The position of lock to claim rewards
      */
     function claimRewards(uint256 streamId, uint256 lockId) external override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "invalid lockid");
+        require(lockId <= locks[msg.sender].length, "bad lockid");
         _before();
         _moveRewardsToPending(msg.sender, streamId, lockId);
     }
-
-    /**
+    
+     /**
      * @dev This function claims all the rewards for lock position and adds to pending of user.
      * @param lockId The position of lock to claim rewards
      */
     function claimAllStreamRewardsForLock(uint256 lockId) external override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "invalid lockid");
+        require(lockId <= locks[msg.sender].length, "bad lockid");
         _before();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
@@ -283,14 +287,13 @@ contract StakingHandlers is
         _before();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
     }
-
     /**
      * @dev withdraw amount in the pending pool. User should wait for
      * pending time (tau constant) in order to be able to withdraw.
      * @param streamId stream index
      */
     function withdraw(uint256 streamId) external override pausable(1) {
-        require(block.timestamp > users[msg.sender].releaseTime[streamId], "not released yet");
+        require(block.timestamp > users[msg.sender].releaseTime[streamId], "not released");
         _withdraw(streamId);
     }
 
@@ -301,43 +304,27 @@ contract StakingHandlers is
      */
     function withdrawAll() external override pausable(1) {
         User storage userAccount = users[msg.sender];
-        uint256 streamsLength = streams.length;
-        for (uint256 i = 0; i < streamsLength; i++) {
+        for (uint256 i = 0; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i]) {
                 _withdraw(i);
             }
         }
     }
 
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE) {
+    function setWeight(Weight memory _weight) override external  {
+        weight = _weight;
+    }
+
+    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE){
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
     }
-
-    function setGovernanceContract(address _govnContract) external override onlyRole(GOVERNANCE_ROLE) {
-        _grantRole(GOVERNANCE_ROLE, _govnContract);
-        govnContract = _govnContract;
+    function _withdrawFTHM() internal{
+        uint256 fthmStreamId = 0;
+        _withdraw(fthmStreamId);
     }
-
-    function setMaxLockPositions(uint8 _maxLockPositions) external override {
-        maxLockPositions = _maxLockPositions;
-    }
-
-    function setEarlyWithdrawalFlag(bool _flag) external override onlyRole(GOVERNANCE_ROLE) {
-        earlyWithdrawalFlag = _flag;
-    }
-
-    function setTreasuryAddress(address _treasury) external override onlyRole(GOVERNANCE_ROLE) {
-        treasury = _treasury;
-    }
-
-    function setVOTETokenAddress(address _voteToken) external override onlyRole(GOVERNANCE_ROLE) {
-        veFTHM = _voteToken;
-    }
-
-    function _isItUnlockable(uint256 lockId) internal view {
-        require(lockId != 0, "lockId 0");
-        require(lockId <= locks[msg.sender].length, "invalid lockid");
+    function _isItUnlockable(uint256 lockId) internal view  {
+        require(lockId <= locks[msg.sender].length, "bad lockid");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfFTHM > 0, "no lock amount");
         require(lock.owner == msg.sender, "bad owner");

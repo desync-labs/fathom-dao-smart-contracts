@@ -8,7 +8,6 @@ import "../StakingStructs.sol";
 interface IStakingGetter {
     function getLatestRewardsPerShare(uint256 streamId) external view returns (uint256);
 
-    function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
     function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
 
@@ -29,11 +28,10 @@ interface IStakingGetter {
             StreamStatus status
         );
 
-    function getAllLocks(address account) external view returns (LockedBalance[] memory);
-
-    function getStreamClaimableAmountPerLock(
-        uint256 streamId,
-        address account,
-        uint256 lockId
-    ) external view returns (uint256);
+    function getAllLocks(address account)  external view  returns (LockedBalance[] memory);
+    function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId)
+        external
+        view
+        
+        returns (uint256);    
 }

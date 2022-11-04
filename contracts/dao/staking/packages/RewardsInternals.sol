@@ -61,26 +61,25 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     }
 
     function _moveAllLockPositionRewardsToPending(address account, uint256 streamId) internal {
-        require(streamId != 0, "auto-compound");
+        require(streamId != 0, "compound");
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
-        LockedBalance[] memory locksOfAccount = locks[account];
+        LockedBalance[] storage locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
-        require(locksLength > 0, "no lock position");
-        for (uint256 i = 1; i <= locksLength; i++) {
+        require(locksLength > 0, "no lock");
+        for (uint256 i = 1; i <= locksLength; i++){
             _moveRewardsToPending(account, streamId, i);
         }
     }
-
+   
     /**
      * @dev This is always called before locking, unlocking, claiming rewards
      * @notice This function updates rewards per share at each call for calculation of rewards
      */
     function _before() internal {
         if (touchedAt == block.timestamp) return; // Already updated by previous transaction
-        uint256 streamsLength = streams.length;
-        if (totalFTHMShares != 0 && streamsLength != 0) {
+        if (totalFTHMShares != 0) {
             totalAmountOfStakedFTHM += _getRewardsAmount(0, touchedAt);
-            for (uint256 i = 1; i < streamsLength; i++) {
+            for (uint256 i = 1; i < streams.length; i++) {
                 if (streams[i].status == StreamStatus.ACTIVE) {
                     streams[i].rps = _getLatestRewardsPerShare(i);
                 }
@@ -103,8 +102,11 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         require(rewardToken != address(0), "bad reward token");
         require(maxDepositAmount > 0, "Zero Max Deposit");
         require(minDepositAmount > 0, "Zero Min Deposit");
-        require(minDepositAmount <= maxDepositAmount, "Invalid Min Deposit");
-        require(maxDepositAmount == scheduleRewards[0], "Invalid Max Deposit");
+        require(minDepositAmount <= maxDepositAmount, "bad Min Deposit");
+        require(
+            maxDepositAmount == scheduleRewards[0],
+            "bad Max Deposit"
+        );
         // scheduleTimes[0] == proposal expiration time
         require(scheduleTimes[0] > block.timestamp, "bad expiration");
         require(scheduleTimes.length == scheduleRewards.length, "bad Schedules");

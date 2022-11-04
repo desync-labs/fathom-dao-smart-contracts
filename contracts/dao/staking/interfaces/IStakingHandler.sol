@@ -19,15 +19,15 @@ interface IStakingHandler {
 
     function initializeStaking(
         address _vault,
-        address _FTHM,
+        address _fthmToken,
         address _veFTHM,
-        Weight memory _weight,
+        Weight calldata _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau,
         uint256 _voteShareCoef,
-        uint256 _voteLockWeight,
+        uint256 _voteLockCoef,
         uint256 _maxLocks
     ) external;
 
@@ -38,6 +38,7 @@ interface IStakingHandler {
     /// calls releaseGovernanceToken(uint256 amount, uint256 _unlockTime)
     function createLock(uint256 amount, uint256 unlockTime) external;
 
+    function unstakePartially(uint256 lockId, uint256 amount)  external;
     // function stake(uint256 amount, address account) external;
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
 
@@ -53,6 +54,7 @@ interface IStakingHandler {
     function claimRewards(uint256 streamId, uint256 lockId) external;
 
     function claimAllStreamRewardsForLock(uint256 lockId) external;
+    function claimAllLockRewardsForStream(uint256 streamId) external;
 
     //function batchClaimRewards(uint256[] calldata streamIds, uint256 lockId) external;
 
@@ -61,8 +63,6 @@ interface IStakingHandler {
     function withdrawAll() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-
-    function claimAllLockRewardsForStream(uint256 streamId) external;
-
-    function setVOTETokenAddress(address _voteToken) external;
+    function setWeight(Weight memory _weight)  external;
+    
 }
