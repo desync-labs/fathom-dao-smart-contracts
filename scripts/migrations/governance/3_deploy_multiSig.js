@@ -18,8 +18,6 @@ const _getTimeStamp = async () => {
     return timestamp
 }
 
-
-
 module.exports =  async function(deployer) {
     let promises = [
 

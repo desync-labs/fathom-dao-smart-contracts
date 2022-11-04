@@ -259,8 +259,6 @@ describe('MultiSig Wallet', () => {
                 errorMessage
             );
         });
-
-        
         
         it('Shoud release funds to beneficiary', async() => {
 
