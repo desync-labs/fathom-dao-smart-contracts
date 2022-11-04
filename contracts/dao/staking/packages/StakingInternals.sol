@@ -51,12 +51,17 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 amount,
         uint256 lockPeriod
     ) internal {
-        //@notice: newLock.end is always greater than block.timestamp
-        uint256 nVeFTHM;
-        if (lockPeriod > 0){
-            nVeFTHM = _updateGovnWeightLock(amount, lockPeriod, account);
-        }
+        ///@notice: newLock.end is always greater than block.timestamp
 
+        uint256 nVeFTHM;
+        User storage userAccount = users[account];
+        if (lockPeriod > 0){
+            nVeFTHM = (amount * lockPeriod * POINT_MULTIPLIER)
+                             / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
+
+            userAccount.veFTHMBalance += BoringMath.to128(nVeFTHM);
+            totalAmountOfveFTHM += nVeFTHM;
+        }
         LockedBalance memory _newLock = LockedBalance({
             amountOfFTHM: BoringMath.to128(amount),
             amountOfveFTHM: BoringMath.to128(nVeFTHM),
@@ -91,24 +96,32 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 lockId,
         address account
     ) internal {
+        require(lockId > 0,"zero lockid");
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         require(totalFTHMShares != 0, "No Shares");
         require(updateLock.FTHMShares != 0, "No Shares");
-        
-        uint256 nLockedVeFTHM = updateLock.amountOfveFTHM;
+        uint256 nVeFTHM = updateLock.amountOfveFTHM;
+        ///@notice if you unstake, early or partial or complete,
+        ///        the number of vote tokens for lock position is set to zero
+        updateLock.amountOfveFTHM = 0;
+        totalAmountOfveFTHM -= nVeFTHM;
+        uint256 remainingvFTHMBalance = 0;
 
-        _updateGovnWeightUnlock(updateLock, userAccount);
+        //this check to not overflow:
+        if (userAccount.veFTHMBalance > nVeFTHM) {
+            remainingvFTHMBalance = userAccount.veFTHMBalance - nVeFTHM;
+        }
+        userAccount.veFTHMBalance = BoringMath.to128(remainingvFTHMBalance);
         _unstake(amount, stakeValue, lockId, account);
-
         /// @notice This is for dust mitigation, so that even if the
         //  user does not hae enough veFTHM, it is still able to burn and unlock
         //  takes a bit of gas
         uint256 balance = IERC20(veFTHM).balanceOf(account);
-        if (balance < nLockedVeFTHM) {
-            nLockedVeFTHM = balance;
+        if (balance < nVeFTHM) {
+            nVeFTHM = balance;
         }
-        IVeMainToken(veFTHM).burn(account, nLockedVeFTHM);
+        IVeMainToken(veFTHM).burn(account, nVeFTHM);
     }
 
     /**
@@ -157,6 +170,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 lockId,
         address account
     ) internal {
+        
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId -1];
         totalAmountOfStakedFTHM -= stakeValue;
@@ -228,46 +242,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         totalPenaltyBalance += penalty;
     }
 
-    /**
-     * @dev Updates the balance of Vote token of the user for locking
-     * @notice Calculation of number of vote tokens is based upon amount locked and it's time period
-     * @param amount The amount of Main Tokens for which vote tokens is to released
-     * @param lockingPeriod The period for which the tokens are locked
-     * @param account The account for which the tokens are locked
-     */
-    function _updateGovnWeightLock(
-        uint256 amount,
-        uint256 lockingPeriod,
-        address account
-    ) internal returns (uint256) {
-        User storage userAccount = users[account];
-        uint256 nVeFTHM = (amount * lockingPeriod * POINT_MULTIPLIER)
-                             / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
-
-        userAccount.veFTHMBalance += BoringMath.to128(nVeFTHM);
-        totalAmountOfveFTHM += nVeFTHM;
-        return nVeFTHM;
-    }
-
-    /**
-     * @dev Updates balances of vote tokens for Locks and user accounts during unlock
-     * @notice completely sets the balance of vote tokens to zero for a lock
-     * @notice sets remaining balance for the user account
-     */
-    function _updateGovnWeightUnlock(LockedBalance storage updateLock, User storage userAccount) internal {
-        uint256 nVeFTHM = updateLock.amountOfveFTHM;
-        ///@notice if you unstake, early or partial or complete,
-        ///        the number of vote tokens for lock position is set to zero
-        updateLock.amountOfveFTHM = 0;
-        totalAmountOfveFTHM -= nVeFTHM;
-        uint256 remainingvFTHMBalance = 0;
-
-        //this check to not overflow:
-        if (userAccount.veFTHMBalance > nVeFTHM) {
-            remainingvFTHMBalance = userAccount.veFTHMBalance - nVeFTHM;
-        }
-        userAccount.veFTHMBalance = BoringMath.to128(remainingvFTHMBalance);
-    }
 
     function _removeLockPosition(
         User storage userAccount,
