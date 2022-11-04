@@ -10,7 +10,7 @@ const {
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 // Proposal 1
-const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
+const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the erc20Factory contract";
 const NEW_STORE_VALUE = "5";
 
 // / proposal 2
@@ -54,39 +54,27 @@ const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp()
     return timestamp
 }
-
-
 //this is used for stream shares calculation.
 const veMainTokenCoefficient = 500;
 // ================================================================================================
 
-
-
-describe('Proposal flow', () => {
+describe('Token Creation Through Governance', () => {
 
     let timelockController
     let veMainToken
     let mainTokenGovernor
-    let box
-    let mainToken
-    let multiSigWallet
+    let erc20Factory
+    
     
     let proposer_role
     let executor_role
     let timelock_admin_role
+    let deployer_role
 
     let proposalId
-    let proposalId2
     let result
-    let encoded_function
-    let encoded_transfer_function
-    let encoded_treasury_function
+    let encoded_factory_function
     let description_hash
-    let description_hash_2
-
-    let txIndex
-    let txIndex1
-    let txIndex2
 
     const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
@@ -118,13 +106,14 @@ describe('Proposal flow', () => {
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
         veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
-        box = await artifacts.initializeInterfaceAt("Box", "Box");
+        erc20Factory = await artifacts.initializeInterfaceAt("ERC20Factory", "ERC20Factory");
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         proposer_role = await timelockController.PROPOSER_ROLE();
         executor_role = await timelockController.EXECUTOR_ROLE();
         timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
+        deployer_role = await erc20Factory.DEPLOYER_ROLE();
 
         // For staking:
         maxWeightShares = 1024;
@@ -194,49 +183,25 @@ describe('Proposal flow', () => {
             veMainTokenCoefficient,
             lockingVoteWeight,
             maxNumberOfLocks
-         )
-
-        // encode the function call to change the value in box.  To be performed if the vote passes
-        encoded_function = web3.eth.abi.encodeFunctionCall({
-            name: 'store',
-            type: 'function',
-            inputs: [{
-                type: 'uint256',
-                name: 'value'
-            }]
-        }, [NEW_STORE_VALUE]);
-
-        // encoded transfer function call for the main token.
-        encoded_transfer_function = web3.eth.abi.encodeFunctionCall({
-            name: 'transfer',
-            type: 'function',
-            inputs: [{
-                type: 'address',
-                name: 'to'
-            },{
-                type: 'uint256',
-                name: 'amount'
-            }]
-        }, [STAKER_1, AMOUNT_OUT_TREASURY]);
+        )
 
         // encode the function call to release funds from MultiSig treasury.  To be performed if the vote passes
-        encoded_treasury_function = web3.eth.abi.encodeFunctionCall({
-            name: 'submitTransaction',
+        encoded_factory_function = web3.eth.abi.encodeFunctionCall({
+            name: 'deployToken',
             type: 'function',
             inputs: [{
-                type: 'address',
-                name: '_to'
+                type: 'string',
+                name: '_name'
+            },{
+                type: 'string',
+                name: '_ticker'
             },{
                 type: 'uint256',
-                name: '_value'
-            },{
-                type: 'bytes',
-                name: '_data'
+                name: '_supply'
             }]
-        }, [mainToken.address, EMPTY_BYTES, encoded_transfer_function]);
+        }, ["Test Token", "TT", 1000000000]);
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
-        description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
 
     });
 
@@ -248,31 +213,16 @@ describe('Proposal flow', () => {
             await timelockController.grantRole(timelock_admin_role, mainTokenGovernor.address, {"from": accounts[0]});
             await timelockController.grantRole(executor_role, mainTokenGovernor.address, {"from": accounts[0]});
         });
-
     });
 
+    describe("Factory initialisation", async() => {
 
-
-    // TODO: Needs to revert when there is no value
-    describe("Box contract", async() => {
-
-        it('Retrieve returns a value previously stored', async() => {
-            // Store a value
-            await box.store(42);
-
-            // Test if the returned value is the same one
-            expect((await box.retrieve()).toString()).to.equal('42');
-        });
-
-        it('Transfer ownership of the box', async() => {
-            await box.transferOwnership(timelockController.address);
+        it('Transfer ownership of the erc20Factory', async() => {
             
-            const new_owner = await box.owner();
-            assert.equal(new_owner, timelockController.address);
+            await erc20Factory.grantRole(deployer_role, timelockController.address, {"from": accounts[0]});
         });
 
     });
-
 
     describe("Staking MainToken to receive veMainToken token", async() => {
 
@@ -319,7 +269,7 @@ describe('Proposal flow', () => {
         });
     });
 
-    describe("Update Parameter Through Governer", async() => {
+    describe("Create New Token Through Governance", async() => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
 
@@ -327,9 +277,9 @@ describe('Proposal flow', () => {
 
             await shouldRevert(
                 mainTokenGovernor.propose(
-                    [box.address],
+                    [erc20Factory.address],
                     [0],
-                    [encoded_function],
+                    [encoded_factory_function],
                     PROPOSAL_DESCRIPTION,
                     {"from": accounts[9]}
                 ),
@@ -338,13 +288,13 @@ describe('Proposal flow', () => {
             );
         });
 
-        it('Propose a change to the boxs store value', async() => {
+        it('Propose a new token to be created', async() => {
 
             // create a proposal in MainToken governor
             result = await mainTokenGovernor.propose(
-                [box.address],
+                [erc20Factory.address],
                 [0],
-                [encoded_function],
+                [encoded_factory_function],
                 PROPOSAL_DESCRIPTION,
                 {"from": STAKER_1}
             );
@@ -419,9 +369,9 @@ describe('Proposal flow', () => {
             // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
 
             const result = await mainTokenGovernor.queue(      
-                [box.address],
+                [erc20Factory.address],
                 [0],
-                [encoded_function],
+                [encoded_factory_function],
                 description_hash,
                 {"from": accounts[0]}
             );            
@@ -445,7 +395,6 @@ describe('Proposal flow', () => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
         });
-
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
@@ -462,12 +411,17 @@ describe('Proposal flow', () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
         });
 
+        it('Check that the proposal status is: Queued', async() => {
+
+            expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
+        });
+
         it('Execute the proposal', async() => {
 
             const result = await mainTokenGovernor.execute(      
-                [box.address],
+                [erc20Factory.address],
                 [0],
-                [encoded_function],
+                [encoded_factory_function],
                 description_hash,
                 {"from": accounts[0]}
             );
@@ -476,236 +430,6 @@ describe('Proposal flow', () => {
         it('Check that the proposal status is: succesful', async() => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("7");
         })
-
-        it('Should retrieve the updated value proposed by governance for the new store value in box.sol', async() => {
-
-            const new_val = await box.retrieve();
-            // Test if the returned value is the new value
-            expect((await box.retrieve()).toString()).to.equal(NEW_STORE_VALUE);
-        });
-    });
-
-    describe( "MultiSig Treasury", async() => {
-
-        it('Mint MainToken token to MultiSig treasury', async() => {
-            await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
-            expect((await mainToken.balanceOf(multiSigWallet.address, {"from": accounts[0]})).toString()).to.equal(T_TOKEN_TO_MINT);
-        });
-
-        // Need ot make exhaustive MultiSig tests 
-        // it('', async() => {  
-        // });
-    });
-
-    describe("VC Treasury Distribution Through Governor", async() => {
-
-        it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {
-
-            // create a proposal in MainToken governor
-            result = await mainTokenGovernor.propose(
-                [multiSigWallet.address],
-                [0],
-                [encoded_treasury_function],
-                PROPOSAL_DESCRIPTION_2,
-                {"from": STAKER_1}
-            );
-
-            // retrieve the proposal id
-            proposalId2 = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];
-   
-        });
-
-        it("Should retrieve voting weights", async () => {
-
-            const currentNumber = await web3.eth.getBlockNumber();
-
-            expect(parseInt((await mainTokenGovernor.getVotes(STAKER_1, currentNumber - 1 )).toString())).to.be.above(parseInt(STAKED_MIN));
-            expect(parseInt((await mainTokenGovernor.getVotes(STAKER_2, currentNumber - 1 )).toString())).to.be.above(parseInt(STAKED_MIN));
-            assert.equal( await mainTokenGovernor.getVotes(NOT_STAKER, currentNumber - 1 ), "0");
-        });
-
-
-        it('Vote on the second proposal', async() => {
-
-            // enum VoteType {
-            //     Against,
-            //     For,
-            //     Abstain
-            // }
-            // =>  0 = Against, 1 = For, 2 = Abstain 
-
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            var nextBlock = 1;
-            while (nextBlock <= 2) {   
-                await blockchain.mineBlock(timestamp + nextBlock);    
-                nextBlock++;              
-            }
-            // Vote:
-            await mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1});
-
-        });
-
-        it("Should not allow an account to vote twice on the same proposal", async () => {
-            const errorMessage = "GovernorVotingSimple: vote already cast";
-              
-            await shouldRevert(
-                mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
-                errTypes.revert,
-                errorMessage
-            ); 
-            
-        });
-
-        it("Should not vote outside of option range", async () => {
-            const errorMessage = "GovernorVotingSimple: invalid value for enum VoteType";
-              
-            await shouldRevert(
-                mainTokenGovernor.castVote(proposalId2, "3", {"from": STAKER_2}),
-                errTypes.revert,
-                errorMessage
-            ); 
-        });
-
-
-        it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock);
-                nextBlock++;              
-            }
-            // Check that the proposal is succesful:
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("4"); 
-        });
-
-
-        it("Should not accept votes outside of the voting period", async () => {
-            const errorMessage = "Governor: vote not currently active";
-              
-            await shouldRevert(
-                mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
-                errTypes.revert,
-                errorMessage
-            );            
-        });
-
-        it('Queue the second proposal', async() => {
-            await mainTokenGovernor.queue(      
-                [multiSigWallet.address],
-                [0],
-                [encoded_treasury_function],
-                description_hash_2,
-                {"from": accounts[0]}
-            );
-        });
-
-        it('Create multiSig transaction to confirm proposal 1', async() => {
-            encodedConfirmation1 = _encodeConfirmation(proposalId2);
-
-            const result = await multiSigWallet.submitTransaction(
-                mainTokenGovernor.address, 
-                EMPTY_BYTES, 
-                encodedConfirmation1, 
-                {"from": accounts[0]}
-            );
-            txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-        })
-
-        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
-            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[0]});
-            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[2]});
-        });
-
-        
-        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
-            await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
-
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock); 
-                nextBlock++;              
-            }
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
-        });
-
-        it('Wait 40 blocks and then check that the proposal status is: Queued', async() => {
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-    
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock); 
-                nextBlock++;              
-            }
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
-        });
-
-        it('Execute the second proposal', async() => {
-            result = await mainTokenGovernor.execute(      
-                [multiSigWallet.address],
-                [0],
-                [encoded_treasury_function],
-                description_hash_2,
-                {"from": accounts[0]}
-            );
-            txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-
-            // Check that the proposal status is: Executed
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("7");
-
-        });
-
-        it('Confirm and Execute the release of funds from MultiSig treasury', async() => {
-            // Here the acocunts which have been designated a "Signer" role for the governor 
-            //      need to confirm each transaction before it can be executed.
-            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[0]});
-            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[1]});
-            // Execute:
-            await multiSigWallet.executeTransaction(txIndex, {"from": accounts[0]});
-            // Balance of account 5 should reflect the funds distributed from treasury in proposal 2
-            expect((await mainToken.balanceOf(STAKER_1, {"from": STAKER_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
-        });
-
-        it('Mint MainToken token to everyone', async() => {
-
-            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 ve tokens
-
-            const _stakeMainGetVe = async (_account) => {
-
-                await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-    
-                await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-    
-                await blockchain.increaseTime(20);
-    
-                let unlockTime = await _getTimeStamp() + lockingPeriod;
-    
-                await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
-            }
-
-            await _stakeMainGetVe(accounts[0]);
-            await _stakeMainGetVe(accounts[0]);
-
-            await _stakeMainGetVe(accounts[9]);
-            await _stakeMainGetVe(accounts[9]);
-
-            console.log(mainTokenGovernor.address);
-            console.log(mainTokenGovernor.address);
-        });
-
-        
     });
 });
 

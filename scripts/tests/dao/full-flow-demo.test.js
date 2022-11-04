@@ -102,13 +102,6 @@ const _calculateNumberOfVFTHM = (sumToDeposit, lockingPeriod, lockingWeight) =>{
     return sumToDepositBN.mul(lockingPeriodBN).div(lockingWeightBN);
 }
 
-const _calculateNumberOfStreamShares = (sumToDeposit, veMainTokenCoefficient, nVFTHM, maxWeightShares) => {
-    const sumToDepositBN = new web3.utils.BN(sumToDeposit);
-    const veMainTokenWeightBN = new web3.utils.BN(veMainTokenCoefficient); 
-    const maxWeightBN = new web3.utils.BN(maxWeightShares);
-    const oneThousandBN = new web3.utils.BN(1000)
-    return (sumToDepositBN.add(veMainTokenWeightBN.mul(nVFTHM).div(oneThousandBN))).mul(maxWeightBN);
-}
 
 const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
     const depositAmountBN = new web3.utils.BN(depositAmount);
@@ -124,6 +117,18 @@ const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
 
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
+}
+
+const _encodeConfirmation = async (_proposalId) => {
+    const timestamp = await blockchain.getLatestBlockTimestamp()
+    return web3.eth.abi.encodeFunctionCall({
+            name: 'confirmProposal',
+            type: 'function',
+            inputs: [{
+                type: 'uint256',
+                name: '_proposalId'
+            }]
+        }, [_proposalId.toString()]);
 }
 
 describe("DAO Demo", () => {
@@ -145,11 +150,13 @@ describe("DAO Demo", () => {
     let minWeightPenalty;
     let veMainTokenCoefficient;
     let lockingVoteWeight;
-    let totalAmountOfStakedFTHM;
-    let totalAmountOfVFTHM;
     let totalAmountOfStreamShares;
     let maxNumberOfLocks;
 
+    let encodedConfirmation1;
+    let encodedConfirmation2;
+    let txIndex1;
+    let txIndex2;
 
     let timelockController
     let mainTokenGovernor
@@ -165,7 +172,6 @@ describe("DAO Demo", () => {
     let proposalId2
     let result
     let encoded_function
-    let encoded_transfer_function
     let encoded_treasury_function
     let description_hash
     let description_hash_2
@@ -299,35 +305,6 @@ describe("DAO Demo", () => {
                 name: 'value'
             }]
         }, [NEW_STORE_VALUE]);
-
-        // // encoded transfer function call for the main token.
-        // encoded_transfer_function = web3.eth.abi.encodeFunctionCall({
-        //     name: 'transfer',
-        //     type: 'function',
-        //     inputs: [{
-        //         type: 'address',
-        //         name: 'to'
-        //     },{
-        //         type: 'uint256',
-        //         name: 'amount'
-        //     }]
-        // }, [staker_1, AMOUNT_OUT_TREASURY]);
-
-        // // encode the function call to release funds from MultiSig treasury.  To be performed if the vote passes
-        // encoded_treasury_function = web3.eth.abi.encodeFunctionCall({
-        //     name: 'submitTransaction',
-        //     type: 'function',
-        //     inputs: [{
-        //         type: 'address',
-        //         name: '_to'
-        //     },{
-        //         type: 'uint256',
-        //         name: '_value'
-        //     },{
-        //         type: 'bytes',
-        //         name: '_data'
-        //     }]
-        // }, [mainToken.address, EMPTY_BYTES, encoded_transfer_function]);
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
@@ -591,10 +568,28 @@ describe("DAO Demo", () => {
             );            
         });
 
-        it('MultiSig Approve the proposal from accounts 0 AND 1', async() => {
-            await mainTokenGovernor.confirmProposal(proposalId, {"from": accounts[0]});
-            await mainTokenGovernor.confirmProposal(proposalId, {"from": accounts[1]});
 
+        it('Create multiSig transaction to confirm proposal 1', async() => {
+            encodedConfirmation1 = _encodeConfirmation(proposalId);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation1, 
+                {"from": accounts[0]}
+            );
+            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
+        });
+
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
 
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
@@ -607,6 +602,8 @@ describe("DAO Demo", () => {
             }
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
         });
+
+
 
         it('Execute the proposal', async() => {
 
@@ -770,13 +767,31 @@ describe("DAO Demo", () => {
             );
         });
 
-        it('Approve the proposal from accounts 0 AND 1', async() => {
-            await mainTokenGovernor.confirmProposal(proposalId2, {"from": accounts[0]});
-            await mainTokenGovernor.confirmProposal(proposalId2, {"from": accounts[1]});
+        it('Create multiSig transaction to confirm proposal 1', async() => {
+            encodedConfirmation2 = _encodeConfirmation(proposalId2);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation2, 
+                {"from": accounts[0]}
+            );
+            txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[1]});
+        });
+
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
+
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
-    
+            
             var nextBlock = 1;
             while (nextBlock <= 40) {   
                 await blockchain.mineBlock(timestamp + nextBlock); 

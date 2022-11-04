@@ -41,6 +41,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     string private _name;
     uint256[] private proposalIds;
 
+    address private multiSig;
+
     mapping(uint256 => ProposalCore) internal _proposals;
     mapping(uint256 => string) internal _descriptions;
 
@@ -70,27 +72,16 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         _;
     }
 
+
     /**
      * @dev Sets the value for {name} and {version}
      */
     constructor(
         string memory name_,
-        address[] memory _signers,
-        uint _numConfirmationsRequired
+        address _multiSig
     ) EIP712(name_, version()) {
         _name = name_;
-        signers = _signers;
-        numConfirmationsRequired = _numConfirmationsRequired;
-
-        for (uint i = 0; i < _signers.length; i++) {
-            address signer = _signers[i];
-
-            require(signer != address(0), "invalid owner");
-            require(!isSigner[signer], "owner not unique");
-
-            isSigner[signer] = true;
-            signers.push(signer);
-        }
+        multiSig = _multiSig;
     }
 
     /**
@@ -332,7 +323,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     // TODO: Remove
-    /**
+    /**`
      * @dev returns all proposal Ids
      */
     function getProposalIds() public view override returns (uint[] memory) {
@@ -610,8 +601,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return weight;
     }
 
-    // TODO:  Remove
-
     function _getProposalsAll(uint len)
         internal
         view
@@ -640,8 +629,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         return (_proposalIds, _descriptionsArray, _statusses);
     }
-
-    // TODO:  Remove
 
     function _getProposals(uint _numIndexes, uint len)
         internal
@@ -716,24 +703,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     // This can be a module of its own:
     // =========================== Turn into a module ================================
 
-    address[] public signers;
-    mapping(address => bool) public isSigner;
-    uint public numConfirmationsRequired;
+    mapping(uint => bool) isConfirmed;
 
-    // mapping from proposal id => signer => bool
-    mapping(uint => mapping(address => bool)) public isConfirmed;
-
-    // mapping from proposal id to the current number of confirmations
-    mapping(uint => uint8) public numConfirmations;
-
-    // Transaction[] public transactions;
 
     event ConfirmProposal(address indexed signer, uint indexed proposalId);
     event RevokeConfirmation(address indexed signer, uint indexed proposalId);
     event ExecuteProposal(address indexed signer, uint indexed proposalId);
 
-    modifier onlySigner() {
-        require(isSigner[msg.sender], "not signer");
+    modifier onlyMultiSig() {
+        require(_msgSender() == multiSig, "Governor: onlyMultiSig");
         _;
     }
 
@@ -743,35 +721,30 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     modifier notConfirmed(uint _proposalId) {
-        require(!isConfirmed[_proposalId][msg.sender], "proposal already confirmed");
+        require(!isConfirmed[_proposalId], "proposal already confirmed");
         _;
     }
 
     function confirmProposal(uint _proposalId)
         public
-        onlySigner
-        // txExists(_proposalId)    // HERE need proposal exists
+        onlyMultiSig
         notExecuted(_proposalId)
         notConfirmed(_proposalId)
     {
-        numConfirmations[_proposalId] += 1;
-        isConfirmed[_proposalId][msg.sender] = true;
+
+        isConfirmed[_proposalId] = true;
 
         emit ConfirmProposal(msg.sender, _proposalId);
     }
 
-    function revokeConfirmation(uint _proposalId) public onlySigner notExecuted(_proposalId) {
-        require(isConfirmed[_proposalId][msg.sender], "proposal not confirmed");
+    function revokeConfirmation(uint _proposalId) public onlyMultiSig notExecuted(_proposalId) {
+        require(isConfirmed[_proposalId], "proposal not confirmed");
 
-        numConfirmations[_proposalId] -= 1;
-        isConfirmed[_proposalId][msg.sender] = false;
+        isConfirmed[_proposalId] = false;
 
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
-    function getsigners() public view returns (address[] memory) {
-        return signers;
-    }
     // ============================= End of module ================================
 
     /* solhint-enable */

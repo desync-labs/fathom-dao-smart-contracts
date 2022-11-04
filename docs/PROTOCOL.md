@@ -1,38 +1,49 @@
 # Fathom Protocol
 ___
 
-## Table of contents
-
 - [Fathom Protocol](#fathom-protocol)
-  - [Table of contents](#table-of-contents)
-  - [Overview](#overview)
-  - [1. DAO](#1-dao)
-  - [2. Votes token](#2-votes-token)
-  - [3. Governance](#3-governance)
-    - [3.1. Governance contract](#31-governance-contract)
-    - [3.2. TimeLock Controller](#32-timelock-controller)
-    - [3.3. Parameter Change Proposal Flow](#33-parameter-change-proposal-flow)
-    - [3.4. Collateal Proposal Flow](#34-collateal-proposal-flow)
-  - [4. Staking](#4-staking)
-    - [4.1. Staking: Main Terms and Definitions, Q&A](#41-staking-main-terms-and-definitions-qa)
-    - [4.2. Lock To Stake](#42-lock-to-stake)
-    - [4.3. How Locks Work?](#43-how-locks-work)
-    - [4.4. How staking works?](#44-how-staking-works)
-    - [4.5. Release of vFTHM](#45-release-of-vfthm)
-    - [4.6. Vault](#46-vault)
-    - [4.7. Rewards](#47-rewards)
-      - [4.7.1. Rewards: Main Terms and Definitions](#471-rewards-main-terms-and-definitions)
-      - [4.7.2. Claim Rewards:](#472-claim-rewards)
-    - [4.8. Streams](#48-streams)
-      - [4.8.1. Streams: Main Terms and Definitions:](#481-streams-main-terms-and-definitions)
-      - [4.8.2. How to Propose and Make a stream Live?](#482-how-to-propose-and-make-a-stream-live)
-      - [4.8.3. Rewards Distribution Schedule:](#483-rewards-distribution-schedule)
-  - [5 Smart Contract Setup:](#5-smart-contract-setup)
-    - [How would you deploy the contracts?](#how-would-you-deploy-the-contracts)
-  - [6. User Flow for Staking](#6-user-flow-for-staking)
-  - [7. Treasury](#7-treasury)
-    - [7.1. MultiSigWallet.sol Treasury](#71-multisigwalletsol-treasury)
-      - [7.1.1. Key MultiSigWallet Functions:](#711-key-multisigwallet-functions)
+  * [Overview](#overview)
+  * [1. DAO](#1-dao)
+  * [2. Votes token](#2-votes-token)
+  * [3. Governance](#3-governance)
+    + [3.1. Governance contract](#31-governance-contract)
+    + [3.2. TimeLock Controller](#32-timelock-controller)
+    + [3.3. Parameter Change Proposal Flow](#33-parameter-change-proposal-flow)
+    + [3.4. Collateal Proposal Flow](#34-collateal-proposal-flow)
+- [Governance technical specifications](#governance-technical-specifications)
+  * [Vote Token](#vote-token)
+      - [Inherited functionality:](#inherited-functionality-)
+  * [Fathom Governor](#fathom-governor)
+      - [Inherited functionality:](#inherited-functionality--1)
+      - [Key Functions:](#key-functions-)
+      - [Deployment and initialisation parameters:](#deployment-and-initialisation-parameters-)
+  * [Multisig Treasury](#multisig-treasury)
+        * [Functionality](#functionality)
+        * [Key Functions:](#key-functions--1)
+  * [Accesibility Permissions and Roles](#accesibility-permissions-and-roles)
+  * [4. Staking](#4-staking)
+    + [4.1. Staking: Main Terms and Definitions, Q&A](#41-staking--main-terms-and-definitions--q-a)
+    + [4.2. Lock To Stake](#42-lock-to-stake)
+    + [4.3. How Locks Work?](#43-how-locks-work-)
+    + [4.4. How staking works?](#44-how-staking-works-)
+    + [4.5. Release of vFTHM](#45-release-of-vfthm)
+    + [4.6. Vault](#46-vault)
+    + [4.7. Rewards](#47-rewards)
+      - [4.7.1. Rewards: Main Terms and Definitions](#471-rewards--main-terms-and-definitions)
+      - [4.7.2. Claim Rewards:](#472-claim-rewards-)
+    + [4.8. Streams](#48-streams)
+      - [4.8.1. Streams: Main Terms and Definitions:](#481-streams--main-terms-and-definitions-)
+      - [4.8.2. How to Propose and Make a stream Live?](#482-how-to-propose-and-make-a-stream-live-)
+      - [4.8.3. Rewards Distribution Schedule:](#483-rewards-distribution-schedule-)
+  * [5 Smart Contract Setup:](#5-smart-contract-setup-)
+    + [How would you deploy the contracts?](#how-would-you-deploy-the-contracts-)
+  * [6. User Flow for Staking](#6-user-flow-for-staking)
+  * [7. Treasury](#7-treasury)
+    + [7.1. MultiSigWallet.sol Treasury](#71-multisigwalletsol-treasury)
+      - [7.1.1. Key MultiSigWallet Functions:](#711-key-multisigwallet-functions-)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ___
 ## Overview
@@ -273,6 +284,262 @@ The final guard against funds leaving the MultiSigWallet treasury are the signer
 ```
 MultiSigWallet.confirmTransaction(uint _txIndex, {"from": **Some MultiSigWallet Owners address**})
 ```
+
+
+# Governance technical specifications
+
+
+## Vote Token
+vFATHOM (vFTHM)
+    
+#### Inherited functionality:
+
+vFTHM is a Non-Transferable, Burnable, Pausable and Mintable ERC20 token with access control.
+
+**ERC20Permit.sol:**
+"Implementation of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in https://eips.ethereum.org/EIPS/eip-2612[EIP-2612]"
+Inherited ERC20Permit functionality **allows** for the delegation of voting power by signature.
+
+**ERC20Votes.sol:**
+"Extension of ERC20 to support Compound-like voting and delegation"
+Inherited ERC20Votes functionality **accounts** for the delegation of voting power by signature.
+
+    
+
+## Fathom Governor
+
+Currently called MainTokenGovernor.sol
+
+#### Inherited functionality:
+
+**Governor.sol:** 
+The main functionality comes from: Governor.sol, further discussed in the section "Key Functions".
+
+**GovernorVotes.sol:**
+Inherited functionality responsible for calculating voters voting power given an account and a blocknumber.
+
+**GovernorSettings.sol:**  
+Parameters controlling governance are from: GovernorSettings.sol.  The parameters of interest are:
+
+    uint256 private _votingDelay; 
+    uint256 private _votingPeriod;
+    uint256 private _proposalThreshold;
+
+Here:
+_votingDelay is the delay (in number of blocks) since the proposal is submitted until voting power is fixed and voting starts.
+_votingPeriod is the number of blocks that an active proposal remains open for voting.
+_proposalThreshold is the number of vFTHM tokens required in order for a voter to become a proposer
+    
+
+**GovernorVotesQuorumFraction.sol:**
+The quorum is the fraction vFTHM token holders who cast a vote as a fraction of the total voting power (total supply of vote tokens) required for a proposal to pass.  Inherited functionality responible for setting the quorum requirements as a fraction of the total token supply.
+
+**GovernorTimelockControl.sol:**
+Timelock extensions add a delay for governance decisions to be executed.  Functionality inherited from GovernorTimelockControl.sol are responsible for controlling the queing and execution of proposals.
+
+**GovernorCountingSimple.sol:**
+There are three options when casting a vote:
+
+    enum VoteType {
+        Against,
+        For,
+        Abstain
+    }
+
+Votes for each proposal are counted and stored in s struct with the form:
+
+    struct ProposalVote {
+        uint256 againstVotes;
+        uint256 forVotes;
+        uint256 abstainVotes;
+        mapping(address => bool) hasVoted;
+    }
+
+Functions for tallying votes and determining proposal success are inherited from GovernorCountingSimple.sol.  
+
+
+#### Key Functions:
+
+***propose:***
+
+    /**
+     * @dev Create a new proposal. Vote start {IGovernor-votingDelay} 
+         blocks after the proposal is created and ends
+     * {IGovernor-votingPeriod} blocks after the voting starts.
+     *
+     * Emits a {ProposalCreated} event.
+     */
+    function propose(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory description
+    ) public virtual returns (uint256 proposalId);
+
+***state:***
+
+    /**
+     * @dev Current state of a proposal, following Compound's convention
+     */
+    function state(uint256 proposalId) public view virtual returns (ProposalState);
+    
+Here ProposalState is the enum:
+
+    enum ProposalState {
+        Pending,
+        Active,
+        Canceled,
+        Defeated,
+        Succeeded,
+        Queued,
+        Expired,
+        Executed
+    }
+
+***getVotes:***
+
+    /**
+     * @notice module:reputation
+     * @dev Voting power of an `account` at a specific `blockNumber`.
+     *
+     * Note: this can be implemented in a number of ways, for 
+         example by reading the delegated balance from one (or
+     * multiple), {ERC20Votes} tokens.
+     */
+    function getVotes(address account, uint256 blockNumber) 
+            public view virtual returns (uint256);
+
+***castVote:***
+
+
+
+    /**
+     * @dev Cast a vote
+     *
+     * Emits a {VoteCast} event.
+     */
+    function castVote(uint256 proposalId, uint8 support) 
+            public virtual returns (uint256 balance);
+    
+and:
+
+    /**
+     * @dev Cast a vote with a reason
+     *
+     * Emits a {VoteCast} event.
+     */
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) public virtual returns (uint256 balance);
+    
+For delegatee votes:
+
+    /**
+     * @dev Cast a vote using the user's cryptographic signature.
+     *
+     * Emits a {VoteCast} event.
+     */
+    function castVoteBySig(
+        uint256 proposalId,
+        uint8 support,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual returns (uint256 balance);
+    
+For all forms of voting, the voting options are from the following enum.
+
+    // enum VoteType {
+    //     Against,
+    //     For,
+    //     Abstain
+    // }
+    // =>  0 = Against, 1 = For, 2 = Abstain 
+
+***queue:***
+
+    /**
+     * @dev Function to queue a proposal to the timelock.
+     */
+    function queue(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public virtual returns (uint256 proposalId);
+
+***confirmProposal:***
+
+The governance process and all of its contracts are owned by N wallets.  A predetermined subset of confirm a proposal before it can be executed.  This is exlpained in more detail in the "Accesibility Permissions and Roles" section.
+
+    function confirmProposal(uint _proposalId)
+
+
+***execute:***
+
+    /**
+     * @dev Execute a successful proposal. 
+         This requires the quorum to be reached, 
+         the vote to be successful, and the
+         deadline to be reached.
+     *
+     * Emits a {ProposalExecuted} event.
+     *
+     * Note: some module can modify the requirements for 
+         execution, for example by adding an additional timelock.
+     */
+    function execute(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public payable virtual returns (uint256 proposalId);
+
+#### Deployment and initialisation parameters:
+
+Steps:
+1.  Deploy Timelock Controller contract
+2.  Deploy vFTHM token contract
+3.  Initialize the Timelock Controller contract with parameters:
+        uint minDelay, address[] proposers, address[] executors
+4.  Deploy the FathomGovernor contract (Currently called MainTokenGovernor) with parameters: IVotes _token,
+        TimelockController _timelock,
+        address[] memory _signers,
+        uint _numConfirmationsRequired
+
+The signers arrays is discussed in the "Accesibility Permissions and Roles" section.
+
+
+<!-- 
+## Multisig Treasury
+
+##### Functionality 
+
+
+
+
+##### Key Functions:
+ -->
+
+
+## Accesibility Permissions and Roles
+
+***FathomGovernor and TimelockController:***
+After deployment of FathomGovernor and TimelockController, the following TimelockController permissions need to be given to FathomGovernor:
+
+        timelockController.PROPOSER_ROLE()
+        timelockController.EXECUTOR_ROLE()
+        timelockController.TIMELOCK_ADMIN_ROLE()
+
+***Signers:***
+Both Multisig and FathomGovernor have arrays of signers.  The signers have similar functionality, but differ in their responsibility.
+
+The MultiSig signers are responsible for the confirmation of transactions queued in the multisig wallet, whereas the FathomGovernor signers are responsible for the confirmation of a proposal before it may be executed.
+
+
+
 
 ___
 ## 4. Staking

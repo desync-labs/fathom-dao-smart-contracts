@@ -21,13 +21,13 @@ contract MainTokenGovernor is
     constructor(
         IVotes _token,
         TimelockController _timelock,
-        address[] memory _signers,
-        uint _numConfirmationsRequired
+        address _multiSig,
+        uint256 _votingPeriod
     )
-        Governor("MainTokenGovernor", _signers, _numConfirmationsRequired)
+        Governor("MainTokenGovernor", _multiSig)
         GovernorSettings(
             1, /* 1 block */
-            20, /* Should be 1 week */
+            _votingPeriod, /* Should be 1 week */
             1000
         )
         GovernorVotes(_token)
@@ -87,7 +87,7 @@ contract MainTokenGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
-        require(numConfirmations[proposalId] >= numConfirmationsRequired, "MainTokenGovernor: Proposal not confirmed");
+        require(isConfirmed[proposalId], "MainTokenGovernor: Proposal not confirmed by council");
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 
