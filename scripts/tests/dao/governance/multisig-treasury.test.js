@@ -23,7 +23,7 @@ describe('MultiSig Wallet', () => {
 
     let mainToken
     let multiSigWallet
-    let fthmTokenTimelock
+    let tokenTimelock
 
     let encoded_transfer_function
     let encoded_remove_owner_function
@@ -42,7 +42,7 @@ describe('MultiSig Wallet', () => {
 
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
-        fthmTokenTimelock = await artifacts.initializeInterfaceAt("FTHMTokenTimelock", "FTHMTokenTimelock");
+        tokenTimelock = await artifacts.initializeInterfaceAt("TokenTimelock", "TokenTimelock");
 
 
         // encoded transfer function call for the main token.
@@ -56,7 +56,7 @@ describe('MultiSig Wallet', () => {
                 type: 'uint256',
                 name: 'amount'
             }]
-        }, [fthmTokenTimelock.address, AMOUNT_OUT_TREASURY]);
+        }, [tokenTimelock.address, AMOUNT_OUT_TREASURY]);
 
 
         encoded_remove_owner_function = web3.eth.abi.encodeFunctionCall({
@@ -212,7 +212,7 @@ describe('MultiSig Wallet', () => {
     describe("Token distribution with 1 year cliff", async() => {
 
 
-        it('Create transaction to release funds from MultiSig treasury to FTHMTokenTimelock', async() => {
+        it('Create transaction to release funds from MultiSig treasury to TokenTimelock', async() => {
 
             const result = await multiSigWallet.submitTransaction(
                 mainToken.address, 
@@ -224,7 +224,7 @@ describe('MultiSig Wallet', () => {
         });
 
         
-        it('Confirm and Execute the release of funds from MultiSig treasury to FTHMTokenTimelock', async() => {
+        it('Confirm and Execute the release of funds from MultiSig treasury to TokenTimelock', async() => {
             
             // Here the acocunts which have been designated a "Signer" role for the governor 
             //      need to confirm each transaction before it can be executed.
@@ -233,7 +233,7 @@ describe('MultiSig Wallet', () => {
             // Execute:
             await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
 
-            expect((await mainToken.balanceOf(fthmTokenTimelock.address, {"from": accounts[0]})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+            expect((await mainToken.balanceOf(tokenTimelock.address, {"from": accounts[0]})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
 
 
@@ -242,7 +242,7 @@ describe('MultiSig Wallet', () => {
             initial_owners = await multiSigWallet.getOwners();
 
             await shouldRevert(
-                fthmTokenTimelock.release( {"from": BENEFICIARY}),
+                tokenTimelock.release( {"from": BENEFICIARY}),
                 errTypes.revert,
                 errorMessage
             );
@@ -254,7 +254,7 @@ describe('MultiSig Wallet', () => {
             initial_owners = await multiSigWallet.getOwners();
 
             await shouldRevert(
-                fthmTokenTimelock.release( {"from": BENEFICIARY}),
+                tokenTimelock.release( {"from": BENEFICIARY}),
                 errTypes.revert,
                 errorMessage
             );
@@ -267,7 +267,7 @@ describe('MultiSig Wallet', () => {
             
             await blockchain.increaseTime(oneYr);
 
-            await fthmTokenTimelock.release( {"from": BENEFICIARY});
+            await tokenTimelock.release( {"from": BENEFICIARY});
 
             expect((await mainToken.balanceOf(BENEFICIARY, 
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);

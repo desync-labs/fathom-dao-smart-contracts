@@ -682,7 +682,7 @@ describe('Proposal flow', () => {
 
         it('Mint MainToken token to everyone', async() => {
 
-            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 ve tokens
+            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 voting tokens
 
             const _stakeMainGetVe = async (_account) => {
 

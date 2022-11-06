@@ -2,10 +2,10 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (governance/IGovernor.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import "../utils/GovernorStructs.sol";
-import "../utils/introspection/ERC165.sol";
+import "../GovernorStructs.sol";
+import "../../../common/introspection/ERC165.sol";
 
 /**
  * @dev Interface of the {Governor} core.

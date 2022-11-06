@@ -2,7 +2,7 @@ const TimelockController = artifacts.require('./dao/governance/TimelockControlle
 const VMainToken = artifacts.require('./dao/governance/VMainToken.sol');
 const Box = artifacts.require('./dao/governance/Box.sol');
 const MainToken = artifacts.require("./dao/treasury/MainToken.sol");
-const ERC20Factory = artifacts.require("./dao/TokenFactory/ERC20Factory.sol");
+const ERC20Factory = artifacts.require("./dao/token-factory/ERC20Factory.sol");
 
 
 module.exports =  async function(deployer) {

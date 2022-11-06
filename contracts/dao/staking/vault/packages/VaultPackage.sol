@@ -2,12 +2,11 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 import "../interfaces/IVault.sol";
-import "../../../../common/libraries/BytesHelper.sol";
-import "../../../../dao/governance/token/ERC20/IERC20.sol";
 import "../interfaces/IVaultEvents.sol";
-import "../../../governance/access/AccessControl.sol";
+import "../../../tokens/ERC20/IERC20.sol";
+import "../../../../common/access/AccessControl.sol";
 
 
 // solhint-disable not-rely-on-time

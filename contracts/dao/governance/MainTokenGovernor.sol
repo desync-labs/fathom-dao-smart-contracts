@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import "./Governor.sol";
 import "./extensions/GovernorSettings.sol";

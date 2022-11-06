@@ -1,11 +1,12 @@
 // Copyright SECURRENCY INC.
 // SPDX-License-Identifier: AGPL 3.0
-pragma solidity ^0.8.13;
-import "../interfaces/IStakingGetter.sol";
+pragma solidity 0.8.13;
+
 import "./IStakingHelper.sol";
-import "../StakingStructs.sol";
 import "./IStakingGetterHelper.sol";
-import "../../governance/access/AccessControl.sol";
+import "../interfaces/IStakingGetter.sol";
+import "../StakingStructs.sol";
+import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
      // solhint-disable not-rely-on-time

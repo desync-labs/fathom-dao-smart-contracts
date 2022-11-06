@@ -2,7 +2,7 @@ const blockchain = require("../../tests/helpers/blockchain");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const TimelockController = artifacts.require('./dao/governance/TimelockController.sol');
-const FTHMTokenTimelock = artifacts.require("./dao/treasury/FTHMTokenTimelock.sol");
+const TokenTimelock = artifacts.require("./dao/treasury/TokenTimelock.sol");
 const MainToken = artifacts.require("./dao/treasury/MainToken.sol");
 
 const TimelockController_address = TimelockController.address;
@@ -22,7 +22,7 @@ module.exports =  async function(deployer) {
     let promises = [
 
         deployer.deploy(MultiSigWallet, owners, "2", TimelockController_address, { gas: 12000000 }),
-        deployer.deploy(FTHMTokenTimelock, MainToken.address, accounts[0], await _getTimeStamp() + oneYr,  { gas: 12000000 }),
+        deployer.deploy(TokenTimelock, MainToken.address, accounts[0], await _getTimeStamp() + oneYr,  { gas: 12000000 }),
     ];
 
     await Promise.all(promises);

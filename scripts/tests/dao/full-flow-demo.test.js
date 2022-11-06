@@ -632,10 +632,6 @@ describe("DAO Demo", () => {
     });
 
     describe('Unlock The whole lock position for staker 2, EarlyUnlock() implies that there should be some Penalty ', async() => {
-        
-
-        
-        // @Max Ji this should be done at last as balance of VOTE Tokens is slashed to zero after unlock
         it("Should early unlock first lock position of staker _2, with penalty", async() => {
             console.log("================================ SUBIK JI ================================" );
             const lockId = 1

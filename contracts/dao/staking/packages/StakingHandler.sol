@@ -2,13 +2,14 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
+
+import "./StakingInternals.sol";
 import "../StakingStorage.sol";
 import "../interfaces/IStakingHandler.sol";
-import "./StakingInternals.sol";
 import "../vault/interfaces/IVault.sol";
-import "../utils/ReentrancyGuard.sol";
-import "../utils/AdminPausable.sol";
+import "../../../common/security/ReentrancyGuard.sol";
+import "../../../common/security/AdminPausable.sol";
 
 // solhint-disable not-rely-on-time
 contract StakingHandlers is
