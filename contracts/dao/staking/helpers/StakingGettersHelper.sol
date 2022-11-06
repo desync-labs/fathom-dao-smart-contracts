@@ -21,27 +21,27 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function setWeight(Weight memory _weight) external override onlyRole(DEFAULT_ADMIN_ROLE){
+    function setWeight(Weight memory _weight) public override onlyRole(DEFAULT_ADMIN_ROLE){
         weight = _weight;
     }
 
-    function getLatestRewardsPerShare(uint256 streamId) external override view  returns (uint256) {
+    function getLatestRewardsPerShare(uint256 streamId) public override view  returns (uint256) {
         return IStakingHelper(stakingContract).getLatestRewardsPerShare(streamId);
     }
 
-    function getLockInfo(address account, uint256 lockId) external override view  returns (LockedBalance memory) {
+    function getLockInfo(address account, uint256 lockId) public override view  returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);
         require(lockId <= locks.length, "out of index");
         require(lockId > 0,"lockId cant be 0");
         return locks[lockId - 1];
     }
 
-    function getLocksLength(address account) external override view returns (uint256) {
+    function getLocksLength(address account) public override view returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         return locks.length;
     }
 
-    function getLock(address account, uint lockId) external
+    function getLock(address account, uint lockId) public
                      override view returns(uint128, uint128, uint128, uint128, uint64, address){
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
@@ -62,7 +62,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     /// @param account the user address
     /// @return user total deposit in (Main Token)
     function getUserTotalDeposit(address account)
-        external
+        public
         view
         override
         returns (uint256)
@@ -82,7 +82,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     /// @param account the user address
     /// @return user total deposit in (Main Token)
     function getStreamClaimableAmount(uint256 streamId, address account)
-        external
+        public
         view
         override
         returns (uint256)
@@ -102,7 +102,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     /// @param account the user address
     /// @return user total deposit in (Main Token)
     function getUserTotalVotes(address account)
-        external
+        public
         view
         override
         returns (uint256)
@@ -120,7 +120,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
 
     function getFeesForEarlyUnlock(uint256 lockId, address account) 
         override 
-        external 
+        public 
         view
         returns (uint256)
     {

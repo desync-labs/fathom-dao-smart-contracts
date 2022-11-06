@@ -132,7 +132,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReason(
         uint256 proposalId,
         uint8 support,
-        string calldata reason
+        string memory reason
     ) public virtual override returns (uint256) {
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, reason);
@@ -144,7 +144,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params
     ) public virtual override returns (uint256) {
         address voter = _msgSender();
@@ -176,7 +176,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params,
         uint8 v,
         bytes32 r,

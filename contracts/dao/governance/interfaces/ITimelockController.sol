@@ -11,7 +11,7 @@ pragma solidity 0.8.13;
 interface ITimelockController {
     function initialize(
         uint256 minDelay,
-        address[] memory proposers,
-        address[] memory executors
+        address[] calldata proposers,
+        address[] calldata executors
     ) external;
 }

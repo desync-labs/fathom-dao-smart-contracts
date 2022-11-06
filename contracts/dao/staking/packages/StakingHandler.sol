@@ -48,7 +48,7 @@ contract StakingHandlers is
         uint256 _voteShareCoef,
         uint256 _voteLockCoef,
         uint256 _maxLocks
-    ) external override {
+    ) public override {
         require(!stakingInitialised, "intiailised");
         _validateStreamParameters(
             streamOwner,
@@ -112,7 +112,7 @@ contract StakingHandlers is
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau
-    ) external override onlyRole(STREAM_MANAGER_ROLE) {
+    ) public override onlyRole(STREAM_MANAGER_ROLE) {
         _validateStreamParameters(
             streamOwner,
             rewardToken,
@@ -149,7 +149,7 @@ contract StakingHandlers is
      * stream owner must approve reward tokens to this contract.
      * @param streamId stream id
      */
-    function createStream(uint256 streamId, uint256 rewardTokenAmount) external override pausable(1) {
+    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1) {
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "Stream nt proposed");
         require(stream.schedule.time[0] >= block.timestamp, "Stream proposal expire");
@@ -171,7 +171,7 @@ contract StakingHandlers is
     }
 
     //STREAM_MANAGER_ROLE
-    function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
+    function cancelStreamProposal(uint256 streamId) public override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "!stream proposed");
         // cancel pa proposal
@@ -184,7 +184,7 @@ contract StakingHandlers is
     /// @dev removes a stream (only default admin role)
     /// @param streamId stream index
     function removeStream(uint256 streamId, address streamFundReceiver)
-        external
+        public
         override
         onlyRole(STREAM_MANAGER_ROLE)
     {
@@ -209,7 +209,7 @@ contract StakingHandlers is
      * @param amount the amount for a lock position
      * @param lockPeriod the locking period
      */
-    function createLock(uint256 amount, uint256 lockPeriod) external override nonReentrant pausable(1) {
+    function createLock(uint256 amount, uint256 lockPeriod) public override nonReentrant pausable(1) {
         require(locks[msg.sender].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <=  maxLockPeriod, "max lock period");
@@ -223,7 +223,7 @@ contract StakingHandlers is
      * @notice stakeValue is calcuated to balance the shares calculation
      * @param lockId The lockId to unlock completely
      */
-    function unlock(uint256 lockId) external override nonReentrant pausable(1) {
+    function unlock(uint256 lockId) public override nonReentrant pausable(1) {
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         _isItUnlockable(lockId);
         require(lock.end <= block.timestamp, "lock not open");
@@ -237,7 +237,7 @@ contract StakingHandlers is
      * @dev This funciton allows for earlier withdrawal but with penalty
      * @param lockId The lock id to unlock early
      */
-    function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1) {
+    function earlyUnlock(uint256 lockId) public override nonReentrant pausable(1) {
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         _isItUnlockable(lockId);
         require(lock.end > block.timestamp, "lock opened");
@@ -252,7 +252,7 @@ contract StakingHandlers is
      * @param lockId The lock id to unlock partially
      * @param amount The amount to unlock partially
      */
-    function unstakePartially(uint256 lockId, uint256 amount) override external nonReentrant{ 
+    function unstakePartially(uint256 lockId, uint256 amount) override public nonReentrant{ 
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         _isItUnlockable(lockId);
         require(lock.end <= block.timestamp, "!lockopen");
@@ -267,7 +267,7 @@ contract StakingHandlers is
      * @param streamId The id of the stream to claim rewards from
      * @param lockId The position of lock to claim rewards
      */
-    function claimRewards(uint256 streamId, uint256 lockId) external override pausable(1) {
+    function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
         _before();
         _moveRewardsToPending(msg.sender, streamId, lockId);
@@ -277,14 +277,14 @@ contract StakingHandlers is
      * @dev This function claims all the rewards for lock position and adds to pending of user.
      * @param lockId The position of lock to claim rewards
      */
-    function claimAllStreamRewardsForLock(uint256 lockId) external override pausable(1) {
+    function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
         _before();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
     }
 
-    function claimAllLockRewardsForStream(uint256 streamId) external override pausable(1) {
+    function claimAllLockRewardsForStream(uint256 streamId) public override pausable(1) {
         _before();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
     }
@@ -293,7 +293,7 @@ contract StakingHandlers is
      * pending time (tau constant) in order to be able to withdraw.
      * @param streamId stream index
      */
-    function withdraw(uint256 streamId) external override pausable(1) {
+    function withdraw(uint256 streamId) public override pausable(1) {
         require(block.timestamp > users[msg.sender].releaseTime[streamId], "not released");
         _withdraw(streamId);
     }
@@ -303,7 +303,7 @@ contract StakingHandlers is
      * This function will reach gas limit with too many streams,
      * so the frontend will allow individual stream withdrawals and disable withdrawAll.
      */
-    function withdrawAll() external override pausable(1) {
+    function withdrawAll() public override pausable(1) {
         User storage userAccount = users[msg.sender];
         for (uint256 i = 0; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i]) {
@@ -312,11 +312,11 @@ contract StakingHandlers is
         }
     }
 
-    function setWeight(Weight memory _weight) override external  {
+    function setWeight(Weight memory _weight) override public  {
         weight = _weight;
     }
 
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE){
+    function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(GOVERNANCE_ROLE){
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
     }
