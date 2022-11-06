@@ -10,7 +10,7 @@ pragma solidity ^0.8.0;
  * _Available since v4.3._
  */
 
-interface IVeMainToken {
+interface IVMainToken {
     // events
     event MemberAddedToWhitelist(address _member);
     event MemberRemovedFromWhitelist(address _member);

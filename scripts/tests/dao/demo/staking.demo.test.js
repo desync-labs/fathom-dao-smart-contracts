@@ -60,12 +60,12 @@ const _calculateNumberOfVFTHM = (sumToDeposit, lockingPeriod, lockingWeight) =>{
     return sumToDepositBN.mul(lockingPeriodBN).div(lockingWeightBN);
 }
 
-const _calculateNumberOfStreamShares = (sumToDeposit, veMainTokenCoefficient, nVFTHM, maxWeightShares) => {
+const _calculateNumberOfStreamShares = (sumToDeposit, vMainTokenCoefficient, nVFTHM, maxWeightShares) => {
     const sumToDepositBN = new web3.utils.BN(sumToDeposit);
-    const veMainTokenWeightBN = new web3.utils.BN(veMainTokenCoefficient); 
+    const vMainTokenWeightBN = new web3.utils.BN(vMainTokenCoefficient); 
     const maxWeightBN = new web3.utils.BN(maxWeightShares);
     const oneThousandBN = new web3.utils.BN(1000)
-    return (sumToDepositBN.add(veMainTokenWeightBN.mul(nVFTHM).div(oneThousandBN))).mul(maxWeightBN)
+    return (sumToDepositBN.add(vMainTokenWeightBN.mul(nVFTHM).div(oneThousandBN))).mul(maxWeightBN)
 }
 
 const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
@@ -99,12 +99,12 @@ describe("Staking Test", () => {
     let vaultService;
     let stakingGetterService;
     let FTHMToken;
-    let veMainToken;
+    let vMainToken;
 
     let streamReward1;
     let streamReward2;
 
-    let veMainTokenAddress;
+    let vMainTokenAddress;
     let FTHMTokenAddress;
     let streamReward1Address;
     let streamReward2Address;
@@ -113,7 +113,7 @@ describe("Staking Test", () => {
     let minWeightShares;
     let maxWeightPenalty;
     let minWeightPenalty;
-    let veMainTokenCoefficient;
+    let vMainTokenCoefficient;
     let lockingVoteWeight;
     let totalAmountOfStakedFTHM;
     let totalAmountOfVFTHM;
@@ -125,7 +125,7 @@ describe("Staking Test", () => {
     const sumToTransfer = web3.utils.toWei('2000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
     const sumForProposer = web3.utils.toWei('3000','ether')
-    const veMainTokensToApprove = web3.utils.toWei('500000', 'ether')
+    const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
         await snapshot.revertToSnapshot();
@@ -145,7 +145,7 @@ describe("Staking Test", () => {
                               minWeightPenalty,
                               weightMultiplier)
         //this is used for stream shares calculation.
-        veMainTokenCoefficient = 500;
+        vMainTokenCoefficient = 500;
         //this is used for calculation of release of veFTHM
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
@@ -171,15 +171,15 @@ describe("Staking Test", () => {
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         
         
-        await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
+        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
         
-        minter_role = await veMainToken.MINTER_ROLE();
-        await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
+        minter_role = await vMainToken.MINTER_ROLE();
+        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
-        veMainTokenAddress = veMainToken.address;
+        vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
         streamReward2Address = streamReward2.address;
@@ -190,7 +190,7 @@ describe("Staking Test", () => {
         await FTHMToken.transfer(staker_4,sumToTransfer, {from: SYSTEM_ACC})
         await FTHMToken.transfer(stream_manager, sumForProposer, {from: SYSTEM_ACC})
         
-        await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
+        await vMainToken.approve(stakingService.address,vMainTokensToApprove, {from: SYSTEM_ACC})
 
         const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
             
@@ -226,13 +226,13 @@ describe("Staking Test", () => {
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
-            veMainTokenAddress,
+            vMainTokenAddress,
             weightObject,
             stream_owner,
             scheduleTimes,
             scheduleRewards,
             2,
-            veMainTokenCoefficient,
+            vMainTokenCoefficient,
             lockingVoteWeight,
             maxNumberOfLocks
          )
@@ -273,7 +273,7 @@ describe("Staking Test", () => {
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
-            const staker1VeTokenBal = (await veMainToken.balanceOf(staker_1)).toString()
+            const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
 
             //  Here we check that the correct amount of vote was minted.
             staker1VeTokenBal.should.be.bignumber.equal(expectedNVFTHM)
@@ -294,7 +294,7 @@ describe("Staking Test", () => {
             //lockingVoteWeight = 365 * 24 * 60 * 60;
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             console.log(".........Total Staked Protocol Token Amount for Lock Position ", _convertToEtherBalance(sumToDeposit));
-            const expectedShares = _calculateNumberOfStreamShares(sumToDeposit, veMainTokenCoefficient, actualNVFTHM, maxWeightShares);
+            const expectedShares = _calculateNumberOfStreamShares(sumToDeposit, vMainTokenCoefficient, actualNVFTHM, maxWeightShares);
             const actualShares = web3.utils.toBN(eventArgs[0])
             
             actualNVFTHM.should.be.bignumber.equal(expectedNVFTHM)
@@ -395,9 +395,9 @@ describe("Staking Test", () => {
         
         it("Should unlock completely locked positions for user - staker_2", async() => {
             let result = await stakingGetterService.getLockInfo(staker_2,1);
-            const beforeVOTEBalance  = (await veMainToken.balanceOf(staker_2)).toString()
+            const beforeVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
             await stakingService.unlock(1, {from: staker_2});
-            const afterVOTEBalance  = (await veMainToken.balanceOf(staker_2)).toString()
+            const afterVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
             const amountOfVFTHMLock3 = result.amountOfveFTHM.toString()
             
             const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
@@ -811,7 +811,7 @@ describe("Staking Test", () => {
         it('display all addresses', async() => {
             console.log("Staking Contract Address: ", stakingService.address)
             console.log("Main Token Address: ", FTHMToken.address)
-            console.log("VE MAIN Token Address: ", veMainToken.address)
+            console.log("VE MAIN Token Address: ", vMainToken.address)
             console.log("Stakin Getters Address: ", stakingGetterService.address)
             console.log("Stream Reward Token Address: ", streamReward1Address)
         })

@@ -55,13 +55,13 @@ const _getTimeStamp = async () => {
     return timestamp
 }
 //this is used for stream shares calculation.
-const veMainTokenCoefficient = 500;
+const vMainTokenCoefficient = 500;
 // ================================================================================================
 
 describe('Token Creation Through Governance', () => {
 
     let timelockController
-    let veMainToken
+    let vMainToken
     let mainTokenGovernor
     let erc20Factory
     
@@ -104,7 +104,7 @@ describe('Token Creation Through Governance', () => {
         await snapshot.revertToSnapshot();
 
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         erc20Factory = await artifacts.initializeInterfaceAt("ERC20Factory", "ERC20Factory");
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
@@ -145,11 +145,11 @@ describe('Token Creation Through Governance', () => {
         FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
-        await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
-        minter_role = await veMainToken.MINTER_ROLE();
-        await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
+        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
+        minter_role = await vMainToken.MINTER_ROLE();
+        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
-        veMainTokenAddress = veMainToken.address;
+        vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
 
         await vaultService.addSupportedToken(FTHMTokenAddress);
@@ -180,13 +180,13 @@ describe('Token Creation Through Governance', () => {
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
-            veMainTokenAddress,
+            vMainTokenAddress,
             weightObject,
             stream_owner,
             scheduleTimes,
             scheduleRewards,
             2,
-            veMainTokenCoefficient,
+            vMainTokenCoefficient,
             lockingVoteWeight,
             maxNumberOfLocks
         )
@@ -230,7 +230,7 @@ describe('Token Creation Through Governance', () => {
 
     });
 
-    describe("Staking MainToken to receive veMainToken token", async() => {
+    describe("Staking MainToken to receive vMainToken token", async() => {
 
         const _stakeMainGetVe = async (_account) => {
 
@@ -245,8 +245,8 @@ describe('Token Creation Through Governance', () => {
             await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
         }
 
-        it('Stake MainToken and receive veMainToken', async() => {
-            // Here Staker 1 and staker 2 receive veMainTokens for staking MainTokens
+        it('Stake MainToken and receive vMainToken', async() => {
+            // Here Staker 1 and staker 2 receive vMainTokens for staking MainTokens
             await _stakeMainGetVe(STAKER_1);
             await _stakeMainGetVe(STAKER_2);
 
@@ -261,10 +261,10 @@ describe('Token Creation Through Governance', () => {
 
         it('Should revert transfer if holder is not whitelisted to transfer', async() => {
 
-            let errorMessage = "VeMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
 
             await shouldRevert(
-                veMainToken.transfer(
+                vMainToken.transfer(
                     accounts[2],
                     "10",
                     {from: accounts[1]}

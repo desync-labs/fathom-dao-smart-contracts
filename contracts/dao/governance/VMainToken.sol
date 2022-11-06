@@ -9,9 +9,9 @@ import "./security/Pausable.sol";
 import "./access/AccessControl.sol";
 import "./token/ERC20/extensions/draft-ERC20Permit.sol";
 import "./token/ERC20/extensions/ERC20Votes.sol";
-import "./interfaces/IVeMainToken.sol";
+import "./interfaces/IVMainToken.sol";
 
-contract VeMainToken is IVeMainToken, ERC20, ERC20Burnable, Pausable, AccessControl, ERC20Permit, ERC20Votes {
+contract VMainToken is IVMainToken, ERC20, ERC20Burnable, Pausable, AccessControl, ERC20Permit, ERC20Votes {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant WHITELISTER_ROLE = keccak256("MINTER_ROLE");
@@ -19,7 +19,7 @@ contract VeMainToken is IVeMainToken, ERC20, ERC20Burnable, Pausable, AccessCont
     // Mapping to keep track of who is allowed to transfer ve tokens
     mapping(address => bool) public isWhiteListed;
 
-    constructor() ERC20("veMainToken", "veMainToken") ERC20Permit("veMainToken") {
+    constructor() ERC20("vMainToken", "vMainToken") ERC20Permit("vMainToken") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -65,7 +65,7 @@ contract VeMainToken is IVeMainToken, ERC20, ERC20Burnable, Pausable, AccessCont
         address to,
         uint256 amount
     ) internal override whenNotPaused {
-        require(isWhiteListed[msg.sender], "VeMainToken: is intransferable unless the sender is whitelisted");
+        require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
 

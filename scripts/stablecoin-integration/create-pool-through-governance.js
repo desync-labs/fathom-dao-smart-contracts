@@ -34,7 +34,7 @@ const _getTimeStamp = async () => {
 const colPoolConfigAddress = "0x26B38db6A03E8c46611a9E4Cf61B2FeC5494FaFf";
 
 //this is used for stream shares calculation.
-const veMainTokenCoefficient = 500;
+const vMainTokenCoefficient = 500;
 
 let mainTokenGovernor;
 let box;
