@@ -32,6 +32,17 @@ const stream_rewarder_2 = accounts[9];
 let vault_test_address;
 const treasury = SYSTEM_ACC;
 
+
+const _createVoteWeights = (
+    voteShareCoef,
+    voteLockCoef) => {
+    return {
+        voteShareCoef: voteShareCoef,
+        voteLockCoef: voteLockCoef
+    }
+}
+
+
 const _createWeightObject = (
     maxWeightShares,
     minWeightShares,
@@ -165,6 +176,11 @@ describe("Staking Test", () => {
             "StakingGettersHelper"
         )
 
+        rewardsValidator = await artifacts.initializeInterfaceAt(
+            "RewardsValidator",
+            "RewardsValidator"
+        )
+
         await stakingGetterService.setWeight(
             weightObject,
             {from: SYSTEM_ACC}
@@ -229,6 +245,11 @@ describe("Staking Test", () => {
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
+        const voteObject = _createVoteWeights(
+            veMainTokenCoefficient,
+            lockingVoteWeight
+        )
+
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -238,12 +259,10 @@ describe("Staking Test", () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            veMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
-            //_flags
+            voteObject,
+            maxNumberOfLocks,
+            rewardsValidator.address
          )
-
         await setTreasuryAddress(
             treasury,
             stakingService

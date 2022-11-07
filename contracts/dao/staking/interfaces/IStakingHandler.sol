@@ -26,9 +26,9 @@ interface IStakingHandler {
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau,
-        uint256 _voteShareCoef,
-        uint256 _voteLockCoef,
-        uint256 _maxLocks
+        VoteCoefficient memory voteCoef,
+        uint256 _maxLocks,
+        address rewardsContract
     ) external;
 
     function removeStream(uint256 streamId, address streamFundReceiver) external;
