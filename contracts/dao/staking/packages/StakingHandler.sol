@@ -19,7 +19,7 @@ contract StakingHandlers is
     AdminPausable
 {
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
-    bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
 
     /**
     * @dev initialize the contract and deploys the first stream of rewards(FTHM)
@@ -62,7 +62,7 @@ contract StakingHandlers is
         require(IVault(vault).isSupportedToken(_fthmToken), "Unsupported token");
         pausableInit(0);
         _grantRole(STREAM_MANAGER_ROLE, msg.sender);
-        _grantRole(GOVERNANCE_ROLE, msg.sender);
+        _grantRole(TREASURY_ROLE, msg.sender);
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         streams.push(
@@ -202,13 +202,23 @@ contract StakingHandlers is
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
+    function createLockWithoutEarlyUnlock(uint256 amount, uint256 lockPeriod, address account)
+        external 
+        override 
+        pausable(1) 
+        onlyRole(TREASURY_ROLE)
+    {
+            isNotEarlyUnlockable[account] = true;
+            createLock(amount, lockPeriod, account);
+    } 
+
     /**
      * @dev Creates a new lock position with lock period of unlock time
      * @param amount the amount for a lock position
      * @param lockPeriod the locking period
      */
     function createLock(uint256 amount, uint256 lockPeriod, address account) 
-                        external override nonReentrant pausable(1) 
+                        public override nonReentrant pausable(1) 
     {
         require(locks[msg.sender].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
@@ -313,15 +323,11 @@ contract StakingHandlers is
         }
     }
 
-    function setIsNotEarlyUnlockable(address account, bool flag) onlyRole(GOVERNANCE_ROLE) external override {
-        isNotEarlyUnlockable[account] = flag;
-    }
-
-    function setWeight(Weight memory _weight) onlyRole(GOVERNANCE_ROLE) override external  {
+    function setWeight(Weight memory _weight) external  onlyRole(TREASURY_ROLE) override   {
         weight = _weight;
     }
 
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(GOVERNANCE_ROLE){
+    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(TREASURY_ROLE){
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
     }

@@ -24,7 +24,7 @@ const stream_owner = accounts[3];
 const staker_2 = accounts[4];
 const staker_3 = accounts[5];
 const staker_4 = accounts[6];
-
+const staker_5 = accounts[7];
 const stream_manager = accounts[7];
 const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
@@ -434,6 +434,21 @@ describe("Staking Test", () => {
             console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedFTHM.toString());
             console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
         });
+
+        it("Should not early unlock", async() => {
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_5})
+            let lockingPeriod = 365 * 24 * 60 * 60;
+            await stakingService.createLock(sumToDeposit,lockingPeriod, staker_5,{from: staker_1});
+            await stakingService.addToNotEarlyUnlockable(staker_5)
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const errorMessage = "early infeasible";
+
+             await shouldRevert(
+                stakingService.earlyUnlock(1, {from: staker_5}),
+                errTypes.revert,  
+                errorMessage
+            );
+        })
     });
     
     describe('Creating Streams and Rewards Calculations', async() => {

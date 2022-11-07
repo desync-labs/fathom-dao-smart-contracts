@@ -64,6 +64,7 @@ interface IStakingHandler {
 
     function withdrawPenalty(address penaltyReceiver) external;
     function setWeight(Weight memory _weight)  external;
-    function setIsNotEarlyUnlockable(address account, bool flag) external;
+    function createLockWithoutEarlyUnlock(uint256 amount, uint256 lockPeriod, address account)
+        external;
     
 }
