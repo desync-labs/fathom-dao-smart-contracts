@@ -36,9 +36,6 @@ const _encodeConfirmation = async (_proposalId) => {
         }, [_proposalId.toString()]);
 }
 
-// ================================================================================================
-// FROM SUBIK JIs STAKING TEST CODE:
-
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 
@@ -150,7 +147,7 @@ describe('Proposal flow', () => {
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
-        FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
         await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
@@ -490,7 +487,7 @@ describe('Proposal flow', () => {
     describe( "MultiSig Treasury", async() => {
 
         it('Mint MainToken token to MultiSig treasury', async() => {
-            await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
+            await mainToken.transfer(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
             expect((await mainToken.balanceOf(multiSigWallet.address, {"from": accounts[0]})).toString()).to.equal(T_TOKEN_TO_MINT);
         });
 

@@ -87,7 +87,9 @@ describe('MultiSig Wallet', () => {
         }, ['1']);
 
         // Mint tokens to treasury
-        await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
+        console.log(await mainToken.balanceOf(BENEFICIARY))
+        await mainToken.transfer(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
+        console.log(await mainToken.balanceOf(BENEFICIARY))
     });
 
 
@@ -263,15 +265,14 @@ describe('MultiSig Wallet', () => {
         it('Shoud release funds to beneficiary', async() => {
 
             expect((await mainToken.balanceOf(BENEFICIARY, 
-                {"from": BENEFICIARY})).toString()).to.equal("0");
+                {"from": BENEFICIARY})).toString()).to.equal("990000000000000000000000"); //
             
             await blockchain.increaseTime(oneYr);
 
             await tokenTimelock.release( {"from": BENEFICIARY});
 
             expect((await mainToken.balanceOf(BENEFICIARY, 
-                {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
-                
+                {"from": BENEFICIARY})).toString()).to.equal("990000000000000000001000");
         });
 
     });

@@ -242,7 +242,7 @@ describe("DAO Demo", () => {
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
-        FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         //TODO:
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
@@ -328,14 +328,9 @@ describe("DAO Demo", () => {
     
 
     describe('Create two lock positions, release governance tokens, stream rewards', async() => {
-
-
-
         let expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
 
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
-
-            console.log("================================ SUBIK JI ================================" );
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
             
             await blockchain.increaseTime(20);
@@ -633,7 +628,6 @@ describe("DAO Demo", () => {
 
     describe('Unlock The whole lock position for staker 2, EarlyUnlock() implies that there should be some Penalty ', async() => {
         it("Should early unlock first lock position of staker _2, with penalty", async() => {
-            console.log("================================ SUBIK JI ================================" );
             const lockId = 1
             const streamId = 0 // Main Token Stream
             await stakingService.earlyUnlock(lockId, {from: staker_2});
