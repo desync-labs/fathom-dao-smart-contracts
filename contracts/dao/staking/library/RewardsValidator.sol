@@ -5,9 +5,9 @@ pragma solidity 0.8.13;
 import "../StakingStructs.sol";
 import "../interfaces/IRewardsValidator.sol";
 contract RewardsValidator is IRewardsValidator{
+    
     // solhint-disable not-rely-on-time
     function _validateStreamParameters(
-        
         address streamOwner,
         address rewardToken,
         uint256 maxDepositAmount,
