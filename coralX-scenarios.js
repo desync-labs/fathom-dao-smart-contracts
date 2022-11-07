@@ -1,7 +1,7 @@
 module.exports = {
-  deployGoerli: [
-    ['execute', '--path', 'scripts/migrations/governance', '--network', 'goerli'],
-    ['execute', '--path', 'scripts/migrations/staking', '--network', 'goerli'],
+  deploySepolia: [
+    ['execute', '--path', 'scripts/migrations/governance', '--network', 'sepolia'],
+    ['execute', '--path', 'scripts/migrations/staking', '--network', 'sepolia'],
   ],
   deployApothem: [
     ['execute', '--path', 'scripts/migrations/governance', '--network', 'apothem'],
@@ -15,6 +15,7 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/migrations/governance'],
     ['execute', '--path', 'scripts/migrations/staking'],
+    ['execute', '--path', 'scripts/migrations/test'],
   ],
   createStablecoinPool: [
     ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']

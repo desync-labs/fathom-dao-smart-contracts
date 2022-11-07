@@ -4,8 +4,9 @@ const StakingLibrary = artifacts.require('./dao/staking/library/StakingLibrary.s
 
 module.exports = async function(deployer) {
     let promises = [
+        deployer.deploy(StakingLibrary, {gas: 8000000}),
         deployer.deploy(PackageStaking, {gas: 8000000}),
-        deployer.deploy(VaultPackage, {gas: 8000000})
+        deployer.deploy(VaultPackage, {gas: 8000000}),
     ]
 
     await Promise.all(promises);
