@@ -261,7 +261,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 24 * 60 * 60;
 
             const unlockTime = lockingPeriod;
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
                 // later to be used in the expectedNVFTHM calculation.  
                 // This mitigates an error created from the slight change in block time.
@@ -291,7 +291,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 24 * 60 * 60;
             
             const unlockTime = lockingPeriod;
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1, gas:maxGasForTxn});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1]);
@@ -337,11 +337,11 @@ describe("Staking Test", () => {
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             
-            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_2});
+            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_2,{from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_3});
+            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_3,{from: staker_3});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_4});
+            let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_4, {from: staker_4});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
             let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");
@@ -373,7 +373,7 @@ describe("Staking Test", () => {
         it("Setup a third locked position with a 5 second lock period: LockId = 3 - staker_1", async() => {
             const unlockTime =  5;
 
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
@@ -572,9 +572,9 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime, staker_3,{from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4,gas: maxGasForTxn});
             
         });
 
@@ -585,7 +585,7 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             
             let beforeLockTimestamp = await _getTimeStamp();
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2,gas: maxGasForTxn});
             const mineToTimestamp = 20 * 24 * 60 * 60
             await blockchain.mineBlock(beforeLockTimestamp + mineToTimestamp);
             
@@ -676,9 +676,9 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             
-            let result1 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2, gas: maxGasForTxn});
+            let result1 = await stakingService.createLock(sumToDeposit,unlockTime,staker_2, {from: staker_2, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
 
         })
@@ -688,7 +688,7 @@ describe("Staking Test", () => {
            
             const lockingPeriod_staker3 = 12 * 60 * 60
             const unlockTime_staker3 =  lockingPeriod_staker3
-            let result2 = await stakingService.createLock(sumToDeposit,unlockTime_staker3, {from: staker_3, gas: maxGasForTxn});
+            let result2 = await stakingService.createLock(sumToDeposit,unlockTime_staker3,staker_3, {from: staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
@@ -729,9 +729,9 @@ describe("Staking Test", () => {
         it('Setup 3rd and 4th locks for stakers _3', async() => {
             const lockingPeriod = 12 * 60 * 60
             const unlockTime = lockingPeriod;
-            let result2 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
+            let result2 = await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_3,{from: staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
 
@@ -810,7 +810,7 @@ describe("Staking Test", () => {
 
             const lockingPeriod = 365 * 24 * 60 * 60;
             unlockTime =  lockingPeriod;
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(60 * 60 + await _getTimeStamp())
             const penalty = await stakingGetterService.getFeesForEarlyUnlock(lockId, staker_3);
             console.log("penalty for staker if he early unlocks now", _convertToEtherBalance(penalty.toString()))
@@ -877,7 +877,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20)
             const lockingPeriod = 60 * 60
             let unlockTime =  lockingPeriod;
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.earlyUnlock(lockId, {from: staker_3})
 
@@ -899,7 +899,7 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,staker_4, {from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
 
         })
@@ -914,7 +914,7 @@ describe("Staking Test", () => {
             const unlockTime =  lockingPeriod;
 
             const sumToDeposit = web3.utils.toWei('20000', 'ether');
-            let result1 = await stakingService.createLock(sumToDeposit,unlockTime, {from: accounts[9], gas: maxGasForTxn});
+            let result1 = await stakingService.createLock(sumToDeposit,unlockTime,accounts[9], {from: accounts[9], gas: maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1])
@@ -950,7 +950,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             const errorMessage = "paused contract"
             await shouldRevert(
-                stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn}),
+                stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn}),
                 errTypes.revert,  
                 errorMessage
             );
@@ -962,7 +962,7 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,staker_4, {from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
@@ -972,7 +972,7 @@ describe("Staking Test", () => {
             await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
     })

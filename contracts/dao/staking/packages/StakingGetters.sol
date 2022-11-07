@@ -8,10 +8,7 @@ import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
 contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInternals {
-    function getLatestRewardsPerShare(uint256 streamId) external view override returns (uint256) {
-        return _getLatestRewardsPerShare(streamId);
-    }
-    
+
     function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }

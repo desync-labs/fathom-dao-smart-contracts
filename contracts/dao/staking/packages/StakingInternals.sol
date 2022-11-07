@@ -29,8 +29,8 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         require(voteFTHM != address(0x00), "vote addr zero");
         require(_vault != address(0x00), "vault addr zero");
 
-        require(_weight.maxWeightShares > _weight.minWeightShares, "invalid share");
-        require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "invalid penalty");
+        require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
+        require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
         fthmToken = _fthmToken;
         veFTHM = voteFTHM;
         weight = _weight;
@@ -51,8 +51,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 amount,
         uint256 lockPeriod
     ) internal {
-        ///@notice: newLock.end is always greater than block.timestamp
-
         uint256 nVeFTHM;
         User storage userAccount = users[account];
         if (lockPeriod > 0){
@@ -96,7 +94,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 lockId,
         address account
     ) internal {
-        require(lockId > 0,"zero lockid");
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         require(totalFTHMShares != 0, "No Shares");
@@ -345,5 +342,4 @@ contract StakingInternals is StakingStorage, RewardsInternals {
                (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
                 maxLockPeriod);
     }
-
 }

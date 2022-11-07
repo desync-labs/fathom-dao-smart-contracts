@@ -24,9 +24,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         weight = _weight;
     }
 
-    function getLatestRewardsPerShare(uint256 streamId) external override view  returns (uint256) {
-        return IStakingHelper(stakingContract).getLatestRewardsPerShare(streamId);
-    }
+    
 
     function getLockInfo(address account, uint256 lockId) external override view  returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);

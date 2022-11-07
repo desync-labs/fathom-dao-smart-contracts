@@ -6,8 +6,6 @@ pragma solidity ^0.8.13;
 import "../StakingStructs.sol";
 
 interface IStakingGetter {
-    function getLatestRewardsPerShare(uint256 streamId) external view returns (uint256);
-
 
     function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
 

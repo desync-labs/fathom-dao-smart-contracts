@@ -41,7 +41,7 @@ module.exports = {
         optimizer: {
           enabled: true,
           details: { yul: false },
-          runs: 200,
+          runs: 150,
         },
         evmVersion: 'istanbul',
       },

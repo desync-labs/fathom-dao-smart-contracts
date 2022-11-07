@@ -100,23 +100,23 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     ) internal view {
         require(streamOwner != address(0), "bad owner");
         require(rewardToken != address(0), "bad reward token");
-        require(maxDepositAmount > 0, "Zero Max Deposit");
-        require(minDepositAmount > 0, "Zero Min Deposit");
+        require(maxDepositAmount > 0, "0 Max Deposit");
+        require(minDepositAmount > 0, "0 Min Deposit");
         require(minDepositAmount <= maxDepositAmount, "bad Min Deposit");
         require(
             maxDepositAmount == scheduleRewards[0],
             "bad Max Deposit"
         );
         // scheduleTimes[0] == proposal expiration time
-        require(scheduleTimes[0] > block.timestamp, "bad expiration");
-        require(scheduleTimes.length == scheduleRewards.length, "bad Schedules");
-        require(scheduleTimes.length >= 2, "Schedules short");
+        require(scheduleTimes[0] > block.timestamp, "bad expiry");
+        require(scheduleTimes.length == scheduleRewards.length, "bad schdl");
+        require(scheduleTimes.length >= 2, "schdl short");
         require(tau != 0, "bad Tau");
         for (uint256 i = 1; i < scheduleTimes.length; i++) {
             require(scheduleTimes[i] > scheduleTimes[i - 1], "bad times");
-            require(scheduleRewards[i] <= scheduleRewards[i - 1], "bad Rewards");
+            require(scheduleRewards[i] <= scheduleRewards[i - 1], "bad rewrds");
         }
-        require(scheduleRewards[scheduleRewards.length - 1] == 0, "bad End Rewards");
+        require(scheduleRewards[scheduleRewards.length - 1] == 0, "bad End rewrds");
     }
 
     /**
@@ -206,8 +206,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     ) internal view returns (uint256 startIndex, uint256 endIndex) {
         Schedule storage schedule = streams[streamId].schedule;
         uint256 scheduleTimeLength = schedule.time.length;
-        require(scheduleTimeLength > 0, "bad schedules");
-        require(end > start, "bad query period");
+        require(scheduleTimeLength > 0, "bad schdls");
+        require(end > start, "bad query prds");
         require(start >= schedule.time[0], "query before start");
         require(end <= schedule.time[scheduleTimeLength - 1], "query after end");
         for (uint256 i = 1; i < scheduleTimeLength; i++) {
@@ -227,7 +227,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
                 }
             }
         }
-        require(startIndex <= endIndex, "invalid index");
+        require(startIndex <= endIndex, "bad index");
     }
 
     /**

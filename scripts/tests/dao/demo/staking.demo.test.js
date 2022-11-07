@@ -256,7 +256,7 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             console.log(".........Creating a Lock Position for staker 1.........");
 
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
                 // later to be used in the expectedNVFTHM calculation.  
                 // This mitigates an error created from the slight change in block time.
@@ -286,7 +286,7 @@ describe("Staking Test", () => {
             
             const unlockTime = lockingPeriod;
             console.log(".........Creating a second Lock Position for staker 1.........");
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1, gas:maxGasForTxn});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1]);
@@ -303,12 +303,7 @@ describe("Staking Test", () => {
             console.log(".........Released VOTE tokens to staker 1 based upon locking period ( 1/2 year )and locking amount (100 Protocol Tokens) ",_convertToEtherBalance(expectedNVFTHM), 'VOTE Tokens')
         })
 
-        it("Should update total vote token balance.", async() => {
-            const totalAmountOfVFTHM = (await stakingService.totalAmountOfveFTHM()).toString();
-            expectedTotalAmountOfVFTHM.should.be.bignumber.equal(totalAmountOfVFTHM);
-            console.log(".........Expected total amount of VOTE Tokens to be Released calculated in Test Script: ", _convertToEtherBalance(expectedTotalAmountOfVFTHM))
-            console.log(".........Actual total amount of VOTE Tokens Released: ", _convertToEtherBalance(totalAmountOfVFTHM))
-        })
+        
 
         it("Should have correct total number of staked protocol tokens", async() => {
             //2 deposits:
@@ -334,9 +329,9 @@ describe("Staking Test", () => {
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
-            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_2});
+            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_2, {from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_3});
+            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_3,{from: staker_3});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
             let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");

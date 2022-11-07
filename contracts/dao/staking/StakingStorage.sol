@@ -19,8 +19,8 @@ contract StakingStorage{
     ///@notice Checks if the staking is initialized
 
     uint256 public maxLockPositions;
-    bool internal earlyWithdrawalFlag;
-    bool internal stakingInitialised;
+    mapping(address => bool) isNotEarlyUnlockable;
+    
     
     uint256 internal touchedAt;
 
@@ -42,6 +42,7 @@ contract StakingStorage{
     address public fthmToken;
     address public veFTHM;
     address public vault;
+    bool internal stakingInitialised;
     ///Weighting coefficient for shares and penalties
     Weight internal weight;
     mapping(address => User) public users;
