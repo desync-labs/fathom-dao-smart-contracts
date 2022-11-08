@@ -158,6 +158,36 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
+// createLockWithFlag(
+//     uint256 amount, 
+//     uint256 lockPeriod, 
+//     address account,
+//     bool flag) 
+
+const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'createLockWithFlag',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'amount'
+        },{
+            type: 'uint256',
+            name: 'lockPeriod'
+        },{
+            type: 'address',
+            name: 'account'
+        },{
+            type: 'bool',
+            name: 'flag'
+        }]
+    }, [amount, lockPeriod, account, flag]);
+
+    return toRet;
+}
+
 describe("DAO Demo", () => {
     const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
@@ -184,6 +214,7 @@ describe("DAO Demo", () => {
     let encodedConfirmation2;
     let txIndex1;
     let txIndex2;
+    let txIndex3;
 
     let timelockController
     let mainTokenGovernor
@@ -852,6 +883,48 @@ describe("DAO Demo", () => {
 
         });        
     });
+
+
+    describe('Create lock possitions from treasury on behalf of comity ', async() => {
+
+        it('Create multiSig transaction to stake on behalf of comity', async() => {
+
+            const result = await multiSigWallet.submitTransaction(
+                stakingService.address, 
+                EMPTY_BYTES, 
+                _encodeStakeFunction(amount, lockPeriod, account, flag), 
+                {"from": accounts[0]}
+            );
+            txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[1]});
+        });
+
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex3, {"from": accounts[0]});
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 40) {   
+                await blockchain.mineBlock(timestamp + nextBlock); 
+                nextBlock++;              
+            }
+        });
+
+        it("", async() => {
+            
+        });
+
+
+    })
+
 })
 
 // it("Should not early unlock", async() => {
