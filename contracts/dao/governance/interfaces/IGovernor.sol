@@ -2,10 +2,10 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (governance/IGovernor.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import "../utils/GovernorStructs.sol";
-import "../utils/introspection/ERC165.sol";
+import "../GovernorStructs.sol";
+import "../../../common/introspection/ERC165.sol";
 
 /**
  * @dev Interface of the {Governor} core.
@@ -29,13 +29,13 @@ abstract contract IGovernor is IERC165 {
      */
     event ProposalCreated(
         uint256 indexed proposalId,
-        address proposer,
+        address indexed proposer,
         address[] targets,
         uint256[] values,
         string[] signatures,
         bytes[] calldatas,
         uint256 startBlock,
-        uint256 endBlock,
+        uint256 indexed endBlock,
         string description
     );
 
@@ -114,7 +114,7 @@ abstract contract IGovernor is IERC165 {
     function castVoteWithReason(
         uint256 proposalId,
         uint8 support,
-        string calldata reason
+        string memory reason
     ) public virtual returns (uint256 balance);
 
     /**
@@ -125,7 +125,7 @@ abstract contract IGovernor is IERC165 {
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params
     ) public virtual returns (uint256 balance);
 
@@ -150,7 +150,7 @@ abstract contract IGovernor is IERC165 {
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params,
         uint8 v,
         bytes32 r,

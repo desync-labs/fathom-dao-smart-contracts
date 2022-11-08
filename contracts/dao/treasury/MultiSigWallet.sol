@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
-import "../../common/libraries/BytesHelper.sol";
 import "./interfaces/IMultiSigWallet.sol";
 
 contract MultiSigWallet is IMultiSigWallet {
-    using BytesHelper for *;
-
     struct Transaction {
         address to;
         uint value;
@@ -25,10 +22,12 @@ contract MultiSigWallet is IMultiSigWallet {
 
     address[] public owners;
     address public governor;
-    mapping(address => bool) public isOwner;
-    uint public numConfirmationsRequired;
 
+    uint public numConfirmationsRequired;
+    
+    mapping(address => bool) public isOwner;
     mapping(uint => mapping(address => bool)) public isConfirmed;
+
     Transaction[] public transactions;
 
     /**

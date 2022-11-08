@@ -15,7 +15,7 @@ const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint25
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 // Token variables
-const T_TOKEN_TO_MINT = "100000000000000000000000";
+const T_TOKEN_TO_TRANSFER = "100000000000000000000000";
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 
@@ -34,7 +34,7 @@ const _getTimeStamp = async () => {
 const colPoolConfigAddress = "0x26B38db6A03E8c46611a9E4Cf61B2FeC5494FaFf";
 
 //this is used for stream shares calculation.
-const veMainTokenCoefficient = 500;
+const vMainTokenCoefficient = 500;
 
 let mainTokenGovernor;
 let box;

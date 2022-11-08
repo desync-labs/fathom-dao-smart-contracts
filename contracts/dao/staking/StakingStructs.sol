@@ -2,13 +2,14 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 enum StreamStatus {
     INACTIVE,
     PROPOSED,
     ACTIVE
 }
+
 //time: timestamp denoting the start of each scheduled interval.
 //Last element is the end of the stream.
 //reward: remaining rewards to be delivered at the beginning of each scheduled interval.

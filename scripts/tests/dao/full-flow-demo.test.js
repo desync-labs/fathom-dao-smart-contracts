@@ -164,10 +164,10 @@ describe("DAO Demo", () => {
     let stakingService;
     let vaultService;
     let FTHMToken;
-    let veMainToken;
+    let vMainToken;
 
     let streamReward1;
-    let veMainTokenAddress;
+    let vMainTokenAddress;
     let FTHMTokenAddress;
     let streamReward1Address;
 
@@ -175,7 +175,7 @@ describe("DAO Demo", () => {
     let minWeightShares;
     let maxWeightPenalty;
     let minWeightPenalty;
-    let veMainTokenCoefficient;
+    let vMainTokenCoefficient;
     let lockingVoteWeight;
     let totalAmountOfStreamShares;
     let maxNumberOfLocks;
@@ -210,15 +210,15 @@ describe("DAO Demo", () => {
     const sumToDeposit = web3.utils.toWei('1000', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('5000','ether');
-    const veMainTokensToApprove = web3.utils.toWei('500000', 'ether')
+    const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
 
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
-        mainToken = await artifacts.initializeInterfaceAt("ERC20MainToken", "ERC20MainToken");
+        mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
 
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         treasury = multiSigWallet.address;
@@ -242,7 +242,7 @@ describe("DAO Demo", () => {
             minWeightPenalty,
             weightMultiplier)
         //this is used for stream shares calculation.
-        veMainTokenCoefficient = 500;
+        vMainTokenCoefficient = 500;
         //this is used for calculation of release of veFTHM
         lockingVoteWeight = 365 * 24 * 60 * 60;
 
@@ -260,19 +260,19 @@ describe("DAO Demo", () => {
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
-        FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         //TODO:
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
 
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         
-        await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
+        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
         //TODO:
-        minter_role = await veMainToken.MINTER_ROLE();
-        await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
+        minter_role = await vMainToken.MINTER_ROLE();
+        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
-        veMainTokenAddress = veMainToken.address;
+        vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
 
@@ -294,7 +294,7 @@ describe("DAO Demo", () => {
         await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
         
-        await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
+        await vMainToken.approve(stakingService.address,vMainTokensToApprove, {from: SYSTEM_ACC})
 
         const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
             
@@ -327,13 +327,13 @@ describe("DAO Demo", () => {
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
-            veMainTokenAddress,
+            vMainTokenAddress,
             weightObject,
             stream_owner,
             scheduleTimes,
             scheduleRewards,
             2,
-            veMainTokenCoefficient,
+            vMainTokenCoefficient,
             lockingVoteWeight,
             maxNumberOfLocks
             //_flags
@@ -362,14 +362,9 @@ describe("DAO Demo", () => {
     
 
     describe('Create two lock positions, release governance tokens, stream rewards', async() => {
-
-
-
         let expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
 
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
-
-            console.log("================================ SUBIK JI ================================" );
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
             
             await blockchain.increaseTime(20);
@@ -382,7 +377,7 @@ describe("DAO Demo", () => {
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
-            const staker1VeTokenBal = (await veMainToken.balanceOf(staker_1)).toString()
+            const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
             //console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
@@ -397,7 +392,7 @@ describe("DAO Demo", () => {
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
-            const staker1VeTokenBal = (await veMainToken.balanceOf(staker_1)).toString()
+            const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
             //console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 / 2 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
@@ -665,12 +660,7 @@ describe("DAO Demo", () => {
     });
 
     describe('Unlock The whole lock position for staker 2, EarlyUnlock() implies that there should be some Penalty ', async() => {
-        
-
-        
-        // @Max Ji this should be done at last as balance of VOTE Tokens is slashed to zero after unlock
         it("Should early unlock first lock position of staker _2, with penalty", async() => {
-            console.log("================================ SUBIK JI ================================" );
             const lockId = 1
             const streamId = 0 // Main Token Stream
             await stakingService.earlyUnlock(lockId, {from: staker_2});
