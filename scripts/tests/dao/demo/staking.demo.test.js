@@ -438,8 +438,7 @@ describe("Staking Test", () => {
         it("Should not early unlock", async() => {
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_5})
             let lockingPeriod = 365 * 24 * 60 * 60;
-            await stakingService.createLock(sumToDeposit,lockingPeriod, staker_5,{from: staker_1});
-            await stakingService.addToNotEarlyUnlockable(staker_5)
+            await stakingService.createLockWithFlag(sumToDeposit,lockingPeriod, staker_5, true,{from: SYSTEM_ACC});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const errorMessage = "early infeasible";
 

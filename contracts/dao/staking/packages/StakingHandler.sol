@@ -48,7 +48,7 @@ contract StakingHandlers is
         uint256 _voteLockCoef,
         uint256 _maxLocks
     ) external override {
-        require(!stakingInitialised, "intiailised");
+        require(!stakingInitialised, "initialised");
         _validateStreamParameters(
             streamOwner,
             _fthmToken,
@@ -150,10 +150,10 @@ contract StakingHandlers is
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external override pausable(1) {
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "nt proposed");
-        require(stream.schedule.time[0] >= block.timestamp, "proposal expire");
+        require(stream.schedule.time[0] >= block.timestamp, "prop expire");
 
-        require(rewardTokenAmount <= stream.maxDepositAmount, "Rewards high");
-        require(rewardTokenAmount >= stream.minDepositAmount, "Rewards low");
+        require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
+        require(rewardTokenAmount >= stream.minDepositAmount, "rwrds low");
 
         stream.status = StreamStatus.ACTIVE;
 
@@ -161,7 +161,7 @@ contract StakingHandlers is
         if (rewardTokenAmount < stream.maxDepositAmount) {
             _updateStreamsRewardsSchedules(streamId, rewardTokenAmount);
         }
-        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "invalid start point");
+        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start point");
 
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, rewardTokenAmount);
 
@@ -202,13 +202,13 @@ contract StakingHandlers is
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    function createLockWithoutEarlyUnlock(uint256 amount, uint256 lockPeriod, address account)
-        external 
-        override 
-        pausable(1) 
-        onlyRole(TREASURY_ROLE)
-    {
-            isNotEarlyUnlockable[account] = true;
+    function createLockWithFlag(
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address account,
+        bool flag) external override pausable(1) onlyRole(TREASURY_ROLE)
+    {   
+            noEarlyWithdrawl[account][locks[account].length + 1] = flag;
             createLock(amount, lockPeriod, account);
     } 
 
@@ -220,7 +220,7 @@ contract StakingHandlers is
     function createLock(uint256 amount, uint256 lockPeriod, address account) 
                         public override nonReentrant pausable(1) 
     {
-        require(locks[msg.sender].length <= maxLockPositions, "max locks");
+        require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <=  maxLockPeriod, "max lock period");
         _before();
@@ -234,8 +234,8 @@ contract StakingHandlers is
      * @param lockId The lockId to unlock completely
      */
     function unlock(uint256 lockId) external override nonReentrant pausable(1) {
-        LockedBalance storage lock = locks[msg.sender][lockId - 1];
         _isItUnlockable(lockId);
+        LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
         _before();
         uint256 stakeValue = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
@@ -248,16 +248,16 @@ contract StakingHandlers is
      * @param lockId The lock id to unlock early
      */
     function earlyUnlock(uint256 lockId) external override nonReentrant pausable(1) {
-        LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(isNotEarlyUnlockable[msg.sender] == false,"early infeasible");
         _isItUnlockable(lockId);
+        require(noEarlyWithdrawl[msg.sender][lockId] == false,"early infeasible");
+        LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end > block.timestamp, "lock opened");
         _before();
         _earlyUnlock(lockId, msg.sender);
         _withdrawFTHM();
     }
 
-    /**
+    /**a
      * @dev This function unstakes a portion of lock position
      * @notice stakeValue is calcuated to balance the shares calculation.
      * @param lockId The lock id to unlock partially

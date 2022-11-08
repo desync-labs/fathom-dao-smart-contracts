@@ -66,7 +66,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             FTHMShares: 0,
             positionStreamShares: 0,
             end: BoringMath.to64(lockPeriod +block.timestamp),
-            owner: msg.sender
+            owner: account
         });
         locks[account].push(_newLock);
         //+1 index

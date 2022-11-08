@@ -19,7 +19,7 @@ contract StakingStorage{
     ///@notice Checks if the staking is initialized
 
     uint256 public maxLockPositions;
-    mapping(address => bool) isNotEarlyUnlockable;
+    mapping(address => mapping(uint256 => bool)) noEarlyWithdrawl;
     
     
     uint256 internal touchedAt;
