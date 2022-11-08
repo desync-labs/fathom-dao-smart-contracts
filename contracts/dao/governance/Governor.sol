@@ -2,19 +2,18 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (governance/Governor.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import "./utils/cryptography/ECDSA.sol";
-import "./utils/cryptography/draft-EIP712.sol";
-import "./utils/introspection/ERC165.sol";
-import "./utils/math/SafeCast.sol";
-import "./utils/structs/DoubleEndedQueue.sol";
-import "./utils/Address.sol";
-import "./utils/Context.sol";
-import "./utils/GovernorStructs.sol";
+import "../../common/cryptography/ECDSA.sol";
+import "../../common/cryptography/EIP712.sol";
+import "../../common/introspection/ERC165.sol";
+import "../../common/math/SafeCast.sol";
+import "../../common/structs/DoubleEndedQueue.sol";
+import "../../common/Address.sol";
+import "../../common/Context.sol";
+import "../../common/Strings.sol";
+import "./GovernorStructs.sol";
 import "./interfaces/IGovernor.sol";
-import "./utils/Strings.sol";
-import "../../common/libraries/BytesHelper.sol";
 
 /**
  * @dev Core of the governance system, designed to be extended though various modules.
@@ -31,7 +30,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using SafeCast for uint256;
     using Strings for *;
-    using BytesHelper for *;
     using Timers for Timers.BlockNumber;
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
@@ -134,7 +132,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReason(
         uint256 proposalId,
         uint8 support,
-        string calldata reason
+        string memory reason
     ) public virtual override returns (uint256) {
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, reason);
@@ -146,7 +144,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params
     ) public virtual override returns (uint256) {
         address voter = _msgSender();
@@ -178,7 +176,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
         uint8 support,
-        string calldata reason,
+        string memory reason,
         bytes memory params,
         uint8 v,
         bytes32 r,

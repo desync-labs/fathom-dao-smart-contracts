@@ -2,7 +2,7 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
 

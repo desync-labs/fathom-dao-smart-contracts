@@ -2,14 +2,15 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
-import "../StakingStorage.sol";
-import "../../../dao/governance/token/ERC20/IERC20.sol";
-import "../../governance/interfaces/IVeMainToken.sol";
+pragma solidity 0.8.13;
+
 import "./RewardsInternals.sol";
+import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
 import "../vault/interfaces/IVault.sol";
-import "../library/BoringMath.sol";
+import "../../tokens/ERC20/IERC20.sol";
+import "../../tokens/IVMainToken.sol";
+import "../../../common/math/BoringMath.sol";
 
 contract StakingInternals is StakingStorage, RewardsInternals {
     // solhint-disable not-rely-on-time
@@ -74,7 +75,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         //+1 index
         _stake(account, amount, nVeFTHM, locks[account].length);
         if (nVeFTHM > 0) {
-            IVeMainToken(veFTHM).mint(account, nVeFTHM);
+            IVMainToken(veFTHM).mint(account, nVeFTHM);
         }
     }
     /**
@@ -121,7 +122,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         if (balance < nVeFTHM) {
             nVeFTHM = balance;
         }
-        IVeMainToken(veFTHM).burn(account, nVeFTHM);
+        IVMainToken(veFTHM).burn(account, nVeFTHM);
     }
 
     /**
