@@ -133,7 +133,6 @@ describe('Proposal flow', () => {
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
-        // FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         proposer_role = await timelockController.PROPOSER_ROLE();
@@ -296,10 +295,6 @@ describe('Proposal flow', () => {
 
     
         const _transferFromMultiSigTreasury = async (_account) => {
-
-        //             console.log((await FTHMToken.balanceOf(multiSigWallet.address, {"from": STAKER_1})).toString())
-        // console.log((await FTHMToken.balanceOf(multiSigWallet.address, {"from": STAKER_1})).toString())
-        // console.log((await FTHMToken.balanceOf(multiSigWallet.address, {"from": STAKER_1})).toString())
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 

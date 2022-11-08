@@ -62,11 +62,13 @@ const T_TOKEN_TO_MINT = "10000000000000000000000";
 
 
 const SYSTEM_ACC = accounts[0];
-const staker_1 = accounts[1];
-const staker_9 = accounts[9];
-
-const stream_owner = accounts[2];
+const staker_1 = accounts[6];
 const staker_2 = accounts[3];
+const staker_9 = accounts[9];
+const stream_owner = accounts[2];
+
+const comity_1 = accounts[0];
+const comity_2 = accounts[1];
 
 const stream_manager = accounts[4];
 const stream_rewarder_1 = accounts[5];
@@ -158,15 +160,8 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
-// createLockWithFlag(
-//     uint256 amount, 
-//     uint256 lockPeriod, 
-//     address account,
-//     bool flag) 
-
 const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
-    // encoded transfer function call for the main token.
-
+    // encoded transfer function call for staking on behalf of someone else from treasury.
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'createLockWithFlag',
         type: 'function',
@@ -188,10 +183,28 @@ const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
     return toRet;
 }
 
+const _encodeStakeApproveFunction = (amount, spender) => {
+    // approve(address spender, uint256 amount)
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'approve',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'spender'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [spender, amount]);
+
+    return toRet;
+}
+
 describe("DAO Demo", () => {
     const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
     let stakingService;
+    let stakingGetterService;
     let vaultService;
     let FTHMToken;
     let vMainToken;
@@ -215,6 +228,9 @@ describe("DAO Demo", () => {
     let txIndex1;
     let txIndex2;
     let txIndex3;
+    let txIndex4;
+    let txIndex5;
+    let txIndex6;
 
     let timelockController
     let mainTokenGovernor
@@ -286,6 +302,11 @@ describe("DAO Demo", () => {
             "VaultPackage",
             "VaultPackage"
         );
+
+        stakingGetterService = await artifacts.initializeInterfaceAt(
+            "StakingGettersHelper",
+            "StakingGettersHelper"
+        )
 
         await vaultService.initVault();
         const admin_role = await vaultService.ADMIN_ROLE();
@@ -388,6 +409,12 @@ describe("DAO Demo", () => {
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
+
+        const treasuryRole = await stakingService.TREASURY_ROLE();
+        await stakingService.grantRole(treasuryRole, multiSigWallet.address, {from: SYSTEM_ACC});
+        await stakingService.grantRole(treasuryRole, staker_1, {from: SYSTEM_ACC});
+        await stakingService.grantRole(treasuryRole, staker_2, {from: SYSTEM_ACC});
+
     })
 
     
@@ -734,7 +761,7 @@ describe("DAO Demo", () => {
                     type: 'uint256',
                     name: 'amount'
                 }]
-            }, [staker_9,  afterBalanceOfTreasury.toString()]);
+            }, [staker_9, "1000000"]);
 
             
 
@@ -887,44 +914,99 @@ describe("DAO Demo", () => {
 
     describe('Create lock possitions from treasury on behalf of comity ', async() => {
 
-        it('Create multiSig transaction to stake on behalf of comity', async() => {
+        it('Create multiSig transactions to stake on behalf of comity', async() => {
 
-            const result = await multiSigWallet.submitTransaction(
-                stakingService.address, 
+            const oneYr = 365 * 24 * 60 * 60;
+            const amount = web3.utils.toWei('200000', 'ether');
+            const approveAmount = web3.utils.toWei('400001', 'ether');
+
+            result = await multiSigWallet.submitTransaction(
+                FTHMToken.address,
                 EMPTY_BYTES, 
-                _encodeStakeFunction(amount, lockPeriod, account, flag), 
+                _encodeStakeApproveFunction(approveAmount, stakingService.address),
                 {"from": accounts[0]}
             );
             txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            let result2 = await multiSigWallet.submitTransaction(
+                stakingService.address,
+                EMPTY_BYTES, 
+                _encodeStakeFunction(amount, oneYr, comity_1, true),
+                {"from": accounts[0]}
+            );
+            txIndex5 = eventsHelper.getIndexedEventArgs(result2, SUBMIT_TRANSACTION_EVENT)[0];
+
+            let result_temp = await multiSigWallet.submitTransaction(
+                stakingService.address,
+                EMPTY_BYTES, 
+                _encodeStakeFunction(amount, oneYr, comity_2, true),
+                {"from": accounts[0]}
+            );
+            txIndex6 = eventsHelper.getIndexedEventArgs(result_temp, SUBMIT_TRANSACTION_EVENT)[0];
+        
         })
 
-        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+        it('Confirm and execute multiSig transactions to stake on behalf of comity', async() => {
+            // Confirm
             await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[1]});
-        });
 
-        
-        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.confirmTransaction(txIndex5, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex5, {"from": accounts[1]});
+
+            await multiSigWallet.confirmTransaction(txIndex6, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex6, {"from": accounts[1]});
+
+            // execute:
             await multiSigWallet.executeTransaction(txIndex3, {"from": accounts[0]});
-
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock); 
-                nextBlock++;              
-            }
+            await blockchain.increaseTime(20);
+            await multiSigWallet.executeTransaction(txIndex5, {"from": accounts[0]});
+            await blockchain.increaseTime(20);
+            await multiSigWallet.executeTransaction(txIndex6, {"from": accounts[0]});
         });
 
-        it("", async() => {
+        it("Check that the lock possitions have been made on behalf of the comity", async() => {
+
+            const amount = web3.utils.toWei('200000', 'ether');
             
-        });
+            result = await stakingGetterService.getLockInfo(comity_1,1);
+            const comity_1StakedFTHM = result.amountOfFTHM.toString();
 
+            result = await stakingGetterService.getLockInfo(comity_2,1);
+            const comity_2StakedFTHM = result.amountOfFTHM.toString();
 
+            assert.equal(comity_1StakedFTHM, amount.toString());
+            assert.equal(comity_2StakedFTHM, amount.toString());
+        });       
+        
+        
+        it("Should Revert: early unlock not possible", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const errorMessage = "early infeasible";
+
+             await shouldRevert(
+                stakingService.earlyUnlock(1, {from: comity_1}),
+                errTypes.revert, 
+                errorMessage
+            );
+        })
+        
+        it("Wait one year and unlock more than was staked, because of staking rewards", async() => {
+
+            const oneYr = 365 * 24 * 60 * 60;
+
+            const amount2 = 200000*10**18;
+
+            await blockchain.mineBlock(await _getTimeStamp() + oneYr);
+            await stakingService.unlock(1, {from: comity_1});
+            expect(parseInt(await FTHMToken.balanceOf(comity_1))).to.be.above(amount2);
+
+            await blockchain.mineBlock(await _getTimeStamp() + oneYr);
+            await stakingService.unlock(1, {from: comity_2});
+            expect(parseInt(await FTHMToken.balanceOf(comity_2))).to.be.above(amount2);
+
+        })
     })
-
 })
 
 // it("Should not early unlock", async() => {
