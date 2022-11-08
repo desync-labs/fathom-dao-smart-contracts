@@ -44,6 +44,7 @@ const {
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
+
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
 const NEW_STORE_VALUE = "142";
@@ -139,6 +140,24 @@ const setTreasuryAddress = async (treasury,stakingService) => {
         )
 }
 
+const _encodeTransferFunction = (_account, t_to_stake) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, t_to_stake]);
+
+    return toRet;
+}
+
 describe("DAO Demo", () => {
     const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
@@ -199,7 +218,7 @@ describe("DAO Demo", () => {
         veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
-        mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
+        mainToken = await artifacts.initializeInterfaceAt("ERC20MainToken", "ERC20MainToken");
 
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         treasury = multiSigWallet.address;
@@ -207,7 +226,6 @@ describe("DAO Demo", () => {
         proposer_role = await timelockController.PROPOSER_ROLE();
         executor_role = await timelockController.EXECUTOR_ROLE();
         timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
-
 
         await snapshot.revertToSnapshot();
         maxWeightShares = 1024;
@@ -258,16 +276,32 @@ describe("DAO Demo", () => {
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
 
-        await FTHMToken.transfer(staker_1,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_2,sumToTransfer, {from: SYSTEM_ACC})
-       // await FTHMToken.transfer(stream_manager, sumForProposer, {from: SYSTEM_ACC})
-    //TODO
-       await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
-       const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
+        const _transferFromMultiSigTreasury = async (_account, _value) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account, _value), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
 
-       vault_test_address = vaultService.address;
-       ///here
-        await FTHMToken.transfer(vault_test_address, twentyPercentOfFTHMTotalSupply, {from: SYSTEM_ACC})
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
+        await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
+        
+        await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
+
+        const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
+            
+        
+        vault_test_address = vaultService.address;
+
+        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
 
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
 
@@ -583,7 +617,6 @@ describe("DAO Demo", () => {
         it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
         });
 
         

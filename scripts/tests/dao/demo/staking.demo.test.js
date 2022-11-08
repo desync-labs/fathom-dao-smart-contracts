@@ -32,6 +32,10 @@ const stream_rewarder_2 = accounts[9];
 let vault_test_address;
 const treasury = SYSTEM_ACC;
 
+const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+// event
+const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+
 const _createWeightObject = (
     maxWeightShares,
     minWeightShares,
@@ -83,12 +87,31 @@ const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
+
 const setTreasuryAddress = async (treasury,stakingService) => {
     const storageSlot = 8;
     await stakingService.adminSstoreAddress(
         storageSlot,
         treasury
         )
+}
+
+const _encodeTransferFunction = (_account, t_to_stake) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, t_to_stake]);
+
+    return toRet;
 }
 
 describe("Staking Test", () => {
@@ -167,6 +190,7 @@ describe("Staking Test", () => {
         FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
+        multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
@@ -183,12 +207,27 @@ describe("Staking Test", () => {
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
         streamReward2Address = streamReward2.address;
-        
-        await FTHMToken.transfer(staker_1,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_2,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_3,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_4,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(stream_manager, sumForProposer, {from: SYSTEM_ACC})
+
+        const _transferFromMultiSigTreasury = async (_account, _value) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account, _value), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
+        await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_3, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_4, sumToTransfer);
+        await _transferFromMultiSigTreasury(stream_manager, sumForProposer);
         
         await veMainToken.approve(stakingService.address,veMainTokensToApprove, {from: SYSTEM_ACC})
 
@@ -196,7 +235,8 @@ describe("Staking Test", () => {
             
         
         vault_test_address = vaultService.address;
-        await FTHMToken.transfer(vault_test_address, twentyPercentOfFTHMTotalSupply, {from: SYSTEM_ACC})
+
+        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
 
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
 
@@ -661,8 +701,6 @@ describe("Staking Test", () => {
         //     let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3, gas: maxGasForTxn});
         //     await blockchain.mineBlock(await _getTimeStamp() + 20);
         // })
-
-      
 
         // it("Should get all unlocked main token for staker - 3", async() => {
         //     //  When we unlock, the main token should be sent to stream 0, with users stream id.  

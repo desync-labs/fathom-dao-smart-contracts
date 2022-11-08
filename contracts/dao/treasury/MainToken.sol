@@ -32,6 +32,7 @@ contract MainToken is Context, IERC20, IERC20Metadata, Ownable {
     constructor() {
         _name = "MainToken";
         _symbol = "MTK";
+
     }
 
     function mint(address to, uint256 amount) public onlyOwner {

@@ -58,6 +58,25 @@ const _getTimeStamp = async () => {
 const veMainTokenCoefficient = 500;
 // ================================================================================================
 
+
+const _encodeTransferFunction = (_account) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, T_TO_STAKE]);
+
+    return toRet;
+}
+
 describe('Token Creation Through Governance', () => {
 
     let timelockController
@@ -83,8 +102,6 @@ describe('Token Creation Through Governance', () => {
     let maxNumberOfLocks
     let lockingVoteWeight
 
- 
-
     const _createWeightObject = (
         maxWeightShares,
         minWeightShares,
@@ -107,7 +124,7 @@ describe('Token Creation Through Governance', () => {
         veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         erc20Factory = await artifacts.initializeInterfaceAt("ERC20Factory", "ERC20Factory");
-        mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
+        mainToken = await artifacts.initializeInterfaceAt("ERC20MainToken", "ERC20MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         proposer_role = await timelockController.PROPOSER_ROLE();
@@ -232,12 +249,25 @@ describe('Token Creation Through Governance', () => {
 
     describe("Staking MainToken to receive veMainToken token", async() => {
 
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+        
         const _stakeMainGetVe = async (_account) => {
 
-            await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-
+            await _transferFromMultiSigTreasury(_account);
             await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -399,7 +429,6 @@ describe('Token Creation Through Governance', () => {
         it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
         });
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {

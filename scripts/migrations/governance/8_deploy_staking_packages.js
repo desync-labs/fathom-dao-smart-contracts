@@ -1,6 +1,5 @@
 const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 const VaultPackage = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
-const StakingLibrary = artifacts.require('./dao/staking/library/StakingLibrary.sol');
 
 module.exports = async function(deployer) {
     let promises = [
