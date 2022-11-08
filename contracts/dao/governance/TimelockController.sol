@@ -2,10 +2,10 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (governance/TimelockController.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
-import "./access/AccessControl.sol";
-import "./utils/Address.sol";
+import "../../common/access/AccessControl.sol";
+import "../../common/Address.sol";
 import "./interfaces/ITimelockController.sol";
 
 /**
@@ -133,7 +133,7 @@ contract TimelockController is AccessControl, ITimelockController {
         uint256 minDelay,
         address[] memory proposers,
         address[] memory executors
-    ) external override {
+    ) public override {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -225,7 +225,7 @@ contract TimelockController is AccessControl, ITimelockController {
     function hashOperation(
         address target,
         uint256 value,
-        bytes calldata data,
+        bytes memory data,
         bytes32 predecessor,
         bytes32 salt
     ) public pure virtual returns (bytes32 hash) {
@@ -237,9 +237,9 @@ contract TimelockController is AccessControl, ITimelockController {
      * transactions.
      */
     function hashOperationBatch(
-        address[] calldata targets,
-        uint256[] calldata values,
-        bytes[] calldata payloads,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
         bytes32 predecessor,
         bytes32 salt
     ) public pure virtual returns (bytes32 hash) {
@@ -258,7 +258,7 @@ contract TimelockController is AccessControl, ITimelockController {
     function schedule(
         address target,
         uint256 value,
-        bytes calldata data,
+        bytes memory data,
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
@@ -278,9 +278,9 @@ contract TimelockController is AccessControl, ITimelockController {
      * - the caller must have the 'proposer' role.
      */
     function scheduleBatch(
-        address[] calldata targets,
-        uint256[] calldata values,
-        bytes[] calldata payloads,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
@@ -333,7 +333,7 @@ contract TimelockController is AccessControl, ITimelockController {
     function execute(
         address target,
         uint256 value,
-        bytes calldata payload,
+        bytes memory payload,
         bytes32 predecessor,
         bytes32 salt
     ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
@@ -355,9 +355,9 @@ contract TimelockController is AccessControl, ITimelockController {
      * - the caller must have the 'executor' role.
      */
     function executeBatch(
-        address[] calldata targets,
-        uint256[] calldata values,
-        bytes[] calldata payloads,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads,
         bytes32 predecessor,
         bytes32 salt
     ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
@@ -370,7 +370,7 @@ contract TimelockController is AccessControl, ITimelockController {
         for (uint256 i = 0; i < targets.length; ++i) {
             address target = targets[i];
             uint256 value = values[i];
-            bytes calldata payload = payloads[i];
+            bytes memory payload = payloads[i];
             _execute(target, value, payload);
             emit CallExecuted(id, i, target, value, payload);
         }
@@ -383,7 +383,7 @@ contract TimelockController is AccessControl, ITimelockController {
     function _execute(
         address target,
         uint256 value,
-        bytes calldata data
+        bytes memory data
     ) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
         require(success, "TimelockController: underlying transaction reverted");
@@ -415,7 +415,7 @@ contract TimelockController is AccessControl, ITimelockController {
      * - the caller must be the timelock itself. This can only be achieved by scheduling and later executing
      * an operation where the timelock is the target and the data is the ABI-encoded call to this function.
      */
-    function updateDelay(uint256 newDelay) external virtual {
+    function updateDelay(uint256 newDelay) public virtual {
         require(msg.sender == address(this), "TimelockController: caller must be timelock");
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;

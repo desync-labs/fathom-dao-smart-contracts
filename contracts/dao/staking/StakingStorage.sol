@@ -2,11 +2,12 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "./StakingStructs.sol";
 import "./interfaces/IStakingStorage.sol";
 import "./library/StakingLibrary.sol";
+
 contract StakingStorage{
     //Set according to Tokenomics: 1e50 -> 1e50/1e18. So Max Supply
     //is 1 * 1e32;

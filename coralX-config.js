@@ -8,23 +8,18 @@ module.exports = {
       private_key: fs.readFileSync("./privateKey").toString(),
       gasPrice: '0x3b9aca00',
     },
-    mainnet: {
-      host: "https://mainnet.infura.io/v3/99c6910d87a34c688c79342177d37bbe",
-      private_key: fs.readFileSync("./privateKey").toString(),
-      gasPrice: '0x3b9aca00',
-    },
-    ropsten: {
-      host: "https://ropsten.infura.io/v3/99c6910d87a34c688c79342177d37bbe",
-      private_key: fs.readFileSync("./privateKey").toString(),
-      gasPrice: '0x3b9aca00',
-    },
-    kovan: {
-      host: "https://kovan.infura.io/v3/99c6910d87a34c688c79342177d37bbe",
+    sepolia: {
+      host: "https://sepolia.infura.io/v3/99c6910d87a34c688c79342177d37bbe",
       private_key: fs.readFileSync("./privateKey").toString(),
       gasPrice: '0x3b9aca00',
     },
     apothem: {
       host: "https://rpc.apothem.network",
+      private_key: fs.readFileSync("./privateKey").toString(),
+      gasPrice: '0x3b9aca00',
+    },
+    xdc: {
+      host: "https://rpc.xinfin.network/",
       private_key: fs.readFileSync("./privateKey").toString(),
       gasPrice: '0x3b9aca00',
     },

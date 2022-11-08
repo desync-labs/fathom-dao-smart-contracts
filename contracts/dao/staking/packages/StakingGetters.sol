@@ -2,13 +2,13 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
+
 import "../StakingStorage.sol";
 import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
-contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInternals {
-
+contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }
