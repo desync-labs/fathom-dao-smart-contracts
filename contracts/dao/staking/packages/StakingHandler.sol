@@ -226,7 +226,6 @@ contract StakingHandlers is
         _lock(account, amount,lockPeriod);
         IERC20(fthmToken).transferFrom(msg.sender, address(vault), amount);
     }
-
     /**
      * @dev This function unlocks the whole position of the lock id.
      * @notice stakeValue is calcuated to balance the shares calculation

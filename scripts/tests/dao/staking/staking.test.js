@@ -148,7 +148,7 @@ describe("Staking Test", () => {
     let _flags;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
-    const sumToTransfer = web3.utils.toWei('2000', 'ether');
+    const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
     const sumForProposer = web3.utils.toWei('3000','ether')
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
