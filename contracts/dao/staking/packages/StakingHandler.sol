@@ -224,9 +224,8 @@ contract StakingHandlers is
         require(lockPeriod <=  maxLockPeriod, "max lock period");
         _before();
         _lock(account, amount,lockPeriod);
-        IERC20(fthmToken).transferFrom(account, address(vault), amount);
+        IERC20(fthmToken).transferFrom(msg.sender, address(vault), amount);
     }
-
     /**
      * @dev This function unlocks the whole position of the lock id.
      * @notice stakeValue is calcuated to balance the shares calculation

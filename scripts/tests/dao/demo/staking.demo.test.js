@@ -145,7 +145,7 @@ describe("Staking Test", () => {
     let _flags;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
-    const sumToTransfer = web3.utils.toWei('2000', 'ether');
+    const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
     const sumForProposer = web3.utils.toWei('3000','ether')
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
@@ -223,6 +223,7 @@ describe("Staking Test", () => {
             await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
         }
 
+        await _transferFromMultiSigTreasury(SYSTEM_ACC, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_3, sumToTransfer);
@@ -476,7 +477,7 @@ describe("Staking Test", () => {
         });
 
         it("Should not early unlock", async() => {
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_5})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: SYSTEM_ACC})
             let lockingPeriod = 365 * 24 * 60 * 60;
             await stakingService.createLockWithFlag(sumToDeposit,lockingPeriod, staker_5, true,{from: SYSTEM_ACC});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
