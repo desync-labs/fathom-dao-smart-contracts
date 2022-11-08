@@ -371,7 +371,7 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60;
             const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             console.log(".........Total Staked Protocol Token Amount for Lock Position for a year", _convertToEtherBalance(sumToDeposit));
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -386,7 +386,7 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60/2;
             const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1, {from: staker_1});
             console.log(".........Total Staked Protocol Token Amount for Lock Position for 1/2 a year", _convertToEtherBalance(sumToDeposit));
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -408,9 +408,9 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60;
 
             const unlockTime = lockingPeriod;
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2});
+            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2});
             await blockchain.increaseTime(20);
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_2, {from: staker_2});
         });
 
         it("Should propose the first staking stream, stream - 1", async() => {
@@ -459,7 +459,7 @@ describe("DAO Demo", () => {
             const unlockTime = lockingPeriod;
             
             let beforeLockTimestamp = await _getTimeStamp();
-            await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2,gas: maxGasForTxn});
 
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp)
             const mineToTimestamp = 20 * 24 * 60 * 60
@@ -853,3 +853,18 @@ describe("DAO Demo", () => {
         });        
     });
 })
+
+// it("Should not early unlock", async() => {
+//     await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_5})
+//     let lockingPeriod = 365 * 24 * 60 * 60;
+//     await stakingService.createLock(sumToDeposit,lockingPeriod, staker_5,{from: staker_5});
+//     await stakingService.addToNotEarlyUnlockable(staker_5)
+//     await blockchain.mineBlock(await _getTimeStamp() + 20);
+//     const errorMessage = "early infeasible";
+
+//      await shouldRevert(
+//         stakingGetterService.earlyUnlock(1),
+//         errTypes.revert,  
+//         errorMessage
+//     );
+// })

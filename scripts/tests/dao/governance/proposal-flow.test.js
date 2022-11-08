@@ -323,7 +323,7 @@ describe('Proposal flow', () => {
 
             let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
         }
 
         it('Stake MainToken and receive vMainToken', async() => {
@@ -547,7 +547,7 @@ describe('Proposal flow', () => {
 
             let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account, {from: _account, gas: 600000});
         }
 
         it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {

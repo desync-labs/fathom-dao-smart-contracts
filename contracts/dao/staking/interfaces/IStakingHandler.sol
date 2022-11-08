@@ -36,7 +36,7 @@ interface IStakingHandler {
     /// @notice Create a new lock.
     /// @dev This will crate a new lock and deposit FTHM to FTHMStaking
     /// calls releaseGovernanceToken(uint256 amount, uint256 _unlockTime)
-    function createLock(uint256 amount, uint256 unlockTime) external;
+    function createLock(uint256 amount, uint256 lockPeriod, address account) external;
 
     function unstakePartially(uint256 lockId, uint256 amount)  external;
     // function stake(uint256 amount, address account) external;
@@ -64,5 +64,10 @@ interface IStakingHandler {
 
     function withdrawPenalty(address penaltyReceiver) external;
     function setWeight(Weight memory _weight)  external;
+    function createLockWithFlag(
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address account,
+        bool flag) external;
     
 }

@@ -10,7 +10,6 @@ import "../../../common/security/IAdminPausable.sol";
 
 interface IStakingGetterHelper{
     function setWeight(Weight memory _weight) external;
-    function getLatestRewardsPerShare(uint256 streamId) external view  returns (uint256);
 
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
