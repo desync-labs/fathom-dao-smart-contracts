@@ -1,28 +1,15 @@
-const TimelockController = artifacts.require('./dao/governance/TimelockController.sol');
-const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
+const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 
 const mainToken = {
     name: "Fathom",
     symbol: "FTHM",
     totalSupply: web3.utils.toWei("1000000", "ether"),
-    issuer: accounts[0]
-};
-
-const vMainToken = {
-    name: "Vote Fathom",
-    symbol: "vFTHM"
+    issuer: MultiSigWallet.address
 };
 
 module.exports =  async function(deployer) {
     let promises = [
-        deployer.deploy(TimelockController, { gas: 12000000 }),
-        deployer.deploy(
-            VMainToken,
-            vMainToken.name,
-            vMainToken.symbol,
-            { gas: 12000000}
-        ),
         deployer.deploy(
             MainToken,
             mainToken.name,
@@ -35,3 +22,4 @@ module.exports =  async function(deployer) {
 
     await Promise.all(promises);
 };
+

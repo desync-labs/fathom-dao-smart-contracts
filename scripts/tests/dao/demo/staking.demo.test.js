@@ -24,13 +24,17 @@ const stream_owner = accounts[3];
 const staker_2 = accounts[4];
 const staker_3 = accounts[5];
 const staker_4 = accounts[6];
-
+const staker_5 = accounts[7];
 const stream_manager = accounts[7];
 const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
 const treasury = SYSTEM_ACC;
+
+const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+// event
+const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 const _createWeightObject = (
     maxWeightShares,
@@ -83,12 +87,31 @@ const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
+
 const setTreasuryAddress = async (treasury,stakingService) => {
     const storageSlot = 8;
     await stakingService.adminSstoreAddress(
         storageSlot,
         treasury
         )
+}
+
+const _encodeTransferFunction = (_account, t_to_stake) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, t_to_stake]);
+
+    return toRet;
 }
 
 describe("Staking Test", () => {
@@ -122,7 +145,7 @@ describe("Staking Test", () => {
     let _flags;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
-    const sumToTransfer = web3.utils.toWei('2000', 'ether');
+    const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
     const sumForProposer = web3.utils.toWei('3000','ether')
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
@@ -167,6 +190,7 @@ describe("Staking Test", () => {
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
+        multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
@@ -183,12 +207,28 @@ describe("Staking Test", () => {
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
         streamReward2Address = streamReward2.address;
-        
-        await FTHMToken.transfer(staker_1,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_2,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_3,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(staker_4,sumToTransfer, {from: SYSTEM_ACC})
-        await FTHMToken.transfer(stream_manager, sumForProposer, {from: SYSTEM_ACC})
+
+        const _transferFromMultiSigTreasury = async (_account, _value) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account, _value), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
+        await _transferFromMultiSigTreasury(SYSTEM_ACC, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_3, sumToTransfer);
+        await _transferFromMultiSigTreasury(staker_4, sumToTransfer);
+        await _transferFromMultiSigTreasury(stream_manager, sumForProposer);
         
         await vMainToken.approve(stakingService.address,vMainTokensToApprove, {from: SYSTEM_ACC})
 
@@ -196,7 +236,8 @@ describe("Staking Test", () => {
             
         
         vault_test_address = vaultService.address;
-        await FTHMToken.transfer(vault_test_address, twentyPercentOfFTHMTotalSupply, {from: SYSTEM_ACC})
+
+        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
 
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
 
@@ -256,7 +297,7 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             console.log(".........Creating a Lock Position for staker 1.........");
 
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
                 // later to be used in the expectedNVFTHM calculation.  
                 // This mitigates an error created from the slight change in block time.
@@ -286,7 +327,7 @@ describe("Staking Test", () => {
             
             const unlockTime = lockingPeriod;
             console.log(".........Creating a second Lock Position for staker 1.........");
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1, gas:maxGasForTxn});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1]);
@@ -303,12 +344,7 @@ describe("Staking Test", () => {
             console.log(".........Released VOTE tokens to staker 1 based upon locking period ( 1/2 year )and locking amount (100 Protocol Tokens) ",_convertToEtherBalance(expectedNVFTHM), 'VOTE Tokens')
         })
 
-        it("Should update total vote token balance.", async() => {
-            const totalAmountOfVFTHM = (await stakingService.totalAmountOfveFTHM()).toString();
-            expectedTotalAmountOfVFTHM.should.be.bignumber.equal(totalAmountOfVFTHM);
-            console.log(".........Expected total amount of VOTE Tokens to be Released calculated in Test Script: ", _convertToEtherBalance(expectedTotalAmountOfVFTHM))
-            console.log(".........Actual total amount of VOTE Tokens Released: ", _convertToEtherBalance(totalAmountOfVFTHM))
-        })
+        
 
         it("Should have correct total number of staked protocol tokens", async() => {
             //2 deposits:
@@ -334,9 +370,9 @@ describe("Staking Test", () => {
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
-            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_2});
+            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_2, {from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_3});
+            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_3,{from: staker_3});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
             let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");
@@ -439,6 +475,20 @@ describe("Staking Test", () => {
             console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedFTHM.toString());
             console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
         });
+
+        it("Should not early unlock", async() => {
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: SYSTEM_ACC})
+            let lockingPeriod = 365 * 24 * 60 * 60;
+            await stakingService.createLockWithFlag(sumToDeposit,lockingPeriod, staker_5, true,{from: SYSTEM_ACC});
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const errorMessage = "early infeasible";
+
+             await shouldRevert(
+                stakingService.earlyUnlock(1, {from: staker_5}),
+                errTypes.revert,  
+                errorMessage
+            );
+        })
     });
     
     describe('Creating Streams and Rewards Calculations', async() => {
@@ -661,8 +711,6 @@ describe("Staking Test", () => {
         //     let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3, gas: maxGasForTxn});
         //     await blockchain.mineBlock(await _getTimeStamp() + 20);
         // })
-
-      
 
         // it("Should get all unlocked main token for staker - 3", async() => {
         //     //  When we unlock, the main token should be sent to stream 0, with users stream id.  

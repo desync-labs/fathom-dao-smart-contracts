@@ -55,6 +55,25 @@ const _getTimeStamp = async () => {
 const vMainTokenCoefficient = 500;
 // ================================================================================================
 
+
+const _encodeTransferFunction = (_account) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, T_TO_STAKE]);
+
+    return toRet;
+}
+
 describe('Token Creation Through Governance', () => {
 
     let timelockController
@@ -79,8 +98,6 @@ describe('Token Creation Through Governance', () => {
     let minter_role
     let maxNumberOfLocks
     let lockingVoteWeight
-
- 
 
     const _createWeightObject = (
         maxWeightShares,
@@ -229,17 +246,30 @@ describe('Token Creation Through Governance', () => {
 
     describe("Staking MainToken to receive vMainToken token", async() => {
 
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+        
         const _stakeMainGetVe = async (_account) => {
 
-            await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-
+            await _transferFromMultiSigTreasury(_account);
             await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
         }
 
         it('Stake MainToken and receive vMainToken', async() => {
@@ -396,7 +426,6 @@ describe('Token Creation Through Governance', () => {
         it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
         });
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
