@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "../StakingStructs.sol";
 import "./IStakingGetter.sol";
@@ -64,7 +64,13 @@ interface IStakingHandler {
 
     function withdrawPenalty(address penaltyReceiver) external;
     function setWeight(Weight memory _weight)  external;
-    function createLockWithoutEarlyUnlock(uint256 amount, uint256 lockPeriod, address account)
+    function createLockWithFlag(
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address account,
+        bool flag) external;
+
+    function updateVault(address _vault)
         external;
     
 }

@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (governance/utils/IVotes.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
 /**
  * @dev Common interface for {ERC20Votes}, {ERC721Votes}, and other {Votes}-enabled contracts.

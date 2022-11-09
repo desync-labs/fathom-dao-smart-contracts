@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "../StakingStructs.sol";
-
 interface IStakingGetter {
 
     function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
 
     function getPending(uint256 streamId, address account) external view returns (uint256);
 
-    /// @param streamId the stream index
     function getStream(uint256 streamId)
         external
         view
@@ -31,5 +29,21 @@ interface IStakingGetter {
         external
         view
         
-        returns (uint256);    
+        returns (uint256); 
+
+
+    function getStreamSchedule(uint256 streamId)
+        external
+        view
+        returns (
+            uint256[] memory scheduleTimes,
+            uint256[] memory scheduleRewards
+        );
+
+    /// @dev get the streams count
+    /// @return streams.length
+    function getStreamsCount() external view  returns (uint256);
+
+    function getLatestRewardsPerShare(uint256 streamId) external view  returns (uint256);
+    function getWeight() external view returns(Weight memory);
 }

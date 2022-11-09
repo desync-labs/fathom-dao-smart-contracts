@@ -1,16 +1,14 @@
 // Copyright SECURRENCY INC.
 // SPDX-License-Identifier: AGPL 3.0
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "../StakingStructs.sol";
 import "../interfaces/IStakingGetter.sol";
 import "../interfaces/IStakingHandler.sol";
 import "../interfaces/IStakingStorage.sol";
-import "../utils/interfaces/IAdminPausable.sol";
+import "../../../common/security/IAdminPausable.sol";
 
 interface IStakingGetterHelper{
-    function setWeight(Weight memory _weight) external;
-
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
     function getLock(address account, uint lockId) 

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Original Copyright Aurora
 // Copyright Fathom 2022
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
+
 import "../StakingStructs.sol";
+
 library StakingLibrary {
-    
     function caclulateAutoCompoundingShares(
             uint256 amount,
             uint256 totalFTHMShares,

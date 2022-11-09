@@ -2,10 +2,10 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
-import "../interfaces/IRewardsValidator.sol";
+import "../interfaces/IRewardsHandler.sol";
 
 contract RewardsInternals is StakingStorage, IStakingEvents {
     // solhint-disable not-rely-on-time
@@ -99,7 +99,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         uint256[] memory scheduleRewards,
         uint256 tau
     ) internal view {
-        IRewardsValidator(rewardsContract)._validateStreamParameters(
+        IRewardsHandler(rewardsContract).validateStreamParameters(
             streamOwner,
             rewardToken, 
             maxDepositAmount, 
@@ -115,7 +115,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
      * @return rewards released since last update.
      */
     function _getRewardsAmount(uint256 streamId, uint256 lastUpdate) internal view returns (uint256) {
-        return IRewardsValidator(rewardsContract)._getRewardsAmount(streams[streamId], lastUpdate);
+        return IRewardsHandler(rewardsContract).getRewardsAmount(streams[streamId].schedule, lastUpdate);
     }
 
     /**

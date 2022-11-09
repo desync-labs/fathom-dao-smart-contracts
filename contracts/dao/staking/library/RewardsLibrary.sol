@@ -2,7 +2,9 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 pragma solidity 0.8.13;
+
 import "../StakingStructs.sol";
+
 library RewardsLibrary{
     // solhint-disable not-rely-on-time
     function _validateStreamParameters(

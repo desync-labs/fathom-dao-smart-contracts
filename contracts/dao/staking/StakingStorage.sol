@@ -2,11 +2,12 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "./StakingStructs.sol";
 import "./interfaces/IStakingStorage.sol";
 import "./library/StakingLibrary.sol";
+
 contract StakingStorage{
     //Set according to Tokenomics: 1e50 -> 1e50/1e18. So Max Supply
     //is 1 * 1e32;
@@ -19,7 +20,7 @@ contract StakingStorage{
     ///@notice Checks if the staking is initialized
 
     uint256 public maxLockPositions;
-    mapping(address => bool) isNotEarlyUnlockable;
+    mapping(address => mapping(uint256 => bool)) noEarlyWithdrawl;
     
     
     uint256 internal touchedAt;
@@ -43,7 +44,6 @@ contract StakingStorage{
     address public veFTHM;
     address public vault;
     address public rewardsContract;
-    bool internal stakingInitialised;
     ///Weighting coefficient for shares and penalties
     Weight internal weight;
     mapping(address => User) public users;

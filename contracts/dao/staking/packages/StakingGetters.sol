@@ -2,12 +2,14 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
+
 import "../StakingStorage.sol";
 import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
-contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInternals {
+contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
+
 
     function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
@@ -22,7 +24,7 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
         address account,
         uint256 lockId
     ) external view override returns (uint256) {
-        require(lockId <= locks[account].length, "out of index");
+        require(lockId <= locks[account].length, "bad index");
         uint256 latestRps = _getLatestRewardsPerShare(streamId);
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
@@ -70,5 +72,36 @@ contract StakingInitPackageGetter is StakingStorage, IStakingGetter, StakingInte
             stream.tau,
             stream.status
         );
+    }
+
+    /// @dev get the stream schedule data
+    /// @param streamId the stream index
+    function getStreamSchedule(uint256 streamId)
+        external
+        view
+        override
+        returns (
+            uint256[] memory scheduleTimes,
+            uint256[] memory scheduleRewards
+        )
+    {
+        return (
+            streams[streamId].schedule.time,
+            streams[streamId].schedule.reward
+        );
+    }
+
+    /// @dev get the streams count
+    /// @return streams.length
+    function getStreamsCount() external view override returns (uint256) {
+        return streams.length;
+    }
+
+    function getLatestRewardsPerShare(uint256 streamId) external view override returns (uint256){
+        return _getLatestRewardsPerShare(streamId);
+    } 
+    
+    function getWeight() external override view returns (Weight memory){
+        return weight;
     }
 }

@@ -36,9 +36,6 @@ const _encodeConfirmation = async (_proposalId) => {
         }, [_proposalId.toString()]);
 }
 
-// ================================================================================================
-// FROM SUBIK JIs STAKING TEST CODE:
-
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 
@@ -55,18 +52,36 @@ const _getTimeStamp = async () => {
 
 
 //this is used for stream shares calculation.
-const veMainTokenCoefficient = 500;
+const vMainTokenCoefficient = 500;
 // ================================================================================================
+
+const _encodeTransferFunction = (_account) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, T_TO_STAKE]);
+
+    return toRet;
+}
 
 
 
 describe('Proposal flow', () => {
 
     let timelockController
-    let veMainToken
+    let vMainToken
     let mainTokenGovernor
     let box
-    let mainToken
+    let FTHMToken
     let multiSigWallet
     
     let proposer_role
@@ -109,15 +124,24 @@ describe('Proposal flow', () => {
             penaltyWeightMultiplier: weightMultiplier
         }
     }
+
+    const _createVoteWeights = (
+        voteShareCoef,
+        voteLockCoef) => {
+        return {
+            voteShareCoef: voteShareCoef,
+            voteLockCoef: voteLockCoef
+        }
+    }
     
     before(async () => {
         await snapshot.revertToSnapshot();
 
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
-        mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
         proposer_role = await timelockController.PROPOSER_ROLE();
@@ -146,18 +170,23 @@ describe('Proposal flow', () => {
             "VaultPackage"
         );
 
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
+        )
+
         await vaultService.initVault();
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
-        FTHMToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
-        await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
-        minter_role = await veMainToken.MINTER_ROLE();
-        await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
+        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
+        minter_role = await vMainToken.MINTER_ROLE();
+        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
-        veMainTokenAddress = veMainToken.address;
+        vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
 
         await vaultService.addSupportedToken(FTHMTokenAddress);
@@ -184,18 +213,22 @@ describe('Proposal flow', () => {
             startTime + 4 * oneYear,
         ]
         
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
-            veMainTokenAddress,
+            vMainTokenAddress,
             weightObject,
             stream_owner,
             scheduleTimes,
             scheduleRewards,
             2,
-            veMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
          )
 
         // encode the function call to change the value in box.  To be performed if the vote passes
@@ -235,7 +268,7 @@ describe('Proposal flow', () => {
                 type: 'bytes',
                 name: '_data'
             }]
-        }, [mainToken.address, EMPTY_BYTES, encoded_transfer_function]);
+        }, [FTHMToken.address, EMPTY_BYTES, encoded_transfer_function]);
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
@@ -276,14 +309,29 @@ describe('Proposal flow', () => {
     });
 
 
-    describe("Staking MainToken to receive veMainToken token", async() => {
+    describe("Staking MainToken to receive vMainToken token", async() => {
+
+    
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            let txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex, {"from": accounts[1]});
+        }
+        
 
         const _stakeMainGetVe = async (_account) => {
 
-            await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-
+            await _transferFromMultiSigTreasury(_account);
             await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -291,8 +339,8 @@ describe('Proposal flow', () => {
             await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
         }
 
-        it('Stake MainToken and receive veMainToken', async() => {
-            // Here Staker 1 and staker 2 receive veMainTokens for staking MainTokens
+        it('Stake MainToken and receive vMainToken', async() => {
+            // Here Staker 1 and staker 2 receive vMainTokens for staking MainTokens
             await _stakeMainGetVe(STAKER_1);
             await _stakeMainGetVe(STAKER_2);
 
@@ -307,10 +355,10 @@ describe('Proposal flow', () => {
 
         it('Should revert transfer if holder is not whitelisted to transfer', async() => {
 
-            let errorMessage = "VeMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
 
             await shouldRevert(
-                veMainToken.transfer(
+                vMainToken.transfer(
                     accounts[2],
                     "10",
                     {from: accounts[1]}
@@ -445,7 +493,6 @@ describe('Proposal flow', () => {
         it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[2]});
         });
 
         
@@ -487,19 +534,34 @@ describe('Proposal flow', () => {
         });
     });
 
-    describe( "MultiSig Treasury", async() => {
-
-        it('Mint MainToken token to MultiSig treasury', async() => {
-            await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
-            expect((await mainToken.balanceOf(multiSigWallet.address, {"from": accounts[0]})).toString()).to.equal(T_TOKEN_TO_MINT);
-        });
-
-        // Need ot make exhaustive MultiSig tests 
-        // it('', async() => {  
-        // });
-    });
-
     describe("VC Treasury Distribution Through Governor", async() => {
+
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+        
+
+        const _stakeMainGetVe = async (_account) => {
+            
+            await _transferFromMultiSigTreasury(_account);
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+            await blockchain.increaseTime(20);
+
+            let unlockTime = lockingPeriod;
+
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account, {from: _account, gas: 600000});
+        }
 
         it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {
 
@@ -622,7 +684,6 @@ describe('Proposal flow', () => {
         it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
             await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[1]});
-            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[2]});
         });
 
         
@@ -677,25 +738,12 @@ describe('Proposal flow', () => {
             // Execute:
             await multiSigWallet.executeTransaction(txIndex, {"from": accounts[0]});
             // Balance of account 5 should reflect the funds distributed from treasury in proposal 2
-            expect((await mainToken.balanceOf(STAKER_1, {"from": STAKER_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+            expect((await FTHMToken.balanceOf(STAKER_1, {"from": STAKER_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
 
         it('Mint MainToken token to everyone', async() => {
 
-            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 ve tokens
-
-            const _stakeMainGetVe = async (_account) => {
-
-                await FTHMToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-    
-                await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-    
-                await blockchain.increaseTime(20);
-    
-                let unlockTime = lockingPeriod;
-    
-                await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
-            }
+            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 voting tokens
 
             await _stakeMainGetVe(accounts[0]);
             await _stakeMainGetVe(accounts[0]);
@@ -703,11 +751,7 @@ describe('Proposal flow', () => {
             await _stakeMainGetVe(accounts[9]);
             await _stakeMainGetVe(accounts[9]);
 
-            console.log(mainTokenGovernor.address);
-            console.log(mainTokenGovernor.address);
         });
-
-        
     });
 });
 
