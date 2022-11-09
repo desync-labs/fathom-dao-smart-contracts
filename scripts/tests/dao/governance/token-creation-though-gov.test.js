@@ -99,6 +99,15 @@ describe('Token Creation Through Governance', () => {
     let maxNumberOfLocks
     let lockingVoteWeight
 
+    const _createVoteWeights = (
+        voteShareCoef,
+        voteLockCoef) => {
+        return {
+            voteShareCoef: voteShareCoef,
+            voteLockCoef: voteLockCoef
+        }
+    }
+
     const _createWeightObject = (
         maxWeightShares,
         minWeightShares,
@@ -151,6 +160,11 @@ describe('Token Creation Through Governance', () => {
             "VaultPackage"
         );
 
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
+        )
+
         await vaultService.initVault();
         
         const admin_role = await vaultService.ADMIN_ROLE();
@@ -191,6 +205,11 @@ describe('Token Creation Through Governance', () => {
             startTime + 4 * oneYear,
         ]
         
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
+
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -200,10 +219,10 @@ describe('Token Creation Through Governance', () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            vMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
-        )
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
+         )
 
         // encode the function call to release funds from MultiSig treasury.  To be performed if the vote passes
         encoded_factory_function = web3.eth.abi.encodeFunctionCall({

@@ -43,7 +43,7 @@ contract StakingStorage{
     address public fthmToken;
     address public veFTHM;
     address public vault;
-    bool internal stakingInitialised;
+    address public rewardsContract;
     ///Weighting coefficient for shares and penalties
     Weight internal weight;
     mapping(address => User) public users;

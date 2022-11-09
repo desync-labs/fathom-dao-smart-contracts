@@ -73,11 +73,10 @@ contract AdminPausable is IAdminPausable,AccessControlUpgradeable {
         }
     }
 
-    function pausableInit(uint256 _flags) internal {
-        require(!initialized, "already intialized");
+    function pausableInit(uint256 _flags) internal initializer{
+        __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSE_ROLE, msg.sender);
         paused = _flags;
-        initialized = true;
     }
 }

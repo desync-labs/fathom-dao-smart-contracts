@@ -9,8 +9,6 @@ import "../interfaces/IStakingStorage.sol";
 import "../../../common/security/IAdminPausable.sol";
 
 interface IStakingGetterHelper{
-    function setWeight(Weight memory _weight) external;
-
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
     function getLock(address account, uint lockId) 

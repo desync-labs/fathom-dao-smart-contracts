@@ -14,18 +14,11 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     uint256 internal constant ONE_MONTH = 2629746;
     uint256 internal constant ONE_YEAR = 31536000;
     uint256 internal constant WEEK = 604800;
-    Weight public weight;
 
     constructor(address _stakingContract) {
         stakingContract = _stakingContract;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
-
-    function setWeight(Weight memory _weight) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        weight = _weight;
-    }
-
-    
 
     function getLockInfo(address account, uint256 lockId) public override view  returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);
@@ -144,6 +137,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     }
 
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
+        Weight memory weight = _getWeight();
         uint maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
         uint256 slopeStart = lockEnd;
         if (timestamp >= slopeStart) return 0;
@@ -155,5 +149,9 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
             weight.minWeightPenalty +
             (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
             maxLockPeriod);
+    }
+
+    function _getWeight() internal view returns(Weight memory){
+        return IStakingHelper(stakingContract).getWeight();
     }
 }

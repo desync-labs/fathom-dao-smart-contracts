@@ -32,6 +32,16 @@ const stream_rewarder_2 = accounts[9];
 let vault_test_address;
 const treasury = SYSTEM_ACC;
 
+
+const _createVoteWeights = (
+    voteShareCoef,
+    voteLockCoef) => {
+    return {
+        voteShareCoef: voteShareCoef,
+        voteLockCoef: voteLockCoef
+    }
+}
+
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 // event
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
@@ -190,10 +200,11 @@ describe("Staking Test", () => {
             "StakingGettersHelper"
         )
 
-        await stakingGetterService.setWeight(
-            weightObject,
-            {from: SYSTEM_ACC}
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
         )
+
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
@@ -274,6 +285,11 @@ describe("Staking Test", () => {
         const admin_role = await vaultService.ADMIN_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
+
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -283,12 +299,10 @@ describe("Staking Test", () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            vMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
-            //_flags
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
          )
-
         await setTreasuryAddress(
             treasury,
             stakingService

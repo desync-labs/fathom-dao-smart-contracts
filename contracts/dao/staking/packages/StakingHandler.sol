@@ -10,7 +10,6 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/ReentrancyGuard.sol";
 import "../../../common/security/AdminPausable.sol";
-
 // solhint-disable not-rely-on-time
 contract StakingHandlers is
     StakingStorage,
@@ -45,11 +44,11 @@ contract StakingHandlers is
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau,
-        uint256 _voteShareCoef,
-        uint256 _voteLockCoef,
-        uint256 _maxLocks
-    ) public override {
-        require(!stakingInitialised, "intiailised");
+        VoteCoefficient memory voteCoef,
+        uint256 _maxLocks,
+        address _rewardsContract
+    ) external override {
+        rewardsContract = _rewardsContract;
         _validateStreamParameters(
             streamOwner,
             _fthmToken,
@@ -59,7 +58,8 @@ contract StakingHandlers is
             scheduleRewards,
             tau
         );
-        _initializeStaking(_fthmToken, _veFTHM, _weight, _vault, _maxLocks, _voteShareCoef,_voteLockCoef);
+        _initializeStaking(_fthmToken, _veFTHM, _weight, _vault, _maxLocks, 
+                            voteCoef.voteShareCoef,voteCoef.voteLockCoef);
         require(IVault(vault).isSupportedToken(_fthmToken), "Unsupported token");
         pausableInit(0);
         _grantRole(STREAM_MANAGER_ROLE, msg.sender);
@@ -82,7 +82,6 @@ contract StakingHandlers is
             })
         );
         maxLockPeriod = ONE_YEAR;
-        stakingInitialised = true;
         emit StreamProposed(streamId, streamOwner, fthmToken, scheduleRewards[0]);
         emit StreamCreated(streamId, streamOwner, fthmToken, scheduleRewards[0]);
     }
@@ -321,8 +320,25 @@ contract StakingHandlers is
         }
     }
 
-    function setWeight(Weight memory _weight) override public  {
+    function setWeight(Weight memory _weight) override public onlyRole(TREASURY_ROLE){
         weight = _weight;
+    }
+
+    /// @dev restricted for the admin only. Admin should pause this
+    /// contract before changing the treasury address by setting the
+    /// pause =1 (for changing this variable, call adminPause(1))
+    /// @param _vault treasury contract address for the reward tokens
+    function updateVault(address _vault)
+        public
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        // enforce pausing this contract before updating the address.
+        // This mitigates the risk of future invalid reward claims
+        require(paused != 0, "REQUIRE_PAUSE");
+        require(_vault != address(0), "INVALID_ADDRESS");
+        require(_vault != vault, "SAME_ADDRESS");
+        vault = _vault;
     }
 
     function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE){

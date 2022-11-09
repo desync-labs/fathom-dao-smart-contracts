@@ -52,6 +52,16 @@ const _createWeightObject = (
 }
 
 
+const _createVoteWeights = (
+    voteShareCoef,
+    voteLockCoef) => {
+    return {
+        voteShareCoef: voteShareCoef,
+        voteLockCoef: voteLockCoef
+    }
+}
+
+
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp()
     return timestamp
@@ -187,6 +197,11 @@ describe("Staking Test", () => {
             "StakingGettersHelper"
         )
 
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
+        )
+
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
@@ -264,6 +279,11 @@ describe("Staking Test", () => {
         await vaultService.addSupportedToken(streamReward1Address)
         await vaultService.addSupportedToken(streamReward2Address)
         
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
+
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -273,11 +293,10 @@ describe("Staking Test", () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            vMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
          )
-         
          await setTreasuryAddress(
             treasury,
             stakingService

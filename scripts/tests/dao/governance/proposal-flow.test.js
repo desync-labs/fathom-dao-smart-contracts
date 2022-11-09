@@ -124,6 +124,15 @@ describe('Proposal flow', () => {
             penaltyWeightMultiplier: weightMultiplier
         }
     }
+
+    const _createVoteWeights = (
+        voteShareCoef,
+        voteLockCoef) => {
+        return {
+            voteShareCoef: voteShareCoef,
+            voteLockCoef: voteLockCoef
+        }
+    }
     
     before(async () => {
         await snapshot.revertToSnapshot();
@@ -160,6 +169,11 @@ describe('Proposal flow', () => {
             "VaultPackage",
             "VaultPackage"
         );
+
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
+        )
 
         await vaultService.initVault();
         const admin_role = await vaultService.ADMIN_ROLE();
@@ -199,6 +213,10 @@ describe('Proposal flow', () => {
             startTime + 4 * oneYear,
         ]
         
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -208,9 +226,9 @@ describe('Proposal flow', () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            vMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
          )
 
         // encode the function call to change the value in box.  To be performed if the vote passes

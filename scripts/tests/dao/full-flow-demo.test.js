@@ -76,6 +76,15 @@ const stream_rewarder_1 = accounts[5];
 let vault_test_address;
 let treasury;
 
+const _createVoteWeights = (
+    voteShareCoef,
+    voteLockCoef) => {
+    return {
+        voteShareCoef: voteShareCoef,
+        voteLockCoef: voteLockCoef
+    }
+}
+
 const _createWeightObject = (
     maxWeightShares,
     minWeightShares,
@@ -307,6 +316,10 @@ describe("DAO Demo", () => {
             "StakingGettersHelper",
             "StakingGettersHelper"
         )
+        rewardsContract = await artifacts.initializeInterfaceAt(
+            "RewardsHandler",
+            "RewardsHandler"
+        )
 
         await vaultService.initVault();
         const admin_role = await vaultService.ADMIN_ROLE();
@@ -375,7 +388,10 @@ describe("DAO Demo", () => {
         //TODO:
         await vaultService.addSupportedToken(FTHMTokenAddress)
         await vaultService.addSupportedToken(streamReward1Address)
-        
+        const voteObject = _createVoteWeights(
+            vMainTokenCoefficient,
+            lockingVoteWeight
+        )
         await stakingService.initializeStaking(
             vault_test_address,
             FTHMTokenAddress,
@@ -385,10 +401,9 @@ describe("DAO Demo", () => {
             scheduleTimes,
             scheduleRewards,
             2,
-            vMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
-            //_flags
+            voteObject,
+            maxNumberOfLocks,
+            rewardsContract.address
          )
          // set treasury address
          await setTreasuryAddress(
