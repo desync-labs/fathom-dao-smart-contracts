@@ -176,7 +176,7 @@ describe('Proposal flow', () => {
         )
 
         await vaultService.initVault();
-        const admin_role = await vaultService.ADMIN_ROLE();
+        const admin_role = await vaultService.TREASURY_MANAGER_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");

@@ -276,13 +276,13 @@ describe("Staking Test", () => {
             startTime + 3 * oneYear,
             startTime + 4 * oneYear,
         ]
-
+        
         await vaultService.initVault();
         await vaultService.addSupportedToken(FTHMTokenAddress)
         await vaultService.addSupportedToken(streamReward1Address)
         await vaultService.addSupportedToken(streamReward2Address)
         
-        const admin_role = await vaultService.ADMIN_ROLE();
+        const admin_role = await vaultService.TREASURY_MANAGER_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
         const voteObject = _createVoteWeights(
