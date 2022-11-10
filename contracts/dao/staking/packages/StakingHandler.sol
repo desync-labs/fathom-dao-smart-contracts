@@ -335,9 +335,9 @@ contract StakingHandlers is
     {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
-        require(paused != 0, "REQUIRE_PAUSE");
-        require(_vault != address(0), "INVALID_ADDRESS");
-        require(_vault != vault, "SAME_ADDRESS");
+        require(paused != 0, "required pause");
+        require(_vault != address(0), "zero addr");
+        require(_vault != vault, "same addr");
         vault = _vault;
     }
 
