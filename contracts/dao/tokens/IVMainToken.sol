@@ -8,6 +8,8 @@ interface IVMainToken {
     event MemberAddedToWhitelist(address _member);
     event MemberRemovedFromWhitelist(address _member);
 
+    function initToken(address _admin, address _minter) external;
+
     function addToWhitelist(address _toAdd) external;
 
     function removeFromWhitelist(address _toRemove) external;

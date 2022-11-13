@@ -170,13 +170,13 @@ describe('Proposal flow', () => {
             "VaultPackage"
         );
 
-        rewardsContract = await artifacts.initializeInterfaceAt(
-            "RewardsHandler",
-            "RewardsHandler"
+        rewardsCalculator = await artifacts.initializeInterfaceAt(
+            "RewardsCalculator",
+            "RewardsCalculator"
         )
 
         await vaultService.initVault();
-        const admin_role = await vaultService.TREASURY_MANAGER_ROLE();
+        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -228,7 +228,7 @@ describe('Proposal flow', () => {
             2,
             voteObject,
             maxNumberOfLocks,
-            rewardsContract.address
+            rewardsCalculator.address
          )
 
         // encode the function call to change the value in box.  To be performed if the vote passes

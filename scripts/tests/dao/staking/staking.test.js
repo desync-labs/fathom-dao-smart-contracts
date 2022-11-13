@@ -200,9 +200,9 @@ describe("Staking Test", () => {
             "StakingGettersHelper"
         )
 
-        rewardsContract = await artifacts.initializeInterfaceAt(
-            "RewardsHandler",
-            "RewardsHandler"
+        rewardsCalculator = await artifacts.initializeInterfaceAt(
+            "RewardsCalculator",
+            "RewardsCalculator"
         )
 
 
@@ -282,7 +282,7 @@ describe("Staking Test", () => {
         await vaultService.addSupportedToken(streamReward1Address)
         await vaultService.addSupportedToken(streamReward2Address)
         
-        const admin_role = await vaultService.TREASURY_MANAGER_ROLE();
+        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
         const voteObject = _createVoteWeights(
@@ -301,7 +301,7 @@ describe("Staking Test", () => {
             2,
             voteObject,
             maxNumberOfLocks,
-            rewardsContract.address
+            rewardsCalculator.address
          )
         await setTreasuryAddress(
             treasury,

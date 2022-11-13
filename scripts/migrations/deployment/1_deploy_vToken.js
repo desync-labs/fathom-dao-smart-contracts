@@ -12,7 +12,7 @@ module.exports =  async function(deployer) {
             vMainToken.name,
             vMainToken.symbol,
             { gas: 12000000}
-        )
+        ),
     ];
 
     await Promise.all(promises);

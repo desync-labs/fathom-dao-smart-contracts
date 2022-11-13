@@ -160,14 +160,14 @@ describe('Token Creation Through Governance', () => {
             "VaultPackage"
         );
 
-        rewardsContract = await artifacts.initializeInterfaceAt(
-            "RewardsHandler",
-            "RewardsHandler"
+        rewardsCalculator = await artifacts.initializeInterfaceAt(
+            "RewardsCalculator",
+            "RewardsCalculator"
         )
 
         await vaultService.initVault();
         
-        const admin_role = await vaultService.TREASURY_MANAGER_ROLE();
+        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
         await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -221,7 +221,7 @@ describe('Token Creation Through Governance', () => {
             2,
             voteObject,
             maxNumberOfLocks,
-            rewardsContract.address
+            rewardsCalculator.address
          )
 
         // encode the function call to release funds from MultiSig treasury.  To be performed if the vote passes

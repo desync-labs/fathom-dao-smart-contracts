@@ -2,7 +2,9 @@
 // Copyright Fathom 2022
 
 pragma solidity ^0.8.13;
+
 import "../StakingStructs.sol";
+
 interface IRewardsHandler {
     function validateStreamParameters(
         address streamOwner,

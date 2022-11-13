@@ -4,7 +4,7 @@
 pragma solidity 0.8.13;
 import "../StakingStructs.sol";
 import "../interfaces/IRewardsHandler.sol";
-contract RewardsHandler is IRewardsHandler{
+contract RewardsCalculator is IRewardsHandler {
      // solhint-disable not-rely-on-time
     function validateStreamParameters(
         address streamOwner,

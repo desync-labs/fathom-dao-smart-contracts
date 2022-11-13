@@ -13,7 +13,7 @@
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "lint": "solhint 'contracts/**/*.sol'",
     "pre-release": "npm run prettier && npm run lint && npm run test-with-timeout",
-    "migrate-reset": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run migrateAndConfigureForTests",
+    "migrate-reset": "coralX scenario --run migrateAndConfigureForTests",
     "migrate-reset-sepolia": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deploySepolia",
     "migrate-reset-apothem": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-xdc": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC",

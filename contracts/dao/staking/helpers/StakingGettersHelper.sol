@@ -14,12 +14,12 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     uint256 internal constant ONE_YEAR = 31536000;
     uint256 internal constant WEEK = 604800;
 
-    constructor(address _stakingContract) {
+    constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function getLockInfo(address account, uint256 lockId) public override view  returns (LockedBalance memory) {
+    function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);
         require(lockId <= locks.length, "out of index");
         require(lockId > 0,"lockId cant be 0");
@@ -31,8 +31,8 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return locks.length;
     }
 
-    function getLock(address account, uint lockId) public
-                     override view returns(uint128, uint128, uint128, uint128, uint64, address){
+    function getLock(address account, uint lockId) public view override
+        returns(uint128, uint128, uint128, uint128, uint64, address) {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");

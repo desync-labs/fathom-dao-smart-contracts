@@ -7,8 +7,9 @@ pragma solidity 0.8.13;
 import "../../common/access/AccessControl.sol";
 import "../../common/Address.sol";
 import "./interfaces/ITimelockController.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract TimelockController is AccessControl, ITimelockController {
+contract TimelockController is AccessControl, Initializable, ITimelockController {
     bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
@@ -55,25 +56,23 @@ contract TimelockController is AccessControl, ITimelockController {
 
     function initialize(
         uint256 minDelay,
+        address admin,
         address[] memory proposers,
         address[] memory executors
-    ) public override {
+    ) public override initializer {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(CANCELLER_ROLE, TIMELOCK_ADMIN_ROLE);
 
-        // deployer + self administration
-        _setupRole(TIMELOCK_ADMIN_ROLE, _msgSender());
+        _setupRole(TIMELOCK_ADMIN_ROLE, admin);
         _setupRole(TIMELOCK_ADMIN_ROLE, address(this));
 
-        // register proposers and cancellers
         for (uint256 i = 0; i < proposers.length; ++i) {
             _setupRole(PROPOSER_ROLE, proposers[i]);
             _setupRole(CANCELLER_ROLE, proposers[i]);
         }
 
-        // register executors
         for (uint256 i = 0; i < executors.length; ++i) {
             _setupRole(EXECUTOR_ROLE, executors[i]);
         }

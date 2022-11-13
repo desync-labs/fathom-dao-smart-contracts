@@ -1,6 +1,7 @@
 // components
 const TimelockController = artifacts.require('./dao/governance/TimelockController.sol');
 const MainTokenGovernor = artifacts.require('./dao/governance/MainTokenGovernor.sol');
+const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 
 // interfaces
 const ITimelockController = artifacts.require('./dao/governance/interfaces/ITimelockController.sol');
@@ -14,6 +15,7 @@ module.exports = async function(deployer) {
 
     await timelockController.initialize(
         minDelay,
+        MultiSigWallet.address,
         proposers,
         executors,
         { gas: 120000000 }

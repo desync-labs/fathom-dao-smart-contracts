@@ -30,17 +30,17 @@ contract StakingHandlers is
     * @param _vault The Vault address to store main token and rewards tokens
     * @param _mainToken token contract address
     * @param _weight Weighting coefficient for shares and penalties
-    * @param streamOwner the owner and manager of the main token stream
+    * @param _admin the owner and manager of the main token stream
     * @param scheduleTimes init schedules times
     * @param scheduleRewards init schedule rewards
     * @param tau release time constant per stream
     */
     function initializeStaking(
+        address _admin,
         address _vault,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        address streamOwner,
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau,
@@ -48,9 +48,9 @@ contract StakingHandlers is
         uint256 _maxLocks,
         address _rewardsContract
     ) external override {
-        rewardsContract = _rewardsContract;
+        rewardsCalculator = _rewardsContract;
         _validateStreamParameters(
-            streamOwner,
+            _admin,
             _mainToken,
             scheduleRewards[0],
             scheduleRewards[0],
@@ -58,18 +58,21 @@ contract StakingHandlers is
             scheduleRewards,
             tau
         );
+
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, 
-                            voteCoef.voteShareCoef,voteCoef.voteLockCoef);
+            voteCoef.voteShareCoef, voteCoef.voteLockCoef);
         require(IVault(vault).isSupportedToken(_mainToken), "Unsupported token");
-        pausableInit(0);
-        _grantRole(STREAM_MANAGER_ROLE, msg.sender);
-        _grantRole(TREASURY_ROLE, msg.sender);
+        pausableInit(0, _admin);
+
+        _grantRole(STREAM_MANAGER_ROLE, _admin);
+        _grantRole(TREASURY_ROLE, _admin);
+
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         streams.push(
             Stream({
-                owner: streamOwner,
-                manager: streamOwner,
+                owner: _admin,
+                manager: _admin,
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
@@ -82,8 +85,8 @@ contract StakingHandlers is
             })
         );
         maxLockPeriod = ONE_YEAR;
-        emit StreamProposed(streamId, streamOwner, mainToken, scheduleRewards[0]);
-        emit StreamCreated(streamId, streamOwner, mainToken, scheduleRewards[0]);
+        emit StreamProposed(streamId, _admin, mainToken, scheduleRewards[0]);
+        emit StreamCreated(streamId, _admin, mainToken, scheduleRewards[0]);
     }
     /**
      * @dev An admin of the staking contract can whitelist (propose) a stream.
@@ -196,13 +199,13 @@ contract StakingHandlers is
         uint256 lockPeriod,
         address account,
         bool flag
-    ) public override pausable(1) onlyRole(TREASURY_ROLE) {   
+    ) public override pausable(1) {   
         prohibitedEarlyWithdraw[account][locks[account].length + 1] = flag;
         createLock(amount, lockPeriod, account);
     } 
 
     function createLock(uint256 amount, uint256 lockPeriod, address account) public override nonReentrant pausable(1) {
-        require(locks[msg.sender].length <= maxLockPositions, "max locks");
+        require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <=  maxLockPeriod, "max lock period");
         _updateStreamRPS();
@@ -279,7 +282,7 @@ contract StakingHandlers is
         }
     }
 
-    function setWeight(Weight memory _weight) override public onlyRole(TREASURY_ROLE){
+    function setWeight(Weight memory _weight) override public onlyRole(DEFAULT_ADMIN_ROLE) {
         weight = _weight;
     }
 

@@ -50,12 +50,12 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     modifier ownerDoesNotExist(address owner) {
-        require(!isOwner[owner], "MultiSig:  Owner already exists");
+        require(!isOwner[owner], "MultiSig: Owner already exists");
         _;
     }
 
     modifier onlyWallet() {
-        require(msg.sender == address(this), "MultiSig:  Only this wallet can use this funciton");
+        require(msg.sender == address(this), "MultiSig: Only this wallet can use this funciton");
         _;
     }
 

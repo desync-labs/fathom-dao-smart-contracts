@@ -57,7 +57,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             amountOfVoteToken: BoringMath.to128(nVoteToken),
             tokenShares: 0,
             positionStreamShares: 0,
-            end: BoringMath.to64(lockPeriod +block.timestamp),
+            end: BoringMath.to64(lockPeriod + block.timestamp),
             owner: account
         });
         locks[account].push(_newLock);
@@ -257,7 +257,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     function _withdrawPenalty(address accountTo) internal {
         uint256 pendingPenalty = totalPenaltyBalance;
         totalPenaltyBalance = 0;
-        totalPenaltyReleased += pendingPenalty;
         IVault(vault).payRewards(accountTo, mainToken, pendingPenalty);
     }
 

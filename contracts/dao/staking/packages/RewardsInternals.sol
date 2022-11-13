@@ -81,7 +81,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         uint256[] memory scheduleRewards,
         uint256 tau
     ) internal view {
-        IRewardsHandler(rewardsContract).validateStreamParameters(
+        IRewardsHandler(rewardsCalculator).validateStreamParameters(
             streamOwner,
             rewardToken, 
             maxDepositAmount, 
@@ -93,7 +93,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     }
 
     function _getRewardsAmount(uint256 streamId, uint256 lastUpdate) internal view returns (uint256) {
-        return IRewardsHandler(rewardsContract).getRewardsAmount(streams[streamId].schedule, lastUpdate);
+        return IRewardsHandler(rewardsCalculator).getRewardsAmount(streams[streamId].schedule, lastUpdate);
     }
 
     function _getLatestRewardsPerShare(uint256 streamId) internal view returns (uint256) {
