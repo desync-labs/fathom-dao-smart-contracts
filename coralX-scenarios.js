@@ -11,7 +11,7 @@ module.exports = {
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/setup/'],
-    ['execute', '--path', 'scripts/migrations/tests/test'],
+    ['execute', '--path', 'scripts/migrations/test'],
   ],
   createStablecoinPool: [
     ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']
