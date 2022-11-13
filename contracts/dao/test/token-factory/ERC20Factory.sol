@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/IERC20Factory.sol";
-import "../tokens/ERC20/ERC20.sol";
-import "../../common/access/AccessControl.sol";
+import "../../tokens/ERC20/ERC20.sol";
+import "../../../common/access/AccessControl.sol";
 
 contract Token is ERC20 {
     constructor(
@@ -20,7 +20,6 @@ contract ERC20Factory is IERC20Factory, AccessControl{
 
     address[] public tokens;
     uint256 public tokenCount;
-    mapping(string => address) tickerToAddress;
     event TokenDeployed(address tokenAddress);
 
     constructor() {

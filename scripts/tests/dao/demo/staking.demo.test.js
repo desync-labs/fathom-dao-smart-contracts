@@ -148,7 +148,7 @@ describe("Staking Test", () => {
     let minWeightPenalty;
     let vMainTokenCoefficient;
     let lockingVoteWeight;
-    let totalAmountOfStakedFTHM;
+    let totalAmountOfStakedToken;
     let totalAmountOfVFTHM;
     let totalAmountOfStreamShares;
     let maxNumberOfLocks;
@@ -179,7 +179,7 @@ describe("Staking Test", () => {
                               weightMultiplier)
         //this is used for stream shares calculation.
         vMainTokenCoefficient = 500;
-        //this is used for calculation of release of veFTHM
+        //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
         stakingService = await artifacts.initializeInterfaceAt(
@@ -369,12 +369,12 @@ describe("Staking Test", () => {
             //2 deposits:
             const sumToDepositBN = new web3.utils.BN(sumToDeposit);
             const expectedTotalAmountOfStakedFTHM = sumToDepositBN.add(sumToDepositBN);
-            let result = await stakingService.totalAmountOfStakedFTHM()
-            const totalAmountOfStakedFTHM = result;
-            assert.equal(totalAmountOfStakedFTHM.toString(),expectedTotalAmountOfStakedFTHM.toString())
-            const totalFTHMShares = await stakingService.totalFTHMShares();
-            expect(totalFTHMShares).to.eql(totalAmountOfStakedFTHM)
-            console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedFTHM.toString()))
+            let result = await stakingService.totalAmountOfStakedToken()
+            const totalAmountOfStakedToken = result;
+            assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
+            const totalShares = await stakingService.totalShares();
+            expect(totalShares).to.eql(totalAmountOfStakedToken)
+            console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedToken.toString()))
         })
 
 
@@ -428,7 +428,7 @@ describe("Staking Test", () => {
             
             
             let result = await stakingGetterService.getLockInfo(staker_1,2);
-            const amountOfVFTHMLock2 = result.amountOfveFTHM.toString()
+            const amountOfVFTHMLock2 = result.amountOfVoteToken.toString()
             
             console.log(".........Unlocking lock position - 1 of Staker_1.......")
             await stakingService.unlock(1, {from : staker_1});
@@ -441,7 +441,7 @@ describe("Staking Test", () => {
             );
 
             result = await stakingGetterService.getLockInfo(staker_1,1);
-            assert(amountOfVFTHMLock2, result.amountOfveFTHM.toString());
+            assert(amountOfVFTHMLock2, result.amountOfVoteToken.toString());
 
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Unlocking All The Lock Positions created till Now..........")
@@ -453,7 +453,7 @@ describe("Staking Test", () => {
             const beforeVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
             await stakingService.unlock(1, {from: staker_2});
             const afterVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
-            const amountOfVFTHMLock3 = result.amountOfveFTHM.toString()
+            const amountOfVFTHMLock3 = result.amountOfVoteToken.toString()
             
             const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
             amountOfVFTHMLock3.should.be.bignumber.equal(differenceInBalance.toString())
@@ -485,20 +485,20 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const totalAmountOfStakedFTHM = await stakingService.totalAmountOfStakedFTHM()
+            const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
 
-            assert.equal(totalAmountOfStakedFTHM.toString(),"0")
+            assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
             console.log(".........After all the locks are completely unlocked.........")
-            console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedFTHM.toString());
+            console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedToken.toString());
             console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
         });
 
         it("Should not early unlock", async() => {
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: SYSTEM_ACC})
             let lockingPeriod = 365 * 24 * 60 * 60;
-            await stakingService.createLockWithFlag(sumToDeposit,lockingPeriod, staker_5, true,{from: SYSTEM_ACC});
+            await stakingService.createLockWithoutEarlyWithdraw(sumToDeposit,lockingPeriod, staker_5, true,{from: SYSTEM_ACC});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const errorMessage = "early infeasible";
 
@@ -704,15 +704,15 @@ describe("Staking Test", () => {
         //     let mineToTimestamp = 15
         //     await blockchain.mineBlock(timestamp + mineToTimestamp);
             
-        //     await stakingService.withdraw(streamId, {from: staker_2})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_2})
             
         //     let beforeBalanceStaker2 = await streamReward2.balanceOf(staker_3)
         //     console.log("balance of stream reward token 2, staker _3, before withdraw: ",_convertToEtherBalance(beforeBalanceStaker2.toString()))
             
-        //     await stakingService.withdraw(streamId, {from: staker_3})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_3})
         //     let afterBalanceStaker2 = await streamReward2.balanceOf(staker_3)
         //     console.log("balance of stream reward token 2, staker _3, after withdraw: ",_convertToEtherBalance(afterBalanceStaker2.toString()))
-        //     await stakingService.withdraw(streamId, {from: staker_4})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_4})
             
         //     assert.equal((await stakingService.getUsersPendingRewards(staker_2,streamId)).toString(),"0")
         //     assert.equal((await stakingService.getUsersPendingRewards(staker_3,streamId)).toString(),"0")
@@ -741,7 +741,7 @@ describe("Staking Test", () => {
         //     const pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3, streamId)
         //     let beforeBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
         //     await blockchain.mineBlock(15 + await _getTimeStamp())
-        //     await stakingService.withdraw(streamId, {from: staker_3})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_3})
 
         //     const afterBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
         //     const expectedFTHMBalanceStaker3 =_calculateAfterWithdrawingBalance(pendingStakedFTHM.toString(),beforeBalanceOfStaker_3.toString());
@@ -752,7 +752,7 @@ describe("Staking Test", () => {
         //     const lockId = 4
         //     const streamId = 0
         //     await blockchain.mineBlock(await _getTimeStamp() + 20)
-        //     await stakingService.withdraw(streamId, {from: staker_3})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_3})
 
         //     pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
         //     console.log("Pending user accounts after withdraw: ",pendingStakedFTHM.toString())
@@ -798,20 +798,20 @@ describe("Staking Test", () => {
         //     console.log("unlocking gas used",result.gasUsed.toString())
         //     await blockchain.mineBlock(15 + await _getTimeStamp())
             
-        //     const totalAmountOfStakedFTHM = await stakingService.totalAmountOfStakedFTHM()
-        //     const totalFTHMShares = await stakingService.totalFTHMShares();
+        //     const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
+        //     const totalShares = await stakingService.totalShares();
         //     const totalAmountOfStreamShares = await stakingService.totalStreamShares()
 
          
 
-        //     assert.equal(totalAmountOfStakedFTHM.toString(),"0")
-        //     assert.equal(totalFTHMShares.toString(),"0")
+        //     assert.equal(totalAmountOfStakedToken.toString(),"0")
+        //     assert.equal(totalShares.toString(),"0")
         //     assert.equal(totalAmountOfStreamShares.toString(),"0")
         // })
         // it("Should apply penalty to early withdrawal", async() => {
         //     const lockId = 1
         //     const streamId = 0
-        //     await stakingService.withdraw(streamId, {from: staker_3})
+        //     await stakingService.withdrawRewards(streamId, {from: staker_3})
         //     await blockchain.mineBlock(await _getTimeStamp() + 20)
         //     const lockingPeriod = 60 * 60
         //     let unlockTime = await _getTimeStamp() + lockingPeriod;

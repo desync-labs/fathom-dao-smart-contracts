@@ -1,4 +1,3 @@
-const TimelockController = artifacts.require('./dao/governance/TimelockController.sol');
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
 const vMainToken = {
@@ -8,7 +7,6 @@ const vMainToken = {
 
 module.exports =  async function(deployer) {
     let promises = [
-        deployer.deploy(TimelockController, { gas: 12000000 }),
         deployer.deploy(
             VMainToken,
             vMainToken.name,

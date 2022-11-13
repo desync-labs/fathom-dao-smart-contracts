@@ -22,20 +22,20 @@ contract MainTokenGovernor is
         IVotes _token,
         TimelockController _timelock,
         address _multiSig,
-        uint256 _votingPeriod
+        uint256 _initialVotingDelay,
+        uint256 _votingPeriod,
+        uint256 _initialProposalThreshold
     )
         Governor("MainTokenGovernor", _multiSig)
         GovernorSettings(
-            1, /* 1 block */
-            _votingPeriod, /* Should be 1 week */
-            1000
+            _initialVotingDelay,
+            _votingPeriod,
+            _initialProposalThreshold
         )
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {}
-
-    // The following functions are overrides required by Solidity.
 
     function propose(
         address[] memory targets,

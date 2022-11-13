@@ -26,17 +26,11 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, ERC20Votes {
         _grantRole(WHITELISTER_ROLE, msg.sender);
     }
 
-    /**
-     * @dev Whitelist a sender allowing them to transfer voting tokens.
-     */
     function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {
         isWhiteListed[_toAdd] = true;
         emit MemberAddedToWhitelist(_toAdd);
     }
 
-    /**
-     * @dev Remove ability of a whitelisted sender to transfer voting tokens.
-     */
     function removeFromWhitelist(address _toRemove) public override onlyRole(WHITELISTER_ROLE) {
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
@@ -67,8 +61,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, ERC20Votes {
         require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
-
-    // The following functions are overrides required by Solidity.
 
     function _afterTokenTransfer(
         address from,

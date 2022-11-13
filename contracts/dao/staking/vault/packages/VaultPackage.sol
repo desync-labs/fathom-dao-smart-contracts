@@ -11,7 +11,6 @@ import "../../../../common/security/AdminPausable.sol";
 
 // solhint-disable not-rely-on-time
 contract VaultPackage is IVault, IVaultEvents, AdminPausable {
-
     bytes32 public constant TREASURY_MANAGER_ROLE = 
         keccak256("TREASURY_MANAGER_ROLE");
 

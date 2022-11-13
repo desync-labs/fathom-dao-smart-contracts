@@ -2,45 +2,42 @@
 ___
 
 - [Fathom Protocol](#fathom-protocol)
-  * [Overview](#overview)
-  * [1. DAO](#1-dao)
-  * [2. Votes token](#2-votes-token)
-  * [3. Governance](#3-governance)
-    + [3.1. Governance contract](#31-governance-contract)
-    + [3.2. TimeLock Controller](#32-timelock-controller)
-    + [3.3. Parameter Change Proposal Flow](#33-parameter-change-proposal-flow)
-    + [3.4. Collateal Proposal Flow](#34-collateal-proposal-flow)
+  - [Overview](#overview)
+  - [1. DAO](#1-dao)
+  - [2. Votes token](#2-votes-token)
+  - [3. Governance](#3-governance)
+    - [3.1. Governance contract](#31-governance-contract)
+    - [3.2. TimeLock Controller](#32-timelock-controller)
+    - [3.3. Parameter Change Proposal Flow](#33-parameter-change-proposal-flow)
+    - [3.4. Collateal Proposal Flow](#34-collateal-proposal-flow)
 - [Governance technical specifications](#governance-technical-specifications)
-  * [Vote Token](#vote-token)
-      - [Inherited functionality:](#inherited-functionality-)
-  * [Fathom Governor](#fathom-governor)
-      - [Inherited functionality:](#inherited-functionality--1)
-      - [Key Functions:](#key-functions-)
-      - [Deployment and initialisation parameters:](#deployment-and-initialisation-parameters-)
-  * [Multisig Treasury](#multisig-treasury)
-        * [Functionality](#functionality)
-        * [Key Functions:](#key-functions--1)
-  * [Accesibility Permissions and Roles](#accesibility-permissions-and-roles)
-  * [4. Staking](#4-staking)
-    + [4.1. Staking: Main Terms and Definitions, Q&A](#41-staking--main-terms-and-definitions--q-a)
-    + [4.2. Lock To Stake](#42-lock-to-stake)
-    + [4.3. How Locks Work?](#43-how-locks-work-)
-    + [4.4. How staking works?](#44-how-staking-works-)
-    + [4.5. Release of vFTHM](#45-release-of-vfthm)
-    + [4.6. Vault](#46-vault)
-    + [4.7. Rewards](#47-rewards)
-      - [4.7.1. Rewards: Main Terms and Definitions](#471-rewards--main-terms-and-definitions)
-      - [4.7.2. Claim Rewards:](#472-claim-rewards-)
-    + [4.8. Streams](#48-streams)
-      - [4.8.1. Streams: Main Terms and Definitions:](#481-streams--main-terms-and-definitions-)
-      - [4.8.2. How to Propose and Make a stream Live?](#482-how-to-propose-and-make-a-stream-live-)
-      - [4.8.3. Rewards Distribution Schedule:](#483-rewards-distribution-schedule-)
-  * [5 Smart Contract Setup:](#5-smart-contract-setup-)
-    + [How would you deploy the contracts?](#how-would-you-deploy-the-contracts-)
-  * [6. User Flow for Staking](#6-user-flow-for-staking)
-  * [7. Treasury](#7-treasury)
-    + [7.1. MultiSigWallet.sol Treasury](#71-multisigwalletsol-treasury)
-      - [7.1.1. Key MultiSigWallet Functions:](#711-key-multisigwallet-functions-)
+  - [Vote Token](#vote-token)
+      - [Inherited functionality:](#inherited-functionality)
+  - [Fathom Governor](#fathom-governor)
+      - [Inherited functionality:](#inherited-functionality-1)
+      - [Key Functions:](#key-functions)
+      - [Deployment and initialisation parameters:](#deployment-and-initialisation-parameters)
+  - [Accesibility Permissions and Roles](#accesibility-permissions-and-roles)
+  - [4. Staking](#4-staking)
+    - [4.1. Staking: Main Terms and Definitions, Q&A](#41-staking-main-terms-and-definitions-qa)
+    - [4.2. Lock To Stake](#42-lock-to-stake)
+    - [4.3. How Locks Work?](#43-how-locks-work)
+    - [4.4. How staking works?](#44-how-staking-works)
+    - [4.5. Release of vFTHM](#45-release-of-vfthm)
+    - [4.6. Vault](#46-vault)
+    - [4.7. Rewards](#47-rewards)
+      - [4.7.1. Rewards: Main Terms and Definitions](#471-rewards-main-terms-and-definitions)
+      - [4.7.2. Claim Rewards:](#472-claim-rewards)
+    - [4.8. Streams](#48-streams)
+      - [4.8.1. Streams: Main Terms and Definitions:](#481-streams-main-terms-and-definitions)
+      - [4.8.2. How to Propose and Make a stream Live?](#482-how-to-propose-and-make-a-stream-live)
+      - [4.8.3. Rewards Distribution Schedule:](#483-rewards-distribution-schedule)
+  - [5 Smart Contract Setup:](#5-smart-contract-setup)
+    - [How would you deploy the contracts?](#how-would-you-deploy-the-contracts)
+  - [6. User Flow for Staking](#6-user-flow-for-staking)
+  - [7. Treasury](#7-treasury)
+    - [7.1. MultiSigWallet.sol Treasury](#71-multisigwalletsol-treasury)
+      - [7.1.1. Key MultiSigWallet Functions:](#711-key-multisigwallet-functions)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -752,12 +749,12 @@ The Flow:
      function _moveAllRewardsToPending(address account, uint256 lockId) internal
      
 ```
-* After claiming rewards a staker can withdraw() their rewards.
+* After claiming rewards a staker can withdrawRewards() their rewards.
 ```
     /** 
      * @dev withdraw amount in the pending pool. 
      */
-    function withdraw(uint256 streamId) external override
+    function withdrawRewards(uint256 streamId) external override
 ```
 
 ---
@@ -863,7 +860,7 @@ function _getRewardsAmount(uint256 streamId, uint256 lastUpdate) internal view r
     function initializeStaking(
         address _vault,
         address _fthmToken,
-        address _veFTHM,
+        address _voteToken,
         Weight memory _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,

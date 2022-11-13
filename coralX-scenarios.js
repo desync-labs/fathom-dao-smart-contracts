@@ -1,21 +1,17 @@
 module.exports = {
   deploySepolia: [
-    ['execute', '--path', 'scripts/migrations/governance', '--network', 'sepolia'],
-    ['execute', '--path', 'scripts/migrations/staking', '--network', 'sepolia'],
+    ['execute', '--path', 'scripts/migrations/setup', '--network', 'sepolia'],
   ],
   deployApothem: [
-    ['execute', '--path', 'scripts/migrations/governance', '--network', 'apothem'],
-    ['execute', '--path', 'scripts/migrations/staking', '--network', 'apothem'],
+    ['execute', '--path', 'scripts/migrations/setup', '--network', 'apothem'],
   ],
   deployXDC: [
-    ['execute', '--path', 'scripts/migrations/governance', '--network', 'xdc'],
-    ['execute', '--path', 'scripts/migrations/staking', '--network', 'xdc'],
+    ['execute', '--path', 'scripts/migrations/setup', '--network', 'xdc'],
   ],
   migrateAndConfigureForTests: [
     ['compile'],
-    ['execute', '--path', 'scripts/migrations/governance'],
-    ['execute', '--path', 'scripts/migrations/staking'],
-    ['execute', '--path', 'scripts/migrations/test'],
+    ['execute', '--path', 'scripts/migrations/setup/'],
+    ['execute', '--path', 'scripts/migrations/tests/test'],
   ],
   createStablecoinPool: [
     ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']

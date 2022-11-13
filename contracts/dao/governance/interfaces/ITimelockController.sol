@@ -3,11 +3,6 @@
 
 pragma solidity 0.8.13;
 
-/**
- * @dev Interface of the {Governor} core.
- *
- * _Available since v4.3._
- */
 interface ITimelockController {
     function initialize(
         uint256 minDelay,

@@ -9,7 +9,6 @@ import "../StakingStructs.sol";
 import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
-     // solhint-disable not-rely-on-time
     address private stakingContract;
     uint256 internal constant ONE_MONTH = 2629746;
     uint256 internal constant ONE_YEAR = 31536000;
@@ -39,19 +38,15 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         require(lockId <= locks.length, "out of index");
         require(lockId > 0,"lockId cant be 0");
         return(
-            lock.amountOfFTHM,
-            lock.amountOfveFTHM,
-            lock.FTHMShares,
+            lock.amountOfToken,
+            lock.amountOfVoteToken,
+            lock.tokenShares,
             lock.positionStreamShares,
             lock.end,
             lock.owner
         );
     }
 
-
-    /// @dev gets the total user deposit
-    /// @param account the user address
-    /// @return user total deposit in (Main Token)
     function getUserTotalDeposit(address account)
         public
         view
@@ -64,14 +59,11 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         }
         uint totalDeposit = 0;
         for (uint lockId = 1; lockId <= locks.length; lockId++) {
-            totalDeposit += locks[lockId - 1].amountOfFTHM;
+            totalDeposit += locks[lockId - 1].amountOfToken;
         }
         return totalDeposit;
     }
 
-    /// @dev gets the total user deposit
-    /// @param account the user address
-    /// @return user total deposit in (Main Token)
     function getStreamClaimableAmount(uint256 streamId, address account)
         public
         view
@@ -89,9 +81,6 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return totalRewards;
     }
 
-    /// @dev gets the total user deposit
-    /// @param account the user address
-    /// @return user total deposit in (Main Token)
     function getUserTotalVotes(address account)
         public
         view
@@ -104,7 +93,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         }
         uint totalVotes = 0;
         for (uint lockId = 1; lockId <= locks.length; lockId++) {
-            totalVotes += locks[lockId - 1].amountOfveFTHM;
+            totalVotes += locks[lockId - 1].amountOfVoteToken;
         }
         return totalVotes;
     }
@@ -121,10 +110,10 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         require(lockId > 0,"lockId cant be 0");
         require(lock.end > block.timestamp, "lock opened, no penalty");
 
-        uint256 totalAmountOfStakedFTHM = IStakingHelper(stakingContract).totalAmountOfStakedFTHM();
-        uint256 totalFTHMShares = IStakingHelper(stakingContract).totalFTHMShares();
+        uint256 totalAmountOfStakedToken = IStakingHelper(stakingContract).totalAmountOfStakedToken();
+        uint256 totalShares = IStakingHelper(stakingContract).totalShares();
 
-        uint256 amount = (totalAmountOfStakedFTHM * lock.FTHMShares) / totalFTHMShares;
+        uint256 amount = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
         uint256 lockEnd = lock.end;
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
         uint256 penalty = (weighingCoef * amount) / 100000;

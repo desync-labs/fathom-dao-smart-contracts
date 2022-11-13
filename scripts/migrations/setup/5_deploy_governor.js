@@ -6,7 +6,9 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const VMainToken_address = VMainToken.address;
 const TimelockController_address = TimelockController.address;
 const MultiSigWallet_address = MultiSigWallet.address;
+const initialVotingDelay = 1;
 const votingPeriod = 20;
+const initialProposalThreshold = 1000;
 
 
 module.exports =  async function(deployer) {
@@ -16,7 +18,9 @@ module.exports =  async function(deployer) {
             VMainToken_address,
             TimelockController_address,
             MultiSigWallet_address, 
-            votingPeriod, 
+            initialVotingDelay,
+            votingPeriod,
+            initialProposalThreshold,
             { gas: 12000000 }),
     ];
 

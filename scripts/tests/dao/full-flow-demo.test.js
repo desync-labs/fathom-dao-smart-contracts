@@ -172,7 +172,7 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
 const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
     // encoded transfer function call for staking on behalf of someone else from treasury.
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'createLockWithFlag',
+        name: 'createLockWithoutEarlyWithdraw',
         type: 'function',
         inputs: [{
             type: 'uint256',
@@ -299,7 +299,7 @@ describe("DAO Demo", () => {
             weightMultiplier)
         //this is used for stream shares calculation.
         vMainTokenCoefficient = 500;
-        //this is used for calculation of release of veFTHM
+        //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
 
         stakingService = await artifacts.initializeInterfaceAt(
@@ -985,10 +985,10 @@ describe("DAO Demo", () => {
             const amount = web3.utils.toWei('200000', 'ether');
             
             result = await stakingGetterService.getLockInfo(comity_1,1);
-            const comity_1StakedFTHM = result.amountOfFTHM.toString();
+            const comity_1StakedFTHM = result.amountOfToken.toString();
 
             result = await stakingGetterService.getLockInfo(comity_2,1);
-            const comity_2StakedFTHM = result.amountOfFTHM.toString();
+            const comity_2StakedFTHM = result.amountOfToken.toString();
 
             assert.equal(comity_1StakedFTHM, amount.toString());
             assert.equal(comity_2StakedFTHM, amount.toString());

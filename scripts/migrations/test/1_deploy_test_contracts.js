@@ -1,5 +1,5 @@
 const Box = artifacts.require('./dao/test/Box.sol');
-const ERC20Factory = artifacts.require("./dao/token-factory/ERC20Factory.sol");
+const ERC20Factory = artifacts.require("./dao/test/token-factory/ERC20Factory.sol");
 const ERC20TokenReward1 = artifacts.require("./dao/test/ERC20Rewards1.sol");
 const ERC20TokenReward2 = artifacts.require("./dao/test/ERC20Rewards2.sol");
 

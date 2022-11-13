@@ -31,19 +31,10 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
     
-    /// @dev gets the user's stream pending reward
-    /// @param streamId stream index
-    /// @param account user account
-    /// @return user.pendings[streamId]
     function getPending(uint256 streamId, address account) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }
 
-    /// @dev get the stream data
-    /// @notice this function doesn't return the stream
-    /// schedule due to some stake slots limitations. To
-    /// get the stream schedule, refer to getStreamSchedule
-    /// @param streamId the stream index
     function getStream(uint256 streamId)
         external
         view
@@ -72,8 +63,6 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         );
     }
 
-    /// @dev get the stream schedule data
-    /// @param streamId the stream index
     function getStreamSchedule(uint256 streamId)
         external
         view
@@ -89,8 +78,6 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         );
     }
 
-    /// @dev get the streams count
-    /// @return streams.length
     function getStreamsCount() external view override returns (uint256) {
         return streams.length;
     }

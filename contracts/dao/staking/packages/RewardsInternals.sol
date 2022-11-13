@@ -9,11 +9,6 @@ import "../interfaces/IRewardsHandler.sol";
 
 contract RewardsInternals is StakingStorage, IStakingEvents {
     // solhint-disable not-rely-on-time
-    /**
-     @dev Updates the stream rewards schedules.
-     @notice This gets called when the stream manager has less rewards token to distribute
-             than original max deposit amount
-     */
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
         for (uint256 i = 0; i < streamScheduleRewardLength; i++) {
@@ -23,10 +18,6 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
     }
 
-    /**
-     @dev Moves the accumulated rewards to pending so that stakers can withdraw rewards
-     @notice The rewards are moved based upon streamId and lockId
-     */
     function _moveRewardsToPending(
         address account,
         uint256 streamId,
@@ -36,7 +27,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         require(streamId != 0, "compound");
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];
-        require(lock.FTHMShares != 0, "No Stake");
+        require(lock.tokenShares != 0, "No Stake");
         uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) *
             lock.positionStreamShares) / RPS_MULTIPLIER;
 
@@ -49,11 +40,6 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         emit Pending(streamId, account, userAccount.pendings[streamId]);
     }
 
-    /**
-     * @dev move all the streams rewards for a user to the pending tokens
-     * @param account is the staker address
-     * @param lockId the lock id of the lock position to move rewards
-     */
     function _moveAllStreamRewardsToPending(address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
         for (uint256 i = 1; i < streamsLength; i++) {
@@ -72,14 +58,10 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
     }
    
-    /**
-     * @dev This is always called before locking, unlocking, claiming rewards
-     * @notice This function updates rewards per share at each call for calculation of rewards
-     */
-    function _before() internal {
+    function _updateStreamRPS() internal {
         if (touchedAt == block.timestamp) return; // Already updated by previous transaction
-        if (totalFTHMShares != 0) {
-            totalAmountOfStakedFTHM += _getRewardsAmount(0, touchedAt);
+        if (totalShares != 0) {
+            totalAmountOfStakedToken += _getRewardsAmount(0, touchedAt);
             for (uint256 i = 1; i < streams.length; i++) {
                 if (streams[i].status == StreamStatus.ACTIVE) {
                     streams[i].rps = _getLatestRewardsPerShare(i);
@@ -106,23 +88,14 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
             minDepositAmount, 
             scheduleTimes, 
             scheduleRewards, 
-            tau);
+            tau
+        );
     }
 
-    /**
-     * @dev calculates and gets the latest released rewards.
-     * @param streamId stream index
-     * @return rewards released since last update.
-     */
     function _getRewardsAmount(uint256 streamId, uint256 lastUpdate) internal view returns (uint256) {
         return IRewardsHandler(rewardsContract).getRewardsAmount(streams[streamId].schedule, lastUpdate);
     }
 
-    /**
-     * @dev calculates and gets the latest reward per share (RPS) for a stream
-     * @param streamId stream index
-     * @return streams[streamId].rps + scheduled reward up till now
-     */
     function _getLatestRewardsPerShare(uint256 streamId) internal view returns (uint256) {
         require(totalStreamShares != 0, "No Stream Shares");
         return streams[streamId].rps + (_getRewardsAmount(streamId, touchedAt) * RPS_MULTIPLIER) / totalStreamShares;

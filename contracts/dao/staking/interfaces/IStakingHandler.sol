@@ -16,11 +16,12 @@ interface IStakingHandler {
         uint256[] memory scheduleRewards,
         uint256 tau
     ) external; // only STREAM_MANAGER_ROLE
+    function cancelStreamProposal(uint256 streamId) external;
 
     function initializeStaking(
         address _vault,
-        address _fthmToken,
-        address _veFTHM,
+        address _mainToken,
+        address _voteToken,
         Weight calldata _weight,
         address streamOwner,
         uint256[] memory scheduleTimes,
@@ -31,46 +32,30 @@ interface IStakingHandler {
         address rewardsContract
     ) external;
 
+    function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
     function removeStream(uint256 streamId, address streamFundReceiver) external;
 
-    /// @notice Create a new lock.
-    /// @dev This will crate a new lock and deposit FTHM to FTHMStaking
-    /// calls releaseGovernanceToken(uint256 amount, uint256 _unlockTime)
     function createLock(uint256 amount, uint256 lockPeriod, address account) external;
-
-    function unstakePartially(uint256 lockId, uint256 amount)  external;
-    // function stake(uint256 amount, address account) external;
-    function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
-
-    // function stakeOnLockPosition(uint256 amount, uint256 lockId) external;
-    //function unstakeLockedPosition(uint256 lockId, uint256 amount) external;
-
-    function unlock(uint256 lockId) external;
-
-    function cancelStreamProposal(uint256 streamId) external;
-
-    function earlyUnlock(uint256 lockId) external;
-
-    function claimRewards(uint256 streamId, uint256 lockId) external;
-
-    function claimAllStreamRewardsForLock(uint256 lockId) external;
-    function claimAllLockRewardsForStream(uint256 streamId) external;
-
-    //function batchClaimRewards(uint256[] calldata streamIds, uint256 lockId) external;
-
-    function withdraw(uint256 streamId) external;
-
-    function withdrawAll() external;
-
-    function withdrawPenalty(address penaltyReceiver) external;
-    function setWeight(Weight memory _weight)  external;
-    function createLockWithFlag(
+    function createLockWithoutEarlyWithdraw(
         uint256 amount, 
         uint256 lockPeriod, 
         address account,
-        bool flag) external;
+        bool flag
+    ) external;
 
-    function updateVault(address _vault)
-        external;
-    
+    function unlockPartially(uint256 lockId, uint256 amount)  external;
+    function unlock(uint256 lockId) external;
+    function earlyUnlock(uint256 lockId) external;
+
+    function claimRewards(uint256 streamId, uint256 lockId) external;
+    function claimAllStreamRewardsForLock(uint256 lockId) external;
+    function claimAllLockRewardsForStream(uint256 streamId) external;
+
+    function withdrawRewards(uint256 streamId) external;
+    function withdrawRewardsFromAllStreams() external;
+
+    function withdrawPenalty(address penaltyReceiver) external;
+    function setWeight(Weight memory _weight)  external;
+
+    function updateVault(address _vault) external;
 }

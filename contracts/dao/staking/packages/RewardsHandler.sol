@@ -14,7 +14,7 @@ contract RewardsHandler is IRewardsHandler{
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau
-    ) public view override{
+    ) public view override {
         require(streamOwner != address(0), "bad owner");
         require(rewardToken != address(0), "bad reward token");
         require(maxDepositAmount > 0, "No Max Deposit");
@@ -45,11 +45,6 @@ contract RewardsHandler is IRewardsHandler{
         );
     }
 
-    /**
-     * @dev calculates and gets the latest released rewards.
-     * @param schedule stream index
-     * @return rewards released since last update.
-     */
     function getRewardsAmount(Schedule memory schedule, uint256 lastUpdate) public override view returns (uint256) {
         require(lastUpdate <= block.timestamp, "bad last Update");
         if (lastUpdate == block.timestamp) return 0; // No more rewards since last update
@@ -71,25 +66,17 @@ contract RewardsHandler is IRewardsHandler{
             // The stream already finished between the last update and now.
             end = streamEnd;
         }
-        return _rewardsSchedule(schedule, start, end);
+        return _getRewardsSchedule(schedule, start, end);
     }
 
-    /**
-     * @dev calculate the total amount of the released tokens within a period (start & end)
-     * @param schedule the stream index
-     * @param start is the start timestamp within the schedule
-     * @param end is the end timestamp (e.g block.timestamp .. now)
-     * @return amount of the released tokens for that period
-     */
-    function _rewardsSchedule(
+    function _getRewardsSchedule(
         Schedule memory schedule,
         uint256 start,
         uint256 end
     ) internal pure returns (uint256) {
-        
         uint256 startIndex;
         uint256 endIndex;
-        (startIndex, endIndex) = _startEndScheduleIndex(schedule, start, end);
+        (startIndex, endIndex) = _getStartEndScheduleIndex(schedule, start, end);
         uint256 rewardScheduledAmount = 0;
         uint256 reward = 0;
         if (startIndex == endIndex) {
@@ -119,13 +106,7 @@ contract RewardsHandler is IRewardsHandler{
         return rewardScheduledAmount;
     }
 
-    /**
-     * @dev gets start index and end index in a stream schedule
-     * @param schedule stream index
-     * @param start start time (in seconds)
-     * @param end end time (in seconds)
-     */
-    function _startEndScheduleIndex(
+    function _getStartEndScheduleIndex(
         Schedule memory schedule,
         uint256 start,
         uint256 end
