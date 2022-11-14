@@ -1,7 +1,6 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
 const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
@@ -21,11 +20,7 @@ const AMOUNT_OUT_TREASURY = "1000";
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-// Token variables
-const T_TOKEN_TO_MINT = "100000000000000000000000";
-
 const _encodeConfirmation = async (_proposalId) => {
-    const timestamp = await blockchain.getLatestBlockTimestamp()
     return web3.eth.abi.encodeFunctionCall({
             name: 'confirmProposal',
             type: 'function',
@@ -39,21 +34,9 @@ const _encodeConfirmation = async (_proposalId) => {
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 
-const SYSTEM_ACC = accounts[0];
 const STAKER_1 = accounts[5];
 const STAKER_2 = accounts[6];
 const NOT_STAKER = accounts[7];
-const stream_owner = accounts[3];
-
-const _getTimeStamp = async () => {
-    const timestamp = await blockchain.getLatestBlockTimestamp()
-    return timestamp
-}
-
-
-//this is used for stream shares calculation.
-const vMainTokenCoefficient = 500;
-// ================================================================================================
 
 const _encodeTransferFunction = (_account) => {
     // encoded transfer function call for the main token.
@@ -72,8 +55,6 @@ const _encodeTransferFunction = (_account) => {
 
     return toRet;
 }
-
-
 
 describe('Proposal flow', () => {
 
@@ -101,38 +82,7 @@ describe('Proposal flow', () => {
     let txIndex1
     let txIndex2
 
-    const oneMonth = 30 * 24 * 60 * 60;
-    const oneYear = 31556926;
-    let lockingPeriod
-    let minter_role
-    let maxNumberOfLocks
-    let lockingVoteWeight
-
- 
-
-    const _createWeightObject = (
-        maxWeightShares,
-        minWeightShares,
-        maxWeightPenalty,
-        minWeightPenalty,
-        weightMultiplier) => {
-        return {
-            maxWeightShares: maxWeightShares,
-            minWeightShares: minWeightShares,
-            maxWeightPenalty: maxWeightPenalty,
-            minWeightPenalty: minWeightPenalty,
-            penaltyWeightMultiplier: weightMultiplier
-        }
-    }
-
-    const _createVoteWeights = (
-        voteShareCoef,
-        voteLockCoef) => {
-        return {
-            voteShareCoef: voteShareCoef,
-            voteLockCoef: voteLockCoef
-        }
-    }
+    let lockingPeriod;
     
     before(async () => {
         await snapshot.revertToSnapshot();
@@ -148,18 +98,6 @@ describe('Proposal flow', () => {
         executor_role = await timelockController.EXECUTOR_ROLE();
         timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
 
-        // For staking:
-        maxWeightShares = 1024;
-        minWeightShares = 256;
-        maxWeightPenalty = 3000;
-        minWeightPenalty = 100;
-        weightMultiplier = 10;
-        maxNumberOfLocks = 10;
-
-        const weightObject =  _createWeightObject(
-            maxWeightShares,minWeightShares,maxWeightPenalty,minWeightPenalty, weightMultiplier
-            );
-
         stakingService = await artifacts.initializeInterfaceAt(
             "StakingPackage",
             "StakingPackage"
@@ -174,62 +112,15 @@ describe('Proposal flow', () => {
             "RewardsCalculator",
             "RewardsCalculator"
         )
-
-        await vaultService.initVault();
-        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
-        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
         
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
-        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
-        minter_role = await vMainToken.MINTER_ROLE();
-        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
         vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
 
-        await vaultService.addSupportedToken(FTHMTokenAddress);
-
-        lockingVoteWeight = 365 * 24 * 60 * 60;
-        maxNumberOfLocks = 10;
-
-        const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
-            web3.utils.toWei("0", 'ether')
-        ]
-
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
         vault_test_address = vaultService.address;
-
-        const scheduleTimes = [
-            startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
-        ]
-        
-        const voteObject = _createVoteWeights(
-            vMainTokenCoefficient,
-            lockingVoteWeight
-        )
-        await stakingService.initializeStaking(
-            vault_test_address,
-            FTHMTokenAddress,
-            vMainTokenAddress,
-            weightObject,
-            stream_owner,
-            scheduleTimes,
-            scheduleRewards,
-            2,
-            voteObject,
-            maxNumberOfLocks,
-            rewardsCalculator.address
-         )
 
         // encode the function call to change the value in box.  To be performed if the vote passes
         encoded_function = web3.eth.abi.encodeFunctionCall({
@@ -274,19 +165,6 @@ describe('Proposal flow', () => {
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
 
     });
-
-    describe("Assign MainToken Governor and TimeLock roles", async() => {
-        // TODO: test _roles, Check that they can make transactions, revoke _roles, try again expecting bounces
-        it('Grant propser, executor and timelock admin roles to MainTokenGovernor', async() => {
-
-            await timelockController.grantRole(proposer_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(timelock_admin_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(executor_role, mainTokenGovernor.address, {"from": accounts[0]});
-        });
-
-    });
-
-
 
     // TODO: Needs to revert when there is no value
     describe("Box contract", async() => {
