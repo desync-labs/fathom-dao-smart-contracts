@@ -5,7 +5,6 @@ const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
 
-
 const maxGasForTxn = 600000
 const {
     shouldRevert,
@@ -261,6 +260,8 @@ describe("Staking Test", () => {
 
         await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
         await _addSupportedTokenFromMultiSigTreasury(streamReward2Address);
+      //  await vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000});
+      //  await vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000});
     });
 
     describe('Creating Locks and Unlocking before any stream reward tokens are issued, and release vote token', async() => {
@@ -538,6 +539,16 @@ describe("Staking Test", () => {
             console.log("VE MAIN Token Address: ", vMainToken.address)
             console.log("Stakin Getters Address: ", stakingGetterService.address)
             console.log("Stream Reward Token Address: ", streamReward1Address)
+        })
+
+        it('Should not be initalizable twice', async() => {
+            const errorMessage = "Initializable: contract is already initialized";
+            shouldRevert(
+                vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
         })
     })
 });

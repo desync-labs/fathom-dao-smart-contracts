@@ -153,8 +153,6 @@ abstract contract IGovernor is IERC165 {
      * https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams[`URLSearchParams`]
      * JavaScript class.
      */
-    // solhint-disable-next-line func-name-mixedcase
-    function COUNTING_MODE() public pure virtual returns (string memory);
 
     function hashProposal(
         address[] memory targets,

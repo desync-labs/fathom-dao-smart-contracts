@@ -9,8 +9,6 @@ const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
 
 
-
-
 const maxGasForTxn = 600000
 const {
     shouldRevert,
@@ -30,7 +28,6 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
-const treasury = SYSTEM_ACC;
 
 
 const _createVoteWeights = (
@@ -98,12 +95,51 @@ const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
 
-const setTreasuryAddress = async (treasury,stakingService) => {
-    const storageSlot = 8;
-    await stakingService.adminSstoreAddress(
-        storageSlot,
-        treasury
-        )
+const _encodeProposeStreamFunction = (
+    _owner,
+    _rewardToken,
+    _maxDepositedAmount,
+    _minDepositedAmount,
+    _scheduleTimes,
+    _scheduleRewards,
+    _tau
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'proposeStream',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'streamOwner'
+        },{
+            type: 'address',
+            name: 'rewardToken'
+        },{
+            type: 'uint256',
+            name: 'maxDepositAmount'
+        },{
+            type: 'uint256',
+            name: 'minDepositAmount'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleTimes'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleRewards'
+        },{
+            type: 'uint256',
+            name: 'tau'
+        }]
+    }, [
+        _owner,
+        _rewardToken,
+        _maxDepositedAmount,
+        _minDepositedAmount,
+        _scheduleTimes,
+        _scheduleRewards,
+        _tau
+    ]);
+
+    return toRet;
 }
 
 
@@ -125,6 +161,45 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
 
     return toRet;
 }
+
+const _encodeWithdrawPenaltyFunction = (_account) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'withdrawPenalty',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'penaltyReceiver'
+        }]
+    }, [_account]);
+
+    return toRet;
+}
+
+const _encodeAddSupportedTokenFunction = (_token) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'addSupportedToken',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_token'
+        }]
+    }, [_token]);
+
+    return toRet;
+}
+
+const _encodeAdminPause = (flag) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'adminPause',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'flags'
+        }]}, [flag]);
+
+    return toRet;
+}
+
 
 describe("Staking Test", () => {
 
@@ -210,17 +285,11 @@ describe("Staking Test", () => {
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
-        
+
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
-        
-        
-        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
-        
-        minter_role = await vMainToken.MINTER_ROLE();
-        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
         vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
@@ -277,36 +346,26 @@ describe("Staking Test", () => {
             startTime + 4 * oneYear,
         ]
         
-        await vaultService.initVault();
-        await vaultService.addSupportedToken(FTHMTokenAddress)
-        await vaultService.addSupportedToken(streamReward1Address)
-        await vaultService.addSupportedToken(streamReward2Address)
-        
-        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
-        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
-        const voteObject = _createVoteWeights(
-            vMainTokenCoefficient,
-            lockingVoteWeight
-        )
+        const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
+            const result = await multiSigWallet.submitTransaction(
+                vaultService.address, 
+                EMPTY_BYTES, 
+                _encodeAddSupportedTokenFunction(_token), 
+                {"from": accounts[0]}
+            );
+            const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
 
-        await stakingService.initializeStaking(
-            vault_test_address,
-            FTHMTokenAddress,
-            vMainTokenAddress,
-            weightObject,
-            stream_owner,
-            scheduleTimes,
-            scheduleRewards,
-            2,
-            voteObject,
-            maxNumberOfLocks,
-            rewardsCalculator.address
-         )
-        await setTreasuryAddress(
-            treasury,
-            stakingService
-        )
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+        }
+
+        await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
+        await _addSupportedTokenFromMultiSigTreasury(streamReward2Address);
+       // await vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000});
+      //  await vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000});
     });
 
     describe('Creating Locks and Unlocking before any stream reward tokens are issued, and release vote token', async() => {
@@ -568,7 +627,37 @@ describe("Staking Test", () => {
                 startTime + 5 * oneMonth
             ]
 
-            const result = await stakingService.proposeStream(
+            const _proposeStreamFromMultiSigTreasury = async (
+                _stream_rewarder_1,
+                _streamReward1Address,
+                _maxRewardProposalAmountForAStream,
+                _minRewardProposalAmountForAStream,
+                _scheduleTimes,
+                _scheduleRewards,
+                _tau
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeProposeStreamFunction(
+                        _stream_rewarder_1,
+                        _streamReward1Address,
+                        _maxRewardProposalAmountForAStream,
+                        _minRewardProposalAmountForAStream,
+                        _scheduleTimes,
+                        _scheduleRewards,
+                        _tau
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_1,
                 streamReward1Address,
                 maxRewardProposalAmountForAStream,
@@ -576,8 +665,8 @@ describe("Staking Test", () => {
                 scheduleTimes,
                 scheduleRewards,
                 10
-                ,{from: SYSTEM_ACC}  
-            )
+            );
+            
             await blockchain.mineBlock(await _getTimeStamp() + 10)
         })
 
@@ -606,7 +695,37 @@ describe("Staking Test", () => {
                 startTime + oneYear
             ]
 
-            const result = await stakingService.proposeStream(
+            const _proposeStreamFromMultiSigTreasury = async (
+                _stream_rewarder_2,
+                _streamReward2Address,
+                _maxRewardProposalAmountForAStream,
+                _minRewardProposalAmountForAStream,
+                _scheduleTimes,
+                _scheduleRewards,
+                _tau
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeProposeStreamFunction(
+                        _stream_rewarder_2,
+                        _streamReward2Address,
+                        _maxRewardProposalAmountForAStream,
+                        _minRewardProposalAmountForAStream,
+                        _scheduleTimes,
+                        _scheduleRewards,
+                        _tau
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_2,
                 streamReward2Address,
                 maxRewardProposalAmountForAStream,
@@ -614,9 +733,7 @@ describe("Staking Test", () => {
                 scheduleTimes,
                 scheduleRewards,
                 10
-                ,{from: SYSTEM_ACC}
-            )
-
+            );
             await blockchain.mineBlock(await _getTimeStamp() + 10)
         })
 
@@ -986,11 +1103,31 @@ describe("Staking Test", () => {
         })
 
         it('Should withdraw penalty to treasury', async() =>{
+
+            const treasury = multiSigWallet.address
+            const _withdrawEarlyPenalty = async(
+                _penaltyReceiver
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeWithdrawPenaltyFunction(
+                        _penaltyReceiver
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
             await blockchain.mineBlock(10 + await _getTimeStamp());
             const beforeBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             let totalPenaltyBalance = await stakingService.totalPenaltyBalance();
-            await stakingService.withdrawPenalty(treasury);
             
+            await _withdrawEarlyPenalty(multiSigWallet.address)
             const afterBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             const expectedDifferenceInBalance = _calculateRemainingBalance(beforeBalanceOfTreasury.toString(),afterBalanceOfTreasury.toString())
             expectedDifferenceInBalance.should.be.bignumber.equal(totalPenaltyBalance.toString())
@@ -1002,7 +1139,25 @@ describe("Staking Test", () => {
         it('Paused contract should not make lock position', async() => {
             const toPauseFlag = 1
 
-            await stakingService.adminPause(toPauseFlag, { from: SYSTEM_ACC})
+            const _pauseStakingContract = async(
+                _flag
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeAdminPause(
+                        _flag
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _pauseStakingContract(toPauseFlag)
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
@@ -1016,7 +1171,25 @@ describe("Staking Test", () => {
 
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0
-            await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
+            const _unpauseStakingContract = async(
+                _flag
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeAdminPause(
+                        _flag
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _unpauseStakingContract(toUnPauseFlag)
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
@@ -1025,13 +1198,21 @@ describe("Staking Test", () => {
         })
 
         it('Should should  make lock position with 0 lock period', async() => {
-            const toUnPauseFlag = 0
-
-            await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should not be initalizable twice', async() => {
+
+            const errorMessage = "Initializable: contract is already initialized";
+            await shouldRevert(
+                vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
         })
     })
 });

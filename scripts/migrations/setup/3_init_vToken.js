@@ -7,6 +7,5 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 
 module.exports = async function(deployer) {
     const vToken = await IVMainToken.at(VMainToken.address);
-
     await vToken.initToken(MultiSigWallet.address, StakingPackage.address, {gas: 8000000});
 }

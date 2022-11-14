@@ -21,7 +21,7 @@ contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
     /// @dev adminPause pauses this contract. Only pause role or default
     /// admin role can access this function.
     /// @param flags flags variable is used for pausing this contract.
-    function adminPause(uint256 flags) external override {
+    function adminPause(uint256 flags) external override onlyRole(PAUSE_ROLE){
         // pause role can pause the contract, however only default admin role can unpause
         require((paused & flags) == paused || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "only admin can unpause");
         paused = flags;
@@ -74,7 +74,8 @@ contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
     }
 
     function pausableInit(uint256 _flags, address _admin) internal initializer {
-        __AccessControl_init();
+        __AccessControl_init_unchained();
+        __Context_init_unchained();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSE_ROLE, _admin);
         paused = _flags;

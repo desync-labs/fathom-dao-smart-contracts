@@ -40,11 +40,6 @@ abstract contract GovernorCountingSimple is Governor {
         return (proposalvote.againstVotes, proposalvote.forVotes, proposalvote.abstainVotes);
     }
 
-    // solhint-disable-next-line func-name-mixedcase
-    function COUNTING_MODE() public pure virtual override returns (string memory) {
-        return "support=bravo&quorum=for,abstain";
-    }
-
     function _countVote(
         uint256 proposalId,
         address account,

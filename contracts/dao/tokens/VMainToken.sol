@@ -7,13 +7,13 @@ import "../../common/security/Pausable.sol";
 import "../../common/access/AccessControl.sol";
 import "./ERC20/extensions/ERC20Votes.sol";
 import "./IVMainToken.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC20Votes {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant WHITELISTER_ROLE = keccak256("MINTER_ROLE");
-
+    bool private initialized;
     // Mapping to keep track of who is allowed to transfer voting tokens
     mapping(address => bool) public isWhiteListed;
 
@@ -24,7 +24,8 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function initToken(address _admin, address _minter) external override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+    function initToken(address _admin, address _minter) public override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!initialized,"already init");
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
         _grantRole(MINTER_ROLE, _minter);
@@ -34,6 +35,7 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
 
         isWhiteListed[_minter] = true;
         emit MemberAddedToWhitelist(_minter);
+        initialized = true;
     }
 
     function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {

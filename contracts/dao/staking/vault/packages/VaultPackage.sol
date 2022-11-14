@@ -16,7 +16,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
 
     mapping(address => bool) public override isSupportedToken;
 
-    function initVault(address _admin, address _rewardsOperator, address[] calldata supportedTokens) external override {
+    function initVault(address _admin, address _rewardsOperator, address[] calldata supportedTokens) external override{
         pausableInit(0, _admin);
         _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
 

@@ -105,4 +105,6 @@ module.exports = async function(deployer) {
         RewardsCalculator.address,
         {gas: 8000000}
     );
+
+    
 }
