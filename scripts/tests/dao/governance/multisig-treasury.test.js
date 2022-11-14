@@ -129,7 +129,7 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to directly remove or add an owner', async() => {
-            let errorMessage = "MultiSig:  Only this wallet can use this funciton";
+            let errorMessage = "MultiSig: Only this wallet can use this funciton";
             initial_owners = await multiSigWallet.getOwners();
 
             await shouldRevert(
