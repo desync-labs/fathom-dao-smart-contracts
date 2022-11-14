@@ -4,25 +4,14 @@
 
 pragma solidity 0.8.13;
 
-/**
- * @dev Interface of the {Governor} core.
- *
- * _Available since v4.3._
- */
-
 interface IVMainToken {
-    // events
     event MemberAddedToWhitelist(address _member);
     event MemberRemovedFromWhitelist(address _member);
 
-    /**
-     * @dev Whitelist a sender allowing them to transfer voting tokens.
-     */
+    function initToken(address _admin, address _minter) external;
+
     function addToWhitelist(address _toAdd) external;
 
-    /**
-     * @dev Remove ability of a whitelisted sender to transfer voting tokens.
-     */
     function removeFromWhitelist(address _toRemove) external;
 
     function pause() external;

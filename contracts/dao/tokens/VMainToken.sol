@@ -7,8 +7,9 @@ import "../../common/security/Pausable.sol";
 import "../../common/access/AccessControl.sol";
 import "./ERC20/extensions/ERC20Votes.sol";
 import "./IVMainToken.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract VMainToken is IVMainToken, Pausable, AccessControl, ERC20Votes {
+contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC20Votes {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant WHITELISTER_ROLE = keccak256("MINTER_ROLE");
@@ -21,22 +22,25 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, ERC20Votes {
         string memory symbol_
     ) ERC20Votes(name_, symbol_) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(PAUSER_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(WHITELISTER_ROLE, msg.sender);
     }
 
-    /**
-     * @dev Whitelist a sender allowing them to transfer voting tokens.
-     */
+    function initToken(address _admin, address _minter) external override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(PAUSER_ROLE, _admin);
+        _grantRole(MINTER_ROLE, _minter);
+        _grantRole(WHITELISTER_ROLE, _admin);
+
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        isWhiteListed[_minter] = true;
+        emit MemberAddedToWhitelist(_minter);
+    }
+
     function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {
         isWhiteListed[_toAdd] = true;
         emit MemberAddedToWhitelist(_toAdd);
     }
 
-    /**
-     * @dev Remove ability of a whitelisted sender to transfer voting tokens.
-     */
     function removeFromWhitelist(address _toRemove) public override onlyRole(WHITELISTER_ROLE) {
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
@@ -67,8 +71,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, ERC20Votes {
         require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
-
-    // The following functions are overrides required by Solidity.
 
     function _afterTokenTransfer(
         address from,

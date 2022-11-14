@@ -56,14 +56,14 @@ contract ERC20Rewards1 is Context, IERC20, IERC20Metadata {
         string memory name_,
         string memory symbol_,
         uint totalSupply_,
-        address issuer
+        address _multiSigTreasury
     ) {
         _name = name_;
         _symbol = symbol_;
         _totalSupply = totalSupply_;
-        _balances[issuer] = totalSupply_;
+        _balances[_multiSigTreasury] = totalSupply_;
 
-        emit Transfer(address(0), issuer, totalSupply_);
+        emit Transfer(address(0), _multiSigTreasury, totalSupply_);
     }
 
     /**

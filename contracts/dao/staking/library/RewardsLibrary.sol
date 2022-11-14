@@ -8,7 +8,6 @@ import "../StakingStructs.sol";
 library RewardsLibrary{
     // solhint-disable not-rely-on-time
     function _validateStreamParameters(
-        
         address streamOwner,
         address rewardToken,
         uint256 maxDepositAmount,
@@ -47,11 +46,6 @@ library RewardsLibrary{
         );
     }
 
-    /**
-     * @dev calculates and gets the latest released rewards.
-     * @param stream stream index
-     * @return rewards released since last update.
-     */
     function _getRewardsAmount(Stream memory stream, uint256 lastUpdate) public view returns (uint256) {
         require(lastUpdate <= block.timestamp, "bad last Update");
         if (lastUpdate == block.timestamp) return 0; // No more rewards since last update
@@ -73,17 +67,10 @@ library RewardsLibrary{
             // The stream already finished between the last update and now.
             end = streamEnd;
         }
-        return _rewardsSchedule(stream, start, end);
+        return _getRewardsSchedule(stream, start, end);
     }
 
-    /**
-     * @dev calculate the total amount of the released tokens within a period (start & end)
-     * @param stream the stream index
-     * @param start is the start timestamp within the schedule
-     * @param end is the end timestamp (e.g block.timestamp .. now)
-     * @return amount of the released tokens for that period
-     */
-    function _rewardsSchedule(
+    function _getRewardsSchedule(
         Stream memory stream,
         uint256 start,
         uint256 end
@@ -91,7 +78,7 @@ library RewardsLibrary{
         Schedule memory schedule = stream.schedule;
         uint256 startIndex;
         uint256 endIndex;
-        (startIndex, endIndex) = _startEndScheduleIndex(stream, start, end);
+        (startIndex, endIndex) = _getStartEndScheduleIndex(stream, start, end);
         uint256 rewardScheduledAmount = 0;
         uint256 reward = 0;
         if (startIndex == endIndex) {
@@ -121,13 +108,7 @@ library RewardsLibrary{
         return rewardScheduledAmount;
     }
 
-    /**
-     * @dev gets start index and end index in a stream schedule
-     * @param stream stream index
-     * @param start start time (in seconds)
-     * @param end end time (in seconds)
-     */
-    function _startEndScheduleIndex(
+    function _getStartEndScheduleIndex(
         Stream memory stream,
         uint256 start,
         uint256 end

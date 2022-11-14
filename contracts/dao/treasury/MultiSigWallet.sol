@@ -14,10 +14,6 @@ contract MultiSigWallet is IMultiSigWallet {
         uint numConfirmations;
     }
 
-    /**
-     *  @dev
-     *  Constants
-     */
     uint public constant MAX_OWNER_COUNT = 50;
 
     address[] public owners;
@@ -30,10 +26,6 @@ contract MultiSigWallet is IMultiSigWallet {
 
     Transaction[] public transactions;
 
-    /**
-     *  @dev
-     *  Modifiers
-     */
     modifier onlyOwnerOrGov() {
         require(
             isOwner[msg.sender] || governor == msg.sender,
@@ -58,12 +50,12 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     modifier ownerDoesNotExist(address owner) {
-        require(!isOwner[owner], "MultiSig:  Owner already exists");
+        require(!isOwner[owner], "MultiSig: Owner already exists");
         _;
     }
 
     modifier onlyWallet() {
-        require(msg.sender == address(this), "MultiSig:  Only this wallet can use this funciton");
+        require(msg.sender == address(this), "MultiSig: Only this wallet can use this funciton");
         _;
     }
 
@@ -110,18 +102,10 @@ contract MultiSigWallet is IMultiSigWallet {
         numConfirmationsRequired = _numConfirmationsRequired;
     }
 
-    /**
-     * @dev Function to receive ETH that will be handled by the governor (disabled if executor
-     *        is a third party contract)
-     */
     receive() external payable override {
         emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 
-    /**
-     *  @dev Allows to remove an owner. Transaction has to be sent by wallet.
-     *  @param owner Address of owner.
-     */
     function removeOwner(address owner) public override onlyWallet ownerExists(owner) {
         isOwner[owner] = false;
         for (uint i = 0; i < owners.length - 1; i++)
@@ -134,10 +118,6 @@ contract MultiSigWallet is IMultiSigWallet {
         emit OwnerRemoval(owner);
     }
 
-    /**
-     *  @dev Allows to add a new owner. Transaction has to be sent by wallet.
-     *  @param owner Address of new owner.
-     */
     function addOwner(address owner)
         public
         override
@@ -151,22 +131,11 @@ contract MultiSigWallet is IMultiSigWallet {
         emit OwnerAddition(owner);
     }
 
-    /**
-     *  @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
-     *  @param _required Number of required confirmations.
-     */
     function changeRequirement(uint _required) public override onlyWallet validRequirement(owners.length, _required) {
         numConfirmationsRequired = _required;
         emit RequirementChange(_required);
     }
 
-    /**
-     * @dev Adds a new transaction to the transaction mapping, if transaction does not exist yet.
-     * @param _to Transaction target address.
-     * @param _value Transaction ether value.
-     * @param _data Transaction data payload.
-     * Emits SubmitTransaction event
-     */
     function submitTransaction(
         address _to,
         uint _value,
@@ -179,10 +148,6 @@ contract MultiSigWallet is IMultiSigWallet {
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
     }
 
-    /**
-     * @dev Allows multiSig owners to confirm a transaction.
-     * @param _txIndex Transaction Index.
-     */
     function confirmTransaction(uint _txIndex)
         public
         override
@@ -198,11 +163,6 @@ contract MultiSigWallet is IMultiSigWallet {
         emit ConfirmTransaction(msg.sender, _txIndex);
     }
 
-    /**
-     * @dev Allows anyone to execute a confirmed transaction.
-     * @param _txIndex Transaction Index.
-     * Emits event: ExecuteTransaction
-     */
     function executeTransaction(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
@@ -216,10 +176,6 @@ contract MultiSigWallet is IMultiSigWallet {
         emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
-    /**
-     * @dev Allows multiSig owners to revoke a confimation.
-     * @param _txIndex Transaction Index.
-     */
     function revokeConfirmation(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
@@ -231,24 +187,14 @@ contract MultiSigWallet is IMultiSigWallet {
         emit RevokeConfirmation(msg.sender, _txIndex);
     }
 
-    /**
-     * @dev Returns the owners of this contract.
-     */
     function getOwners() public view override returns (address[] memory) {
         return owners;
     }
 
-    /**
-     * @dev Returns the number of transactions confirmed and unconfirmed.
-     */
     function getTransactionCount() public view override returns (uint) {
         return transactions.length;
     }
 
-    /**
-     * @dev Returns a transactions details.
-     * @param _txIndex Transaction Index.
-     */
     function getTransaction(uint _txIndex)
         public
         view

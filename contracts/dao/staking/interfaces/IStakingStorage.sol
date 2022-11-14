@@ -6,14 +6,13 @@ pragma solidity 0.8.13;
 import "../StakingStructs.sol";
 
 interface IStakingStorage {
-    function totalFTHMShares() external view returns (uint256);
+    function totalShares() external view returns (uint256);
 
     function totalStreamShares() external view returns (uint256);
 
-    function totalAmountOfveFTHM() external view returns (uint256);
+    function totalAmountOfVoteToken() external view returns (uint256);
 
-    function totalAmountOfStakedFTHM() external view returns (uint256);
+    function totalAmountOfStakedToken() external view returns (uint256);
 
     function totalPenaltyBalance() external view returns (uint256);
-
 }

@@ -4,7 +4,7 @@
 
 pragma solidity 0.8.13;
 
-import "../../../common/SafeERC20.sol";
+import "../../../../common/SafeERC20.sol";
 
 /**
  * @dev A token holder contract that will allow a beneficiary to extract the
@@ -14,7 +14,6 @@ import "../../../common/SafeERC20.sol";
  * after 1 year".
  */
 interface ITokenTimelock {
-
     /**
      * @dev Transfers tokens held by the timelock to the beneficiary. Will only succeed if invoked after the release
      * time.
@@ -35,6 +34,4 @@ interface ITokenTimelock {
      * @dev Returns the time when the tokens are released in seconds since Unix epoch (i.e. Unix timestamp).
      */
     function releaseTime() external view returns (uint256);
-
-
 }

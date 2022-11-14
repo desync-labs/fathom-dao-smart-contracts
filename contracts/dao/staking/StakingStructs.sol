@@ -20,8 +20,7 @@ struct Schedule {
 }
 
 struct User {
-    uint128 veFTHMBalance;
-    uint128 veFTHMReleased;
+    uint128 voteTokenBalance;
     //streamId => pendings
     mapping(uint256 => uint256) pendings; // The amount of tokens pending release for user per stream
     //streamId => releaseTime
@@ -46,16 +45,16 @@ struct VoteCoefficient{
 }
 
 struct LockedBalance {
-    uint128 amountOfFTHM;
-    uint128 amountOfveFTHM;
-    uint128 FTHMShares;
+    uint128 amountOfToken;
+    uint128 amountOfVoteToken;
+    uint128 tokenShares;
     uint128 positionStreamShares;
     uint64 end;
     address owner;
 }
 struct Stream {
     address owner; // stream owned by the ERC-20 reward token owner
-    address manager; // stream manager handled by FTHM stream manager role
+    address manager; // stream manager handled by Main stream manager role
     address rewardToken;
     uint256 rewardDepositAmount; // the reward amount that has been deposited by third party
     uint256 rewardClaimedAmount; /// how much rewards have been claimed by stakers
