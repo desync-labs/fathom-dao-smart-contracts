@@ -398,6 +398,7 @@ describe("DAO Demo", () => {
         vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
+
         const _transferFromMultiSigTreasury = async (_account, _value) => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
@@ -412,6 +413,7 @@ describe("DAO Demo", () => {
 
             await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
         }
+
         await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
         const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
@@ -639,11 +641,7 @@ describe("DAO Demo", () => {
 
         });
 
-        it('', async() => {
-            // Grant propser, executor and timelock admin roles to MainTokenGovernor
-            await timelockController.grantRole(proposer_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(timelock_admin_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(executor_role, mainTokenGovernor.address, {"from": accounts[0]});
+        it('Transfer ownership of the box to TimelockController', async() => {
 
             await box.transferOwnership(timelockController.address);
             

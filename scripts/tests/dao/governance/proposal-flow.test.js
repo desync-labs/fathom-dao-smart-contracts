@@ -64,10 +64,6 @@ describe('Proposal flow', () => {
     let box
     let FTHMToken
     let multiSigWallet
-    
-    let proposer_role
-    let executor_role
-    let timelock_admin_role
 
     let proposalId
     let proposalId2
@@ -93,10 +89,6 @@ describe('Proposal flow', () => {
         box = await artifacts.initializeInterfaceAt("Box", "Box");
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
-        
-        proposer_role = await timelockController.PROPOSER_ROLE();
-        executor_role = await timelockController.EXECUTOR_ROLE();
-        timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
 
         stakingService = await artifacts.initializeInterfaceAt(
             "StakingPackage",
@@ -177,7 +169,7 @@ describe('Proposal flow', () => {
             expect((await box.retrieve()).toString()).to.equal('42');
         });
 
-        it('Transfer ownership of the box', async() => {
+        it('Transfer ownership of the box to TimelockController', async() => {
             await box.transferOwnership(timelockController.address);
             
             const new_owner = await box.owner();
