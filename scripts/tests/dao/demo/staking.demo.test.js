@@ -172,11 +172,8 @@ describe("Staking Test", () => {
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
-        
-        
-        proxyAddress = JSON.parse(rawdata);
-        console.log("....... addresses",proxyAddress)
         await snapshot.revertToSnapshot();
+        proxyAddress = JSON.parse(rawdata);
         maxWeightShares = 1024;
         minWeightShares = 256;
         maxWeightPenalty = 3000;
@@ -190,22 +187,11 @@ describe("Staking Test", () => {
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
-        // stakingService = await artifacts.initializeInterfaceAt(
-        //     "IStaking",
-        //     "TransparentUpgradeableProxy"
-        // );
         const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
         stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
 
         const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-
-        // vaultService = await artifacts.initializeInterfaceAt(
-        //     "VaultPackage",
-        //     "VaultPackage"
-        // );
         vaultService = await IVault.at(proxyAddress.VaultProxy)
-
- 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
             "StakingGettersHelper"
@@ -302,7 +288,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 365 * 24 * 60 * 60;
 
             const unlockTime = lockingPeriod;
-            console.log(".........Creating a Lock Position for staker 1.........");
+            // console.log(".........Creating a Lock Position for staker 1.........");
 
             let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
@@ -314,7 +300,7 @@ describe("Staking Test", () => {
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
             const expectedLockId = 1
-            console.log(".........Total Staked Protocol Token Amount for Lock Position ", _convertToEtherBalance(sumToDeposit));
+            // console.log(".........Total Staked Protocol Token Amount for Lock Position ", _convertToEtherBalance(sumToDeposit));
             assert.equal(eventArgs[2].toString(),expectedLockId)
             assert.equal(afterFTHMBalance.toString(),expectedFTHMBalanceStaker1.toString())
 
@@ -325,7 +311,7 @@ describe("Staking Test", () => {
 
             //  Here we check that the correct amount of vote was minted.
             staker1VeTokenBal.should.be.bignumber.equal(expectedNVFTHM)
-            console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (100 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
+            // console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (100 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
         
         it("Should create a second lock possition for staker_1, and check that correct number of vote tokens are released", async() => {
@@ -333,7 +319,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 365 * 24 * 60 * 60 / 2;
             
             const unlockTime = lockingPeriod;
-            console.log(".........Creating a second Lock Position for staker 1.........");
+            // console.log(".........Creating a second Lock Position for staker 1.........");
             let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
@@ -341,14 +327,14 @@ describe("Staking Test", () => {
             
             //lockingVoteWeight = 365 * 24 * 60 * 60;
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
-            console.log(".........Total Staked Protocol Token Amount for Lock Position ", _convertToEtherBalance(sumToDeposit));
+            // console.log(".........Total Staked Protocol Token Amount for Lock Position ", _convertToEtherBalance(sumToDeposit));
             const expectedShares = _calculateNumberOfStreamShares(sumToDeposit, vMainTokenCoefficient, actualNVFTHM, maxWeightShares);
             const actualShares = web3.utils.toBN(eventArgs[0])
             
             actualNVFTHM.should.be.bignumber.equal(expectedNVFTHM)
             actualShares.should.be.bignumber.equal(expectedShares)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
-            console.log(".........Released VOTE tokens to staker 1 based upon locking period ( 1/2 year )and locking amount (100 Protocol Tokens) ",_convertToEtherBalance(expectedNVFTHM), 'VOTE Tokens')
+            // console.log(".........Released VOTE tokens to staker 1 based upon locking period ( 1/2 year )and locking amount (100 Protocol Tokens) ",_convertToEtherBalance(expectedNVFTHM), 'VOTE Tokens')
         })
 
         it("Should have correct total number of staked protocol tokens", async() => {
@@ -360,7 +346,7 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
             const totalShares = await stakingService.totalShares();
             expect(totalShares).to.eql(totalAmountOfStakedToken)
-            console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedToken.toString()))
+            // console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedToken.toString()))
         })
 
         it("Setup a lock position for Staker 2  and Staker 3", async() => {
@@ -373,7 +359,7 @@ describe("Staking Test", () => {
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_3})
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
+            // console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
             let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_2, {from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_3,{from: staker_3});
@@ -445,9 +431,9 @@ describe("Staking Test", () => {
 
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
-            console.log(".........After all the locks are completely unlocked.........")
-            console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedToken.toString());
-            console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
+            // console.log(".........After all the locks are completely unlocked.........")
+            // console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedToken.toString());
+            // console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
         });
 
         it("Should not early unlock", async() => {
@@ -469,7 +455,7 @@ describe("Staking Test", () => {
         it("Should propose a second stream, stream - 1", async() => {
             console.log("A protocol wanting to collaborate with us, proposes a stream")
             console.log("They provide us their native tokens that they want to distribute to the community")
-            console.log(".........Creating a Proposal for a stream..........")
+            // console.log(".........Creating a Proposal for a stream..........")
             const maxRewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             const minRewardProposalAmountForAStream = web3.utils.toWei('200', 'ether');
             
@@ -530,7 +516,7 @@ describe("Staking Test", () => {
 
         it("Should Create a Stream - 1", async() => {
             const streamId = 1
-            console.log(".........Creating the stream proposed.........")
+            // console.log(".........Creating the stream proposed.........")
             console.log("Once create stream is called, the proposal will become live once start time is reached")
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})

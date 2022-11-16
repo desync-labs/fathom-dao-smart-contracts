@@ -7,7 +7,8 @@ const should = chai.use(require('chai-bn')(BN)).should();
 const utils = require('../../helpers/utils');
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
 
 const maxGasForTxn = 600000
 const {
@@ -231,7 +232,8 @@ describe("Staking Test", () => {
     let totalAmountOfStreamShares;
     let maxNumberOfLocks;
     let _flags;
-    
+    let proxyAddress;
+
     const sumToDeposit = web3.utils.toWei('100', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
@@ -240,6 +242,7 @@ describe("Staking Test", () => {
 
     before(async() => {
         await snapshot.revertToSnapshot();
+        proxyAddress = JSON.parse(rawdata);
         maxWeightShares = 1024;
         minWeightShares = 256;
         maxWeightPenalty = 3000;
@@ -259,16 +262,19 @@ describe("Staking Test", () => {
         vMainTokenCoefficient = 500;
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
-        
-        stakingService = await artifacts.initializeInterfaceAt(
-            "StakingPackage",
-            "StakingPackage"
-        );
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
+        // stakingService = await artifacts.initializeInterfaceAt(
+        //     "StakingPackage",
+        //     "StakingPackage"
+        // );
 
-        vaultService = await artifacts.initializeInterfaceAt(
-            "VaultPackage",
-            "VaultPackage"
-        );
+        // vaultService = await artifacts.initializeInterfaceAt(
+        //     "VaultPackage",
+        //     "VaultPackage"
+        // );
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
@@ -1206,9 +1212,9 @@ describe("Staking Test", () => {
 
         it('Should not be initalizable twice', async() => {
 
-            const errorMessage = "Initializable: contract is already initialized";
+            const errorMessage = "Vault: Already Initialized";
             await shouldRevert(
-                vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000}),
+                vaultService.initVault([FTHMToken.address], {gas: 8000000}),
                 errTypes.revert,
                 errorMessage
             ); 

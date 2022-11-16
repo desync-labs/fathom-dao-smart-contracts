@@ -18,13 +18,12 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     mapping(address => bool) public override isSupportedToken;
 
     function initVault(address[] calldata supportedTokens) external override{
-        require(!vaultInitialized,"Vault: initailzied");
+        require(!vaultInitialized,"Vault: Already Initialized");
         for (uint i = 0; i < supportedTokens.length; i++) {
             _addSupportedToken(supportedTokens[i]);
         }
         vaultInitialized = true;
     }
-    
     function initAdminAndOperator(address _admin,address _rewardsOperator) external override  {
         pausableInit(0, _admin);
         _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
