@@ -7,7 +7,7 @@ pragma solidity 0.8.13;
 import "./IAdminPausable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
+contract AdminPausable is IAdminPausable,AccessControlUpgradeable {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     address public admin;
     uint256 public paused;
@@ -80,4 +80,5 @@ contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
         _grantRole(PAUSE_ROLE, _admin);
         paused = _flags;
     }
+ 
 }

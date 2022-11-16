@@ -10,6 +10,7 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/ReentrancyGuard.sol";
 import "../../../common/security/AdminPausable.sol";
+
 // solhint-disable not-rely-on-time
 contract StakingHandlers is
     StakingStorage,

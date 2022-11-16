@@ -11,18 +11,23 @@ import "../../../../common/security/AdminPausable.sol";
 
 // solhint-disable not-rely-on-time
 contract VaultPackage is IVault, IVaultEvents, AdminPausable {
+    bool private vaultInitialized;
     bytes32 public constant REWARDS_OPERATOR_ROLE = 
         keccak256("REWARDS_OPERATOR_ROLE");
 
     mapping(address => bool) public override isSupportedToken;
 
-    function initVault(address _admin, address _rewardsOperator, address[] calldata supportedTokens) external override{
-        pausableInit(0, _admin);
-        _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
-
+    function initVault(address[] calldata supportedTokens) external override{
+        require(!vaultInitialized,"Vault: initailzied");
         for (uint i = 0; i < supportedTokens.length; i++) {
             _addSupportedToken(supportedTokens[i]);
         }
+        vaultInitialized = true;
+    }
+    
+    function initAdminAndOperator(address _admin,address _rewardsOperator) external override  {
+        pausableInit(0, _admin);
+        _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
     }
 
     function payRewards(address _user, address _token, uint256 _amount) external override {

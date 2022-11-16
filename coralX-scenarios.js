@@ -19,6 +19,8 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/deployment'],
     ['execute', '--path', 'scripts/migrations/setup'],
     ['execute', '--path', 'scripts/migrations/test'],
+   
+
   ],
   createStablecoinPool: [
     ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']

@@ -4,6 +4,9 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
+
 
 const maxGasForTxn = 600000
 const {
@@ -143,7 +146,9 @@ describe("Staking Test", () => {
     let stakingGetterService;
     let FTHMToken;
     let vMainToken;
-
+    let stakingUpgrade;
+    let proxyAdmin;
+    let multiSigWallet;
     let streamReward1;
     let streamReward2;
 
@@ -156,6 +161,9 @@ describe("Staking Test", () => {
     let minWeightPenalty;
     let vMainTokenCoefficient;
     let lockingVoteWeight;
+    let rewardsCalculator;
+    let proxyAddress;
+
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
@@ -164,6 +172,10 @@ describe("Staking Test", () => {
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
+        
+        
+        proxyAddress = JSON.parse(rawdata);
+        console.log("....... addresses",proxyAddress)
         await snapshot.revertToSnapshot();
         maxWeightShares = 1024;
         minWeightShares = 256;
@@ -178,16 +190,22 @@ describe("Staking Test", () => {
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
-        stakingService = await artifacts.initializeInterfaceAt(
-            "StakingPackage",
-            "StakingPackage"
-        );
+        // stakingService = await artifacts.initializeInterfaceAt(
+        //     "IStaking",
+        //     "TransparentUpgradeableProxy"
+        // );
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
 
-        vaultService = await artifacts.initializeInterfaceAt(
-            "VaultPackage",
-            "VaultPackage"
-        );
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
 
+        // vaultService = await artifacts.initializeInterfaceAt(
+        //     "VaultPackage",
+        //     "VaultPackage"
+        // );
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
+
+ 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
             "StakingGettersHelper"
@@ -196,6 +214,16 @@ describe("Staking Test", () => {
         rewardsCalculator = await artifacts.initializeInterfaceAt(
             "RewardsCalculator",
             "RewardsCalculator"
+        )
+
+        stakingUpgrade = await artifacts.initializeInterfaceAt(
+            "StakingUpgrade",
+            "StakingUpgrade"
+        )
+
+        proxyAdmin = await artifacts.initializeInterfaceAt(
+            "ProxyAdmin",
+            "ProxyAdmin"
         )
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -239,10 +267,7 @@ describe("Staking Test", () => {
 
         const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
         
-        vault_test_address = vaultService.address;
-
-        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
-
+        await _transferFromMultiSigTreasury(vaultService.address, twentyPercentOfFTHMTotalSupply);
         const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
@@ -258,8 +283,10 @@ describe("Staking Test", () => {
             await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
         }
 
+
         await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
         await _addSupportedTokenFromMultiSigTreasury(streamReward2Address);
+        
       //  await vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000});
       //  await vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000});
     });
@@ -371,6 +398,8 @@ describe("Staking Test", () => {
             );
             //  staker_1 would have to use the function earlyUnlock() to unlock before the lock period has passed.
         })
+
+        
         
         // it("Should completely unlock LockId = 1 - staker_1, and swap with last lock position _3", async() => {
         it("Should completely unlock LockId = 1 - staker_1, replace LockId 1 with LockId 2 in the locks array for staker_1", async() => {
@@ -378,57 +407,31 @@ describe("Staking Test", () => {
             const sumToUnstake = web3.utils.toWei('0.01','ether')
             const mineTimestamp = 365 * 24 * 60 * 60;
             await blockchain.mineBlock(await _getTimeStamp() + mineTimestamp);
-            
-            
-            let result = await stakingGetterService.getLockInfo(staker_1,2);
-            const amountOfVFTHMLock2 = result.amountOfVoteToken.toString()
-            
             console.log(".........Unlocking lock position - 1 of Staker_1.......")
             await stakingService.unlock(1, {from : staker_1});
-            const errorMessage = "out of index";
-
-            await shouldRevert(
-                stakingGetterService.getLockInfo(staker_1,2),
-                errTypes.revert,  
-                errorMessage
-            );
-
-            result = await stakingGetterService.getLockInfo(staker_1,1);
-            assert(amountOfVFTHMLock2, result.amountOfVoteToken.toString());
-
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Unlocking All The Lock Positions created till Now..........")
+        })
+
+        it('Should upgrade and call new function', async() => {
+            await proxyAdmin.upgrade(
+                stakingService.address,
+                stakingUpgrade.address)
+            
+            stakingService = await artifacts.initializeInterfaceAt(
+                "StakingUpgrade",
+                "TransparentUpgradeableProxy"
+            );
+            console.log((await stakingService.getLockInfo(staker_1,1)).toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
         it("Should unlock completely locked positions for user - staker_2", async() => {
-            let result = await stakingGetterService.getLockInfo(staker_2,1);
-            const beforeVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
             await stakingService.unlock(1, {from: staker_2});
-            const afterVOTEBalance  = (await vMainToken.balanceOf(staker_2)).toString()
-            const amountOfVFTHMLock3 = result.amountOfVoteToken.toString()
-            
-            const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
-            amountOfVFTHMLock3.should.be.bignumber.equal(differenceInBalance.toString())
-            const errorMessage = "out of index";
-            // The last lock possition should no longer be accesible
-            await shouldRevert(
-                stakingGetterService.getLockInfo(staker_2,1),
-                errTypes.revert,  
-                errorMessage
-            );
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         }) 
         
         it("Should unlock completely locked positions for user - staker_3", async() => {
             await stakingService.unlock(1, {from: staker_3});
-            const errorMessage = "out of index";
-
-            await shouldRevert(
-                stakingGetterService.getLockInfo(staker_3,1),
-                errTypes.revert,  
-                errorMessage
-            );
-            
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         });
 
@@ -533,14 +536,7 @@ describe("Staking Test", () => {
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
 
-        it('display all addresses', async() => {
-            console.log("Staking Contract Address: ", stakingService.address)
-            console.log("Main Token Address: ", FTHMToken.address)
-            console.log("VE MAIN Token Address: ", vMainToken.address)
-            console.log("Stakin Getters Address: ", stakingGetterService.address)
-            console.log("Stream Reward Token Address: ", streamReward1Address)
-        })
-
+        
         it('Should not be initalizable twice', async() => {
             const errorMessage = "Initializable: contract is already initialized";
             shouldRevert(
@@ -550,6 +546,8 @@ describe("Staking Test", () => {
             ); 
             
         })
+
+        
     })
 });
    
