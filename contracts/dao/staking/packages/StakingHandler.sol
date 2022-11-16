@@ -287,6 +287,8 @@ contract StakingHandlers is
         weight = _weight;
     }
 
+    // function setRewardsContract(address memory _rewardsContract) 
+
     function updateVault(address _vault)
         public
         override

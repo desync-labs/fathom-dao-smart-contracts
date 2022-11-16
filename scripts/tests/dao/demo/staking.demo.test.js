@@ -78,6 +78,22 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
+const _encodeUpgradeFunction = (_proxy, _impl) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'upgrade',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'proxy'
+        },{
+            type: 'address',
+            name: 'implementation'
+        }]
+    }, [_proxy, _impl]);
+
+    return toRet;
+}
+
 const _encodeAddSupportedTokenFunction = (_token) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'addSupportedToken',
@@ -399,20 +415,57 @@ describe("Staking Test", () => {
             console.log(".........Unlocking All The Lock Positions created till Now..........")
         })
 
-        it('Should upgrade and call new function', async() => {
-            await proxyAdmin.upgrade(
-                stakingService.address,
-                stakingUpgrade.address)
+        // it('Should upgrade and call new function', async() => {
             
-            stakingService = await artifacts.initializeInterfaceAt(
-                "StakingUpgrade",
-                "TransparentUpgradeableProxy"
-            );
+        //     await proxyAdmin.upgrade(
+        //         stakingService.address,
+        //         stakingUpgrade.address)
+            
+        //     stakingService = await artifacts.initializeInterfaceAt(
+        //         "StakingUpgrade",
+        //         "TransparentUpgradeableProxy"
+        //     );
+        //     console.log((await stakingService.getLockInfo(staker_1,1)).toString())
+        //     await blockchain.mineBlock(await _getTimeStamp() + 20);
+        // })
+
+        it('Should upgrade by mulitsig and call new function', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const _proposeUpgrade = async (
+                _proxy,
+                _impl
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    proxyAddress.StakingProxyAdmin, 
+                    EMPTY_BYTES, 
+                    _encodeUpgradeFunction(
+                        _proxy,
+                        _impl
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            const StakingUpgrade = artifacts.require('./dao/staking/packages/StakingUpgrade.sol');
+            console.log(proxyAddress.StakingProxyAdmin)
+            console.log(stakingUpgrade.address)
+            await _proposeUpgrade(
+                proxyAddress.StakingProxy,
+                stakingUpgrade.address
+            )
+            
+            stakingService = await StakingUpgrade.at(proxyAddress.StakingProxy)
             console.log((await stakingService.getLockInfo(staker_1,1)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
         it("Should unlock completely locked positions for user - staker_2", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         }) 

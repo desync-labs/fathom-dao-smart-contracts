@@ -14,7 +14,6 @@ async function deployProxy(
     ProxyName
 )
 {
-  const provider = await web3.currentProvider;
   let promises = [
         deployer.deploy(ProxyAdmin, {gas:8000000})
     ];
@@ -36,7 +35,6 @@ async function deployProxy(
     
     let data = JSON.stringify(newAddresses);
     await fs.writeFileSync('./addresses.json', data);
-    
 }
 
 module.exports = { deployProxy };
