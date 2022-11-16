@@ -408,6 +408,7 @@ describe("Staking Test", () => {
             const mineTimestamp = 365 * 24 * 60 * 60;
             await blockchain.mineBlock(await _getTimeStamp() + mineTimestamp);
             console.log(".........Unlocking lock position - 1 of Staker_1.......")
+            console.log("balance of FTHM Token before unlock: ",(await FTHMToken.balanceOf(staker_1)).toString())
             await stakingService.unlock(1, {from : staker_1});
             console.log(".........Unlocking All The Lock Positions created till Now..........")
         })

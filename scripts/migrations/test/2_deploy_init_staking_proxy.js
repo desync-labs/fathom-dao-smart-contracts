@@ -183,6 +183,17 @@ module.exports = async function(deployer) {
 
     await vaultService.initAdminAndOperator(MultiSigWallet.address,deployedStakingProxy.address)
     let data = JSON.stringify(newAddresses);
-    fs.writeFileSync('./addresses.json', data);
+    fs.writeFileSync('./addresses.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
+    // await upgrades.deployProxy(
+    //     deployer,
+    //     StakingPackage.address,
+    //     toInitialize,
+    //     "StakingProxyAdmin",
+    //     "StakingProxy"
+    // )
 
 }
