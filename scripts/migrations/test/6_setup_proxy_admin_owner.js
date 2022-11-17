@@ -7,8 +7,6 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 module.exports = async function(deployer) {
     const stakingProxyAdmin = await ProxyAdmin.at(proxyAddress.StakingProxyAdmin)
     await stakingProxyAdmin.transferOwnership(MultiSigWallet.address)
-    // console.log(await stakingProxyAdmin.getProxyAdmin(proxyAddress.StakingProxy))
-    // console.log(await stakingProxyAdmin.address)
-    // console.log(MultiSigWallet.address);
-    console.log(await stakingProxyAdmin.getProxyImplementation(proxyAddress.StakingProxy))
+    const vaultProxyAdmin = await ProxyAdmin.at(proxyAddress.VaultProxyAdmin)
+    await vaultProxyAdmin.transferOwnership(MultiSigWallet.address)
 }

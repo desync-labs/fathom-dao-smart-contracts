@@ -284,7 +284,32 @@ contract StakingHandlers is
     }
 
     function setWeight(Weight memory _weight) override public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
+        require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
         weight = _weight;
+    }
+
+    function setVoteToken(address _voteToken) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        require(_voteToken != address(0), "zero addr");
+        voteToken = _voteToken;
+    }
+
+    function setRewardsCalculator(address _rewardsCalculator) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        require(_rewardsCalculator != address(0), "zero addr");
+        rewardsCalculator = _rewardsCalculator;
+    }  
+
+    function setVoteCoefficient(VoteCoefficient memory voteCoef) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        voteShareCoef = voteCoef.voteShareCoef;
+        voteLockCoef = voteCoef.voteLockCoef;
+    }  
+
+    function setMaxLockPeriod(uint256 _maxLockPeriod) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        maxLockPeriod = _maxLockPeriod;
+    }
+
+    function setMaxLockPositions(uint256 _maxLockPositions) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        maxLockPositions = _maxLockPositions;
     }
 
     // function setRewardsContract(address memory _rewardsContract) 

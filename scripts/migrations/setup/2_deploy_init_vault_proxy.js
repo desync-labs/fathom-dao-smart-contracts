@@ -2,6 +2,7 @@ const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.
 const fs = require('fs');
 
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
+const upgrades = require("../../tests/helpers/upgrades");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 
@@ -26,29 +27,33 @@ module.exports = async function(deployer) {
           ]
         },  [[MainToken.address]]);
 
-    let promises = [
-        deployer.deploy(ProxyAdmin, {gas:8000000})
-    ];
-    await Promise.all(promises);
-    const deployedVaultProxyAdmin = artifacts.require('./common/proxy/transparent/ProxyAdmin.sol');
+    // let promises = [
+    //     deployer.deploy(ProxyAdmin, {gas:8000000})
+    // ];
+    // await Promise.all(promises);
+    // const deployedVaultProxyAdmin = artifacts.require('./common/proxy/transparent/ProxyAdmin.sol');
     
-    await deployer.deploy(TransparentUpgradeableProxy, vault.address, ProxyAdmin.address, toInitialize,{gas:8000000})
+    // await deployer.deploy(TransparentUpgradeableProxy, vault.address, ProxyAdmin.address, toInitialize,{gas:8000000})
 
-    const deployedVaultProxy = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
+    // const deployedVaultProxy = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
     
-    let addressUpdate = {
-        VaultProxyAdmin:deployedVaultProxyAdmin.address,
-        VaultProxy: deployedVaultProxy.address
-    }
+    // let addressUpdate = {
+    //     VaultProxyAdmin:deployedVaultProxyAdmin.address,
+    //     VaultProxy: deployedVaultProxy.address
+    // }
     
-    const newAddresses = {
-        ...proxyAddress,
-        ...addressUpdate
-    }
+    // const newAddresses = {
+    //     ...proxyAddress,
+    //     ...addressUpdate
+    // }
 
-    let data = JSON.stringify(newAddresses);
-    fs.writeFileSync('./addresses.json', data);
+    // let data = JSON.stringify(newAddresses);
+    // fs.writeFileSync('./addresses.json', data);
+    [proxyAdminAddr, proxyAddr] = await upgrades.deployProxy(
+        deployer, 
+        vault.address, 
+        toInitialize, 
+        "VaultProxyAdmin",
+        "VaultProxy")
     
-    //initing twice! check other initializers also!
-    //await upgrades.deployProxy(deployer, vault.address, toInitialize)
 }

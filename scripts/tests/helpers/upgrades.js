@@ -34,7 +34,13 @@ async function deployProxy(
     }
     
     let data = JSON.stringify(newAddresses);
-    await fs.writeFileSync('./addresses.json', data);
+    fs.writeFileSync('./addresses.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
+
+    return [deployedProxyAdmin.address, deployedProxy.address]
 }
 
 module.exports = { deployProxy };

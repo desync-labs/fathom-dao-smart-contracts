@@ -1220,6 +1220,17 @@ describe("Staking Test", () => {
             ); 
             
         })
+
+        it('Should not be initalizable twice vault init owner', async() => {
+
+            const errorMessage = "Initializable: contract is already initialized";
+            await shouldRevert(
+                vaultService.initAdminAndOperator(multiSigWallet.address,stakingService.address, {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
+        })
     })
 });
    

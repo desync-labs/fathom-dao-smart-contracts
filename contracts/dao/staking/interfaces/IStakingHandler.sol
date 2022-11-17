@@ -58,4 +58,10 @@ interface IStakingHandler {
     function setWeight(Weight memory _weight)  external;
 
     function updateVault(address _vault) external;
+
+    function setVoteToken(address _voteToken)  external;
+    function setRewardsCalculator(address _rewardsCalculator) external;
+    function setVoteCoefficient(VoteCoefficient memory voteCoef) external;
+    function setMaxLockPeriod(uint256 _maxLockPeriod)  external;
+    function setMaxLockPositions(uint256 _maxLockPositions) external;
 }

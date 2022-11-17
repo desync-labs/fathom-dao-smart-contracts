@@ -154,7 +154,7 @@ const _encodeProposeStreamFunction = (
     return toRet;
 }
 
-describe("Staking Test", () => {
+describe("Staking Test and Upgrade Test", () => {
 
     const oneYear = 31556926;
     let stakingService;
@@ -452,14 +452,13 @@ describe("Staking Test", () => {
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
             const StakingUpgrade = artifacts.require('./dao/staking/packages/StakingUpgrade.sol');
-            console.log(proxyAddress.StakingProxyAdmin)
-            console.log(stakingUpgrade.address)
             await _proposeUpgrade(
                 proxyAddress.StakingProxy,
                 stakingUpgrade.address
             )
             
             stakingService = await StakingUpgrade.at(proxyAddress.StakingProxy)
+            //getLockInfo New function added to StakingUpgrade.
             console.log((await stakingService.getLockInfo(staker_1,1)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })

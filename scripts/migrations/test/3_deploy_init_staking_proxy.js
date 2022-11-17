@@ -162,45 +162,15 @@ module.exports = async function(deployer) {
                 [1024,256,3000,100,10], scheduleTimes,scheduleRewards, tau, 
                 [vMainTokenCoefficient,lockingVoteWeight], maxNumberOfLocks, RewardsCalculator.address]);
         
-        let promises = [
-            deployer.deploy(ProxyAdmin, {gas:8000000})
-        ];
-
-        await Promise.all(promises);
-        const deployedStakingProxyAdmin = artifacts.require('./common/proxy/transparent/ProxyAdmin.sol');
-
-        await deployer.deploy(TransparentUpgradeableProxy, StakingPackage.address, ProxyAdmin.address, toInitialize,{gas:8000000})
-        const deployedStakingProxy = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
-
-        let addressUpdate = {
-            StakingProxyAdmin:deployedStakingProxyAdmin.address,
-            StakingProxy: deployedStakingProxy.address
-        }
-        
-        const newAddresses = {
-            ...proxyAddress,
-            ...addressUpdate
-        }
-
-        await vaultService.initAdminAndOperator(MultiSigWallet.address,deployedStakingProxy.address)
-        
-      //  await deployedStakingProxyAdmin.changeProxyAdmin(deployedStakingProxy.address, MultiSigWallet.address);
-        
-        let data = JSON.stringify(newAddresses);
-        fs.writeFileSync('./addresses.json',data, function(err){
-            if(err){
-                console.log(err)
-            }
-        })
+        [proxyAdminAddr, proxyAddr] = await upgrades.deployProxy(
+            deployer, 
+            StakingPackage.address, 
+            toInitialize, 
+            "StakingProxyAdmin",
+            "StakingProxy")
+        await vaultService.initAdminAndOperator(MultiSigWallet.address,proxyAddr)
     }catch(error){
         console.log(error)
     }
-    // await upgrades.deployProxy(
-    //     deployer,
-    //     StakingPackage.address,
-    //     toInitialize,
-    //     "StakingProxyAdmin",
-    //     "StakingProxy"
-    // )
 
 }
