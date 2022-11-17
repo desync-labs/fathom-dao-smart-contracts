@@ -1,4 +1,3 @@
-const { Manifest, logWarning, ProxyDeployment, BeaconProxyUnsupportedError } = require('@openzeppelin/upgrades-core');
 const ProxyAdmin = artifacts.require('./common/proxy/transparent/ProxyAdmin.sol');
 const TransparentUpgradeableProxy = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
 const fs = require('fs');
