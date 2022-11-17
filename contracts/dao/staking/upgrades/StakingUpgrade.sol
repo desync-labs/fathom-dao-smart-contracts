@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: AGPL 3.0
+// Original Copyright Aurora
+// Copyright Fathom 2022
 pragma solidity 0.8.13;
-import "./StakingHandler.sol";
+import "../packages/StakingHandler.sol";
 interface IStakingUpgrade{
      function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 }

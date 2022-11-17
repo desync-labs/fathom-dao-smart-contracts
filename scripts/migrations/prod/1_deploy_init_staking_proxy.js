@@ -169,6 +169,7 @@ module.exports = async function(deployer) {
             "StakingProxyAdmin",
             "StakingProxy")
         await vaultService.initAdminAndOperator(MultiSigWallet.address,proxyAddr)
+    
     }catch(error){
         console.log(error)
     }

@@ -163,7 +163,7 @@ describe("Staking Test and Upgrade Test", () => {
     let FTHMToken;
     let vMainToken;
     let stakingUpgrade;
-    let proxyAdmin;
+    let vaultUpgrade;
     let multiSigWallet;
     let streamReward1;
     let streamReward2;
@@ -223,9 +223,9 @@ describe("Staking Test and Upgrade Test", () => {
             "StakingUpgrade"
         )
 
-        proxyAdmin = await artifacts.initializeInterfaceAt(
-            "ProxyAdmin",
-            "ProxyAdmin"
+        vaultUpgrade = await artifacts.initializeInterfaceAt(
+            "VaultUpgrade",
+            "VaultUpgrade"
         )
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -429,7 +429,7 @@ describe("Staking Test and Upgrade Test", () => {
         //     await blockchain.mineBlock(await _getTimeStamp() + 20);
         // })
 
-        it('Should upgrade by mulitsig and call new function', async() => {
+        it('Should upgrade Staking by mulitsig and call new function getLockInfo', async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const _proposeUpgrade = async (
                 _proxy,
@@ -451,7 +451,7 @@ describe("Staking Test and Upgrade Test", () => {
     
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
-            const StakingUpgrade = artifacts.require('./dao/staking/packages/StakingUpgrade.sol');
+            const StakingUpgrade = artifacts.require('./dao/staking/upgrades/StakingUpgrade.sol');
             await _proposeUpgrade(
                 proxyAddress.StakingProxy,
                 stakingUpgrade.address
@@ -460,6 +460,39 @@ describe("Staking Test and Upgrade Test", () => {
             stakingService = await StakingUpgrade.at(proxyAddress.StakingProxy)
             //getLockInfo New function added to StakingUpgrade.
             console.log((await stakingService.getLockInfo(staker_1,1)).toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+        })
+
+        it('Should upgrade Vault by mulitsig and call new function getSupportedToken', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const _proposeUpgrade = async (
+                _proxy,
+                _impl
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    proxyAddress.VaultProxyAdmin, 
+                    EMPTY_BYTES, 
+                    _encodeUpgradeFunction(
+                        _proxy,
+                        _impl
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            const VaultUpgrade = artifacts.require('./dao/staking/upgrades/VaultUpgrade.sol');
+            await _proposeUpgrade(
+                proxyAddress.VaultProxy,
+                vaultUpgrade.address
+            )
+            
+            vaultService = await VaultUpgrade.at(proxyAddress.VaultProxy)
+            console.log((await vaultService.getIsSupportedToken(FTHMToken.address)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
@@ -585,6 +618,7 @@ describe("Staking Test and Upgrade Test", () => {
             ); 
             
         })
+
 
         
     })
