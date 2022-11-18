@@ -51,8 +51,7 @@ interface IStakingHandler {
     function claimAllStreamRewardsForLock(uint256 lockId) external;
     function claimAllLockRewardsForStream(uint256 streamId) external;
 
-    function withdrawRewards(uint256 streamId) external;
-    function withdrawRewardsFromAllStreams() external;
+    function withdrawAllRewards() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
     function setWeight(Weight memory _weight)  external;

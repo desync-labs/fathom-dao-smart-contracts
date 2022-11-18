@@ -248,6 +248,7 @@ contract StakingHandlers is
         require(lockId <= locks[msg.sender].length, "bad lockid");
         _updateStreamRPS();
         _moveRewardsToPending(msg.sender, streamId, lockId);
+        _withdraw(streamId);
     }
     
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
@@ -255,26 +256,21 @@ contract StakingHandlers is
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
+        for (uint256 i = 0; i < streams.length; i++) {
+            _withdraw(i);
+        }
     }
 
     function claimAllLockRewardsForStream(uint256 streamId) public override pausable(1) {
         _updateStreamRPS();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
-    }
-    /**
-     * @dev withdraw amount in the pending pool. User should wait for
-     * pending time (tau constant) in order to be able to withdraw.
-     */
-    function withdrawRewards(uint256 streamId) public override pausable(1) {
-        require(block.timestamp > users[msg.sender].releaseTime[streamId], "not released");
         _withdraw(streamId);
     }
-
     /**
      * @dev withdraw all claimed balances which have passed pending period.
      * This function will reach gas limit with too many streams
      */
-    function withdrawRewardsFromAllStreams() public override pausable(1) {
+    function withdrawAllRewards() public override pausable(1) {
         User storage userAccount = users[msg.sender];
         for (uint256 i = 0; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i]) {
