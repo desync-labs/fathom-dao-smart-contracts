@@ -312,8 +312,6 @@ contract StakingHandlers is
         maxLockPositions = _maxLockPositions;
     }
 
-    // function setRewardsContract(address memory _rewardsContract) 
-
     function updateVault(address _vault)
         public
         override

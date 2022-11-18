@@ -1,4 +1,3 @@
-const PackageStaking = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
 const StakingGettersHelper = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 const fs = require('fs');
 

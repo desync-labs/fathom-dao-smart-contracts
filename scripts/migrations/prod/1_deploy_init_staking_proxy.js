@@ -1,10 +1,7 @@
 const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 const fs = require('fs');
-
 const VaultPackage = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
-const TransparentUpgradeableProxy = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
-const ProxyAdmin = artifacts.require('./common/proxy/transparent/ProxyAdmin.sol');
 
 const blockchain = require("../../tests/helpers/blockchain");
 const upgrades = require("../../tests/helpers/upgrades");

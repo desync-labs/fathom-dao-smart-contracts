@@ -1,7 +1,6 @@
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 const IVMainToken = artifacts.require('./dao/tokens/IVMainToken.sol');
 
-const StakingPackage = artifacts.require('./common/proxy/transparent/TransparentUpgradeableProxy.sol');
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const fs = require('fs');

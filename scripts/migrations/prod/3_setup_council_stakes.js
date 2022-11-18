@@ -2,7 +2,6 @@ const eventsHelper = require("../../tests/helpers/eventsHelper");
 const fs = require('fs');
 
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
-const StakingPackage = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 const IERC20 = artifacts.require("./dao/tokens/ERC20/IERC20.sol");
