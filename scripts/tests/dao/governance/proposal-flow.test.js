@@ -94,16 +94,6 @@ describe('Proposal flow', () => {
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
 
-        // stakingService = await artifacts.initializeInterfaceAt(
-        //     "StakingPackage",
-        //     "StakingPackage"
-        // );
-
-        // vaultService = await artifacts.initializeInterfaceAt(
-        //     "VaultPackage",
-        //     "VaultPackage"
-        // );
-
         const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
         stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
         const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
@@ -167,7 +157,6 @@ describe('Proposal flow', () => {
 
     });
 
-    // TODO: Needs to revert when there is no value
     describe("Box contract", async() => {
 
         it('Retrieve returns a value previously stored', async() => {
@@ -187,10 +176,7 @@ describe('Proposal flow', () => {
 
     });
 
-
     describe("Staking MainToken to receive vMainToken token", async() => {
-
-    
         const _transferFromMultiSigTreasury = async (_account) => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 

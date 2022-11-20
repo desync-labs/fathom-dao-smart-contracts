@@ -17,15 +17,13 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
     // Mapping to keep track of who is allowed to transfer voting tokens
     mapping(address => bool) public isWhiteListed;
 
-    constructor(
-        string memory name_,
-        string memory symbol_
-    ) ERC20Votes(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_) ERC20Votes(name_, symbol_) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function initToken(address _admin, address _minter) public override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!initialized,"already init");
+        require(!initialized, "already init");
+        initialized = true;
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
         _grantRole(MINTER_ROLE, _minter);
@@ -35,7 +33,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
 
         isWhiteListed[_minter] = true;
         emit MemberAddedToWhitelist(_minter);
-        initialized = true;
     }
 
     function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {
@@ -65,20 +62,12 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         _burn(account, amount);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override whenNotPaused {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
         require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal override {
         super._afterTokenTransfer(from, to, amount);
     }
 

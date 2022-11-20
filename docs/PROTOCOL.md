@@ -749,12 +749,12 @@ The Flow:
      function _moveAllRewardsToPending(address account, uint256 lockId) internal
      
 ```
-* After claiming rewards a staker can withdrawRewards() their rewards.
+* After claiming rewards a staker can withdrawStream() their rewards.
 ```
     /** 
      * @dev withdraw amount in the pending pool. 
      */
-    function withdrawRewards(uint256 streamId) external override
+    function withdrawStream(uint256 streamId) external override
 ```
 
 ---

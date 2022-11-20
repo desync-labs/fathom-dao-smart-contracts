@@ -19,15 +19,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
     mapping(bytes32 => uint256) private _timestamps;
     uint256 private _minDelay;
 
-    event CallScheduled(
-        bytes32 indexed id,
-        uint256 indexed index,
-        address target,
-        uint256 value,
-        bytes data,
-        bytes32 predecessor,
-        uint256 delay
-    );
+    event CallScheduled(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data, bytes32 predecessor, uint256 delay);
 
     event CallExecuted(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data);
 
@@ -54,12 +46,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         _;
     }
 
-    function initialize(
-        uint256 minDelay,
-        address admin,
-        address[] memory proposers,
-        address[] memory executors
-    ) public override initializer {
+    function initialize(uint256 minDelay, address admin, address[] memory proposers, address[] memory executors) public override initializer {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -214,11 +201,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         return keccak256(abi.encode(targets, values, payloads, predecessor, salt));
     }
 
-    function _execute(
-        address target,
-        uint256 value,
-        bytes memory data
-    ) internal virtual {
+    function _execute(address target, uint256 value, bytes memory data) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
         require(success, "TimelockController: underlying transaction reverted");
     }

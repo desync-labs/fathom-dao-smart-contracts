@@ -5,7 +5,6 @@ import "./TokenTimelock.sol";
 import "./interfaces/ITokenTimelockFactory.sol";
 import "../../../common/access/AccessControl.sol";
 
-
 contract TokenTimelockFactory is ITokenTimelockFactory, AccessControl {
     bytes32 public constant DEPLOYER_ROLE = keccak256("DEPLOYER_ROLE");
 
@@ -31,13 +30,13 @@ contract TokenTimelockFactory is ITokenTimelockFactory, AccessControl {
         for (uint256 i = 0; i < length; i++) {
             TokenTimelock tokenTimelock = new TokenTimelock(IERC20(token), beneficiaries[i], releaseTimes[i]);
             tokenTimelocks.push(address(tokenTimelock));
-            
+
             tokenTimelocksCount += 1;
             emit TokenTimelockDeployed(address(tokenTimelock));
 
             result[i] = address(tokenTimelock);
         }
-        
+
         return result;
     }
 }

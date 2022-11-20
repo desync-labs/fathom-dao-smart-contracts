@@ -36,7 +36,6 @@ TO INCLUDE:
 const blockchain = require("../helpers/blockchain");
 const eventsHelper = require("../helpers/eventsHelper");
 const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
@@ -52,39 +51,25 @@ const NEW_STORE_VALUE = "142";
 
 // / proposal 2
 const PROPOSAL_DESCRIPTION_2 = "Proposal #2: Distribute funds from treasury to accounts[5]";
-const AMOUNT_OUT_TREASURY = "200";
 
 // Events
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-
-// Token variables
-const T_TOKEN_TO_MINT = "10000000000000000000000";
 
 
 const SYSTEM_ACC = accounts[0];
 const staker_1 = accounts[6];
 const staker_2 = accounts[3];
 const staker_9 = accounts[9];
-const stream_owner = accounts[2];
 
 const comity_1 = accounts[0];
 const comity_2 = accounts[1];
 
-const stream_manager = accounts[4];
 const stream_rewarder_1 = accounts[5];
 
 let vault_test_address;
 let treasury;
 
-const _createVoteWeights = (
-    voteShareCoef,
-    voteLockCoef) => {
-    return {
-        voteShareCoef: voteShareCoef,
-        voteLockCoef: voteLockCoef
-    }
-}
 const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'withdrawPenalty',
@@ -98,20 +83,6 @@ const _encodeWithdrawPenaltyFunction = (_account) => {
     return toRet;
 }
 
-const _createWeightObject = (
-    maxWeightShares,
-    minWeightShares,
-    maxWeightPenalty,
-    minWeightPenalty,
-    weightMultiplier) => {
-    return {
-        maxWeightShares: maxWeightShares,
-        minWeightShares: minWeightShares,
-        maxWeightPenalty: maxWeightPenalty,
-        minWeightPenalty: minWeightPenalty,
-        penaltyWeightMultiplier: weightMultiplier
-    }
-}
 
 const maxGasForTxn = 600000
 
@@ -134,18 +105,11 @@ const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
     return beforeBalanceBN.sub(depositAmountBN)
 }
 
-const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
-    const pendingAmountBN = new web3.utils.BN(pendingAmount);
-    const beforeBalanceBN = new web3.utils.BN(beforeBalance)
-    return beforeBalanceBN.add(pendingAmountBN)
-}
-
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
 
 const _encodeConfirmation = async (_proposalId) => {
-    const timestamp = await blockchain.getLatestBlockTimestamp()
     return web3.eth.abi.encodeFunctionCall({
             name: 'confirmProposal',
             type: 'function',
@@ -155,8 +119,6 @@ const _encodeConfirmation = async (_proposalId) => {
             }]
         }, [_proposalId.toString()]);
     }
-
-
 
 const _encodeTransferFunction = (_account, t_to_stake) => {
     // encoded transfer function call for the main token.
@@ -190,11 +152,8 @@ const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
         },{
             type: 'address',
             name: 'account'
-        },{
-            type: 'bool',
-            name: 'flag'
         }]
-    }, [amount, lockPeriod, account, flag]);
+    }, [amount, lockPeriod, account]);
 
     return toRet;
 }
@@ -277,7 +236,6 @@ const _encodeProposeStreamFunction = (
 }
 
 describe("DAO Demo", () => {
-    const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
     let stakingService;
     let stakingGetterService;
@@ -286,18 +244,10 @@ describe("DAO Demo", () => {
     let vMainToken;
 
     let streamReward1;
-    let vMainTokenAddress;
     let FTHMTokenAddress;
     let streamReward1Address;
 
-    let maxWeightShares;
-    let minWeightShares;
-    let maxWeightPenalty;
-    let minWeightPenalty;
-    let vMainTokenCoefficient;
     let lockingVoteWeight;
-    let totalAmountOfStreamShares;
-    let maxNumberOfLocks;
     let proxyAddress;
 
     let encodedConfirmation1;
@@ -334,7 +284,6 @@ describe("DAO Demo", () => {
     const sumToDeposit = web3.utils.toWei('1000', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('5000','ether');
-    const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
         proxyAddress = JSON.parse(rawdata);
@@ -352,21 +301,7 @@ describe("DAO Demo", () => {
         timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
 
         await snapshot.revertToSnapshot();
-        maxWeightShares = 1024;
-        minWeightShares = 256;
-        maxWeightPenalty = 3000;
-        minWeightPenalty = 100;
-        weightMultiplier = 10;
-        maxNumberOfLocks = 10;
         
-        const weightObject =  _createWeightObject(
-            maxWeightShares,
-            minWeightShares,
-            maxWeightPenalty,
-            minWeightPenalty,
-            weightMultiplier)
-        //this is used for stream shares calculation.
-        vMainTokenCoefficient = 500;
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
@@ -374,16 +309,6 @@ describe("DAO Demo", () => {
         stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
         const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
         vaultService = await IVault.at(proxyAddress.VaultProxy)
-
-        // stakingService = await artifacts.initializeInterfaceAt(
-        //     "StakingPackage",
-        //     "StakingPackage"
-        // );
-
-        // vaultService = await artifacts.initializeInterfaceAt(
-        //     "VaultPackage",
-        //     "VaultPackage"
-        // );
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
@@ -393,8 +318,6 @@ describe("DAO Demo", () => {
             "RewardsCalculator",
             "RewardsCalculator"
         )
-
-        
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
@@ -428,23 +351,6 @@ describe("DAO Demo", () => {
         vault_test_address = vaultService.address;
 
         await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
-
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
-
-        const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
-            web3.utils.toWei("0", 'ether')
-        ]
-        const scheduleTimes = [
-            startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
-        ]
 
         const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
             const result = await multiSigWallet.submitTransaction(
@@ -490,12 +396,12 @@ describe("DAO Demo", () => {
             const beforeLockTimestamp = await _getTimeStamp()
             let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
-            // console.log(".........Total Staked Protocol Token Amount for Lock Position for a year", _convertToEtherBalance(sumToDeposit));
+            console.log(".........Total Staked Protocol Token Amount for Lock Position for a year", _convertToEtherBalance(sumToDeposit));
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
             const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
-            //// console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
+            console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
         it('Should create a lock possition with lockId = 2 for staker_1', async() => {
@@ -504,18 +410,18 @@ describe("DAO Demo", () => {
             const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
             let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1, {from: staker_1});
-            // console.log(".........Total Staked Protocol Token Amount for Lock Position for 1/2 a year", _convertToEtherBalance(sumToDeposit));
+            console.log(".........Total Staked Protocol Token Amount for Lock Position for 1/2 a year", _convertToEtherBalance(sumToDeposit));
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
             const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
-            //// console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 / 2 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
+            console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 / 2 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
         
         it("Should update total vote token balance.", async() => {
-            // console.log(".........Released VOTE tokens to staker 1 based upon two lock positions.",_convertToEtherBalance(expectedTotalAmountOfVFTHM), 'VOTE Tokens')
+            console.log(".........Released VOTE tokens to staker 1 based upon two lock positions.",_convertToEtherBalance(expectedTotalAmountOfVFTHM), 'VOTE Tokens')
         })
 
         it('Should create 2 lock positions with lockId = 1 and lockId = 2 for staker_2', async() => {
@@ -629,21 +535,16 @@ describe("DAO Demo", () => {
 
     });
 
-
-
     describe('Governance', async() => {
-
-
         it('Consider a contract owned by the governor called: Box', async() => {
 
-            // console.log("=================================== MAX ==================================")
             // Store a value
             await box.store(5);
 
             // Test if the returned value is the same one
             expect((await box.retrieve()).toString()).to.equal('5');
-            // console.log(".........The initial value stored in the box contract is: .........");
-            // console.log((await box.retrieve()).toString());
+            console.log(".........The initial value stored in the box contract is: .........");
+            console.log((await box.retrieve()).toString());
 
 
         });
@@ -795,8 +696,8 @@ describe("DAO Demo", () => {
             // Test if the returned value is the new value
             expect((await box.retrieve()).toString()).to.equal(NEW_STORE_VALUE);
 
-            // console.log(".........The new updated value stored in the box contract is:.........");
-            // console.log((await box.retrieve()).toString());
+            console.log(".........The new updated value stored in the box contract is:.........");
+            console.log((await box.retrieve()).toString());
         });
     });
 
@@ -807,13 +708,13 @@ describe("DAO Demo", () => {
             await stakingService.earlyUnlock(lockId, {from: staker_2});
 
             pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_2,streamId)
-            // console.log(".........Pending user Balance with early withdrawal: (around 72% due to  early unlock punishment)",_convertToEtherBalance(pendingStakedFTHM.toString()))
+            console.log(".........Pending user Balance with early withdrawal: (around 72% due to  early unlock punishment)",_convertToEtherBalance(pendingStakedFTHM.toString()))
         });
 
         it('The protocol can now withdraw penalty accrued to the treasury', async() =>{
             await blockchain.mineBlock(10 + await _getTimeStamp());
             const beforeBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
-            // console.log(".........The balance of treasury before withdrawing the penalty due to early withdrawal",_convertToEtherBalance(beforeBalanceOfTreasury.toString()))
+            console.log(".........The balance of treasury before withdrawing the penalty due to early withdrawal",_convertToEtherBalance(beforeBalanceOfTreasury.toString()))
             let beforeTotalPenaltyBalance = await stakingService.totalPenaltyBalance();
 
             const _withdrawEarlyPenalty = async(
@@ -837,7 +738,7 @@ describe("DAO Demo", () => {
             await _withdrawEarlyPenalty(multiSigWallet.address)
             
             afterBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
-            // console.log(".........The balance of treasury after withdrawing the penalty due to early withdrawal",_convertToEtherBalance(afterBalanceOfTreasury.toString()))
+            console.log(".........The balance of treasury after withdrawing the penalty due to early withdrawal",_convertToEtherBalance(afterBalanceOfTreasury.toString()))
             const expectedDifferenceInBalance = _calculateRemainingBalance(beforeBalanceOfTreasury.toString(),afterBalanceOfTreasury.toString())
             expectedDifferenceInBalance.should.be.bignumber.equal(beforeTotalPenaltyBalance.toString())
             const currentTotalPenaltyBalance = await stakingService.totalPenaltyBalance();
@@ -850,8 +751,6 @@ describe("DAO Demo", () => {
     describe("VC Treasury Distribution Through Governor", async() => {
 
         it('Prepare encoded funciton calls', async() =>{
-
-            // console.log("=================================== MAX ==================================" );
 
             encoded_transfer_function = web3.eth.abi.encodeFunctionCall({
                 name: 'transfer',
@@ -1008,7 +907,7 @@ describe("DAO Demo", () => {
             // Balance of account 5 should reflect the funds distributed from treasury in proposal 2
             // expect((await mainToken.balanceOf(staker_1, {"from": staker_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
             const staker_9Balance = await FTHMToken.balanceOf(staker_9);
-            // console.log(".........The balance of the recipient after release of treasury funds is",_convertToEtherBalance(staker_9Balance.toString()))
+            console.log(".........The balance of the recipient after release of treasury funds is",_convertToEtherBalance(staker_9Balance.toString()))
 
         });        
     });
@@ -1096,15 +995,20 @@ describe("DAO Demo", () => {
         it("Wait one year and unlock more than was staked, because of staking rewards", async() => {
 
             const oneYr = 365 * 24 * 60 * 60;
+            const threeSec = 3 * 60;
 
             const amount2 = 200000*10**18;
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_1});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_1});
             expect(parseInt(await FTHMToken.balanceOf(comity_1))).to.be.above(amount2);
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_2});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_2});
             expect(parseInt(await FTHMToken.balanceOf(comity_2))).to.be.above(amount2);
 
         })

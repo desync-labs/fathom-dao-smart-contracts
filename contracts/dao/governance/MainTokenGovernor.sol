@@ -27,11 +27,7 @@ contract MainTokenGovernor is
         uint256 _initialProposalThreshold
     )
         Governor("MainTokenGovernor", _multiSig)
-        GovernorSettings(
-            _initialVotingDelay,
-            _votingPeriod,
-            _initialProposalThreshold
-        )
+        GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
@@ -50,12 +46,7 @@ contract MainTokenGovernor is
         return super.proposalThreshold();
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(Governor, GovernorTimelockControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view override(Governor, GovernorTimelockControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -67,12 +58,7 @@ contract MainTokenGovernor is
         return super.votingPeriod();
     }
 
-    function quorum(uint256 blockNumber)
-        public
-        view
-        override(IGovernor, GovernorVotesQuorumFraction)
-        returns (uint256)
-    {
+    function quorum(uint256 blockNumber) public view override(IGovernor, GovernorVotesQuorumFraction) returns (uint256) {
         return super.quorum(blockNumber);
     }
 

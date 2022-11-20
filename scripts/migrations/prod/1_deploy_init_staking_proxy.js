@@ -1,13 +1,10 @@
-const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 const fs = require('fs');
-const VaultPackage = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
 
 const blockchain = require("../../tests/helpers/blockchain");
-const upgrades = require("../../tests/helpers/upgrades");
+const upgrades = require("../../helpers/upgrades");
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
-const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 const StakingPackage = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
@@ -15,7 +12,6 @@ const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
 
-const Vault = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
 const rawdata = fs.readFileSync('../../../addresses.json');
 let proxyAddress = JSON.parse(rawdata);
 
@@ -65,8 +61,6 @@ const lockingVoteWeight = 365 * 24 * 60 * 60;
 
 module.exports = async function(deployer) {
     try{
-        const stakingService = await IStaking.at(StakingPackage.address);
-        
         const weightObject =  _createWeightObject(
             maxWeightShares,
             minWeightShares,
@@ -106,7 +100,8 @@ module.exports = async function(deployer) {
             inputs: [{
                 type: 'address',
                 name: '_admin'
-            },{
+            },
+            {
                 type: 'address',
                 name: '_vault'
             },
@@ -132,10 +127,12 @@ module.exports = async function(deployer) {
             {
                 type: 'uint256[]',
                 name: 'scheduleTimes'
-            },{
+            },
+            {
                 type: 'uint256[]',
                 name: 'scheduleRewards'
-            },{
+            },
+            {
                 type: 'uint256',
                 name: 'tau'
             },
@@ -146,28 +143,30 @@ module.exports = async function(deployer) {
                     {"type": "uint32", "name":"voteShareCoef"},
                     {"type": "uint32", "name":"voteLockCoef"}
                 ]
-            },{
+            },
+            {
                 type: 'uint256',
                 name: '_maxLocks'
             },
             {
                 type: 'address',
                 name: '_rewardsContract'
-            }
-            ]
-            },  [MultiSigWallet.address,vaultService.address, MainToken.address, VMainToken.address, 
-                [1024,256,3000,100,10], scheduleTimes,scheduleRewards, tau, 
-                [vMainTokenCoefficient,lockingVoteWeight], maxNumberOfLocks, RewardsCalculator.address]);
+            }]
+            },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
+                weightObject, scheduleTimes, scheduleRewards, tau, 
+                voteObject, maxNumberOfLocks, RewardsCalculator.address]);
         
         [proxyAdminAddr, proxyAddr] = await upgrades.deployProxy(
             deployer, 
             StakingPackage.address, 
             toInitialize, 
             "StakingProxyAdmin",
-            "StakingProxy")
+            "StakingProxy"
+        );
+        
         await vaultService.initAdminAndOperator(MultiSigWallet.address,proxyAddr)
     
-    }catch(error){
+    } catch(error) {
         console.log(error)
     }
 

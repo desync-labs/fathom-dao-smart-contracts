@@ -26,8 +26,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     event ExecuteProposal(address indexed signer, uint indexed proposalId);
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
-    bytes32 public constant EXTENDED_BALLOT_TYPEHASH =
-        keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
+    bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
 
     string private _name;
     uint256[] private proposalIds;
@@ -65,10 +64,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         _;
     }
 
-    constructor(
-        string memory name_,
-        address _multiSig
-    ) EIP712(name_, version()) {
+    constructor(string memory name_, address _multiSig) EIP712(name_, version()) {
         _name = name_;
         multiSig = _multiSig;
     }
@@ -86,10 +82,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
 
         ProposalState status = state(proposalId);
-        require(
-            status == ProposalState.Succeeded || status == ProposalState.Queued,
-            "Governor: proposal not successful"
-        );
+        require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
 
         _proposals[proposalId].executed = true;
 
@@ -107,11 +100,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _castVote(proposalId, voter, support, "");
     }
 
-    function castVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string memory reason
-    ) public virtual override returns (uint256) {
+    function castVoteWithReason(uint256 proposalId, uint8 support, string memory reason) public virtual override returns (uint256) {
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, reason);
     }
@@ -126,19 +115,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _castVote(proposalId, voter, support, reason, params);
     }
 
-    function castVoteBySig(
-        uint256 proposalId,
-        uint8 support,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public virtual override returns (uint256) {
-        address voter = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support))),
-            v,
-            r,
-            s
-        );
+    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) public virtual override returns (uint256) {
+        address voter = ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support))), v, r, s);
         return _castVote(proposalId, voter, support, "");
     }
 
@@ -152,17 +130,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes32 s
     ) public virtual override returns (uint256) {
         address voter = ECDSA.recover(
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        EXTENDED_BALLOT_TYPEHASH,
-                        proposalId,
-                        support,
-                        keccak256(bytes(reason)),
-                        keccak256(params)
-                    )
-                )
-            ),
+            _hashTypedDataV4(keccak256(abi.encode(EXTENDED_BALLOT_TYPEHASH, proposalId, support, keccak256(bytes(reason)), keccak256(params)))),
             v,
             r,
             s
@@ -177,10 +145,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes[] memory calldatas,
         string memory description
     ) public virtual override returns (uint256) {
-        require(
-            getVotes(_msgSender(), block.number - 1) >= proposalThreshold(),
-            "Governor: proposer votes below proposal threshold"
-        );
+        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below proposal threshold");
 
         uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
 
@@ -200,17 +165,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         proposalIds.push(proposalId);
 
-        emit ProposalCreated(
-            proposalId,
-            _msgSender(),
-            targets,
-            values,
-            new string[](targets.length),
-            calldatas,
-            snapshot,
-            deadline,
-            description
-        );
+        emit ProposalCreated(proposalId, _msgSender(), targets, values, new string[](targets.length), calldatas, snapshot, deadline, description);
 
         return proposalId;
     }
@@ -229,12 +184,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
-    function getProposals(uint _numIndexes) public view override returns (
-        string[] memory,
-        string[] memory,
-        string[] memory
-    )
-    {
+    function getProposals(uint _numIndexes) public view override returns (string[] memory, string[] memory, string[] memory) {
         uint len = proposalIds.length;
 
         if (len == 0) {
@@ -249,12 +199,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _getProposals1(_numIndexes);
     }
 
-    function _getProposals1(uint _numIndexes) internal view returns (
-        string[] memory,
-        string[] memory,
-        string[] memory
-    )
-    {
+    function _getProposals1(uint _numIndexes) internal view returns (string[] memory, string[] memory, string[] memory) {
         string[] memory _statusses = new string[](_numIndexes);
         string[] memory _descriptionsArray = new string[](_numIndexes);
         string[] memory _proposalIds = new string[](_numIndexes);
@@ -299,11 +244,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _getVotes(account, blockNumber, _defaultParams());
     }
 
-    function getVotesWithParams(
-        address account,
-        uint256 blockNumber,
-        bytes memory params
-    ) public view virtual override returns (uint256) {
+    function getVotesWithParams(address account, uint256 blockNumber, bytes memory params) public view virtual override returns (uint256) {
         return _getVotes(account, blockNumber, params);
     }
 
@@ -381,16 +322,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return uint256(keccak256(abi.encode(targets, values, calldatas, descriptionHash)));
     }
 
-    function _countVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        uint256 weight,
-        bytes memory params
-    ) internal virtual;
+    function _countVote(uint256 proposalId, address account, uint8 support, uint256 weight, bytes memory params) internal virtual;
 
     function _execute(
-        uint256, /* proposalId */
+        uint256 /* proposalId */,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
@@ -404,9 +339,9 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function _beforeExecute(
-        uint256, /* proposalId */
+        uint256 /* proposalId */,
         address[] memory targets,
-        uint256[] memory, /* values */
+        uint256[] memory /* values */,
         bytes[] memory calldatas,
         bytes32 /*descriptionHash*/
     ) internal virtual {
@@ -420,10 +355,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function _afterExecute(
-        uint256, /* proposalId */
-        address[] memory, /* targets */
-        uint256[] memory, /* values */
-        bytes[] memory, /* calldatas */
+        uint256 /* proposalId */,
+        address[] memory /* targets */,
+        uint256[] memory /* values */,
+        bytes[] memory /* calldatas */,
         bytes32 /*descriptionHash*/
     ) internal virtual {
         if (_executor() != address(this)) {
@@ -453,12 +388,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return proposalId;
     }
 
-    function _castVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        string memory reason
-    ) internal virtual returns (uint256) {
+    function _castVote(uint256 proposalId, address account, uint8 support, string memory reason) internal virtual returns (uint256) {
         return _castVote(proposalId, account, support, reason, _defaultParams());
     }
 
@@ -484,15 +414,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return weight;
     }
 
-    function _getProposalsAll(uint len)
-        internal
-        view
-        returns (
-            string[] memory,
-            string[] memory,
-            string[] memory
-        )
-    {
+    function _getProposalsAll(uint len) internal view returns (string[] memory, string[] memory, string[] memory) {
         string[] memory _statusses = new string[](len);
         string[] memory _descriptionsArray = new string[](len);
         string[] memory _proposalIds = new string[](len);
@@ -513,15 +435,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return (_proposalIds, _descriptionsArray, _statusses);
     }
 
-    function _getProposals(uint _numIndexes, uint len)
-        internal
-        view
-        returns (
-            string[] memory,
-            string[] memory,
-            string[] memory
-        )
-    {
+    function _getProposals(uint _numIndexes, uint len) internal view returns (string[] memory, string[] memory, string[] memory) {
         string[] memory _statusses = new string[](_numIndexes);
         string[] memory _descriptionsArray = new string[](_numIndexes);
         string[] memory _proposalIds = new string[](_numIndexes);
@@ -552,11 +466,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     function _voteSucceeded(uint256 proposalId) internal view virtual returns (bool);
 
-    function _getVotes(
-        address account,
-        uint256 blockNumber,
-        bytes memory params
-    ) internal view virtual returns (uint256);
+    function _getVotes(address account, uint256 blockNumber, bytes memory params) internal view virtual returns (uint256);
 
     function _defaultParams() internal view virtual returns (bytes memory) {
         return "";

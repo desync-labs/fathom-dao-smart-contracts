@@ -7,7 +7,7 @@ pragma solidity 0.8.13;
 import "./IAdminPausable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract AdminPausable is IAdminPausable,AccessControlUpgradeable {
+contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     uint256 public paused;
 
@@ -19,7 +19,7 @@ contract AdminPausable is IAdminPausable,AccessControlUpgradeable {
     /// @dev adminPause pauses this contract. Only pause role or default
     /// admin role can access this function.
     /// @param flags flags variable is used for pausing this contract.
-    function adminPause(uint256 flags) external override onlyRole(PAUSE_ROLE){
+    function adminPause(uint256 flags) external override onlyRole(PAUSE_ROLE) {
         // pause role can pause the contract, however only default admin role can unpause
         require((paused & flags) == paused || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "only admin can unpause");
         paused = flags;

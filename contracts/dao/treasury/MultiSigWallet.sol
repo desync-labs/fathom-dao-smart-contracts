@@ -20,17 +20,14 @@ contract MultiSigWallet is IMultiSigWallet {
     address public governor;
 
     uint public numConfirmationsRequired;
-    
+
     mapping(address => bool) public isOwner;
     mapping(uint => mapping(address => bool)) public isConfirmed;
 
     Transaction[] public transactions;
 
     modifier onlyOwnerOrGov() {
-        require(
-            isOwner[msg.sender] || governor == msg.sender,
-            "MultiSig: MultiSigWallet, onlyOwnerOrGov(): Neither owner nor governor"
-        );
+        require(isOwner[msg.sender] || governor == msg.sender, "MultiSig: MultiSigWallet, onlyOwnerOrGov(): Neither owner nor governor");
         _;
     }
 
@@ -65,10 +62,7 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     modifier validRequirement(uint ownerCount, uint _required) {
-        require(
-            ownerCount <= MAX_OWNER_COUNT && _required <= ownerCount && _required != 0 && ownerCount != 0,
-            "MultiSig: Invalid requirement"
-        );
+        require(ownerCount <= MAX_OWNER_COUNT && _required <= ownerCount && _required != 0 && ownerCount != 0, "MultiSig: Invalid requirement");
         _;
     }
 
@@ -77,17 +71,10 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
-    constructor(
-        address[] memory _owners,
-        uint _numConfirmationsRequired,
-        address _governor
-    ) {
+    constructor(address[] memory _owners, uint _numConfirmationsRequired, address _governor) {
         governor = _governor;
         require(_owners.length > 0, "owners required");
-        require(
-            _numConfirmationsRequired > 0 && _numConfirmationsRequired <= _owners.length,
-            "invalid number of required confirmations"
-        );
+        require(_numConfirmationsRequired > 0 && _numConfirmationsRequired <= _owners.length, "invalid number of required confirmations");
 
         for (uint i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
@@ -118,14 +105,9 @@ contract MultiSigWallet is IMultiSigWallet {
         emit OwnerRemoval(owner);
     }
 
-    function addOwner(address owner)
-        public
-        override
-        onlyWallet
-        ownerDoesNotExist(owner)
-        notNull(owner)
-        validRequirement(owners.length + 1, numConfirmationsRequired)
-    {
+    function addOwner(
+        address owner
+    ) public override onlyWallet ownerDoesNotExist(owner) notNull(owner) validRequirement(owners.length + 1, numConfirmationsRequired) {
         isOwner[owner] = true;
         owners.push(owner);
         emit OwnerAddition(owner);
@@ -136,11 +118,7 @@ contract MultiSigWallet is IMultiSigWallet {
         emit RequirementChange(_required);
     }
 
-    function submitTransaction(
-        address _to,
-        uint _value,
-        bytes memory _data
-    ) public override onlyOwnerOrGov {
+    function submitTransaction(address _to, uint _value, bytes memory _data) public override onlyOwnerOrGov {
         uint txIndex = transactions.length;
 
         transactions.push(Transaction({ to: _to, value: _value, data: _data, executed: false, numConfirmations: 0 }));
@@ -148,14 +126,7 @@ contract MultiSigWallet is IMultiSigWallet {
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
     }
 
-    function confirmTransaction(uint _txIndex)
-        public
-        override
-        onlyOwnerOrGov
-        txExists(_txIndex)
-        notExecuted(_txIndex)
-        notConfirmed(_txIndex)
-    {
+    function confirmTransaction(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
         transaction.numConfirmations += 1;
         isConfirmed[_txIndex][msg.sender] = true;
@@ -195,26 +166,11 @@ contract MultiSigWallet is IMultiSigWallet {
         return transactions.length;
     }
 
-    function getTransaction(uint _txIndex)
-        public
-        view
-        override
-        returns (
-            address to,
-            uint value,
-            bytes memory data,
-            bool executed,
-            uint numConfirmations
-        )
-    {
+    function getTransaction(
+        uint _txIndex
+    ) public view override returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations) {
         Transaction storage transaction = transactions[_txIndex];
 
-        return (
-            transaction.to,
-            transaction.value,
-            transaction.data,
-            transaction.executed,
-            transaction.numConfirmations
-        );
+        return (transaction.to, transaction.value, transaction.data, transaction.executed, transaction.numConfirmations);
     }
 }
