@@ -1,13 +1,14 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
 const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
 } = require('../../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
 
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -21,45 +22,51 @@ const AMOUNT_OUT_TREASURY = "1000";
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-// Token variables
-const T_TOKEN_TO_MINT = "10000000000000000000000";
-
-
-
-// ================================================================================================
-// FROM SUBIK JIs STAKING TEST CODE:
-// const ERC20TokenMAINTkn = artifacts.require("./registry-layer/tokens-factory/tokens/ERC-20/ERC20Token.sol");
-// const IERC20 = artifacts.require("./common/interfaces/erc20/IERC20.sol");
+const _encodeConfirmation = async (_proposalId) => {
+    return web3.eth.abi.encodeFunctionCall({
+            name: 'confirmProposal',
+            type: 'function',
+            inputs: [{
+                type: 'uint256',
+                name: '_proposalId'
+            }]
+        }, [_proposalId.toString()]);
+}
 
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 
-const SYSTEM_ACC = accounts[0];
 const STAKER_1 = accounts[5];
 const STAKER_2 = accounts[6];
 const NOT_STAKER = accounts[7];
-const stream_owner = accounts[3];
 
-const _getTimeStamp = async () => {
-    const timestamp = await blockchain.getLatestBlockTimestamp()
-    return timestamp
+const _encodeTransferFunction = (_account) => {
+    // encoded transfer function call for the main token.
+
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'to'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, T_TO_STAKE]);
+
+    return toRet;
 }
-//this is used for stream shares calculation.
-const veMainTokenCoefficient = 500;
-// ================================================================================================
 
 describe('Proposal flow', () => {
 
     let timelockController
-    let veMainToken
+    let vMainToken
     let mainTokenGovernor
     let box
-    let mainToken
+    let FTHMToken
     let multiSigWallet
-    
-    let proposer_role
-    let executor_role
-    let timelock_admin_role
+    let proxyAddress;
 
     let proposalId
     let proposalId2
@@ -71,115 +78,40 @@ describe('Proposal flow', () => {
     let description_hash_2
 
     let txIndex
+    let txIndex1
+    let txIndex2
 
-    const oneMonth = 30 * 24 * 60 * 60;
-    const oneYear = 31556926;
-    let lockingPeriod
-    let minter_role
-    let maxNumberOfLocks
-    let lockingVoteWeight
-
- 
-
-    const _createWeightObject = (
-        maxWeightShares,
-        minWeightShares,
-        maxWeightPenalty,
-        minWeightPenalty,
-        weightMultiplier) => {
-        return {
-            maxWeightShares: maxWeightShares,
-            minWeightShares: minWeightShares,
-            maxWeightPenalty: maxWeightPenalty,
-            minWeightPenalty: minWeightPenalty,
-            penaltyWeightMultiplier: weightMultiplier
-        }
-    }
+    let lockingPeriod;
     
     before(async () => {
+        
         await snapshot.revertToSnapshot();
-
+        proxyAddress = JSON.parse(rawdata);
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
-        veMainToken = await artifacts.initializeInterfaceAt("VeMainToken", "VeMainToken");
+        vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
-        mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
-
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
+
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
+
+        rewardsCalculator = await artifacts.initializeInterfaceAt(
+            "RewardsCalculator",
+            "RewardsCalculator"
+        )
         
-        proposer_role = await timelockController.PROPOSER_ROLE();
-        executor_role = await timelockController.EXECUTOR_ROLE();
-        timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
-
-        // For staking:
-        maxWeightShares = 1024;
-        minWeightShares = 256;
-        maxWeightPenalty = 3000;
-        minWeightPenalty = 100;
-        weightMultiplier = 10;
-        maxNumberOfLocks = 10;
-
-        const weightObject =  _createWeightObject(
-            maxWeightShares,minWeightShares,maxWeightPenalty,minWeightPenalty, weightMultiplier
-            );
-
-        stakingService = await artifacts.initializeInterfaceAt(
-            "IStaking",
-            "StakingPackage"
-        );
-
-        vaultService = await artifacts.initializeInterfaceAt(
-            "IVault",
-            "VaultPackage"
-        );
-        
-        mainTknToken = await artifacts.initializeInterfaceAt("ERC20MainToken","ERC20MainToken");
+        FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
 
         lockingPeriod =  365 * 24 * 60 * 60;
-        await veMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC});
-        minter_role = await veMainToken.MINTER_ROLE();
-        await veMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
-        veMainTokenAddress = veMainToken.address;
-        mainTknTokenAddress = mainTknToken.address;
+        vMainTokenAddress = vMainToken.address;
+        FTHMTokenAddress = FTHMToken.address;
 
-        await vaultService.addSupportedToken(mainTknTokenAddress);
-
-        lockingVoteWeight = 365 * 24 * 60 * 60;
-        maxNumberOfLocks = 10;
-
-        const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
-            web3.utils.toWei("0", 'ether')
-        ]
-
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
         vault_test_address = vaultService.address;
-
-        const scheduleTimes = [
-            startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
-        ]
-        
-        await stakingService.initializeStaking(
-            vault_test_address,
-            mainTknTokenAddress,
-            veMainTokenAddress,
-            weightObject,
-            stream_owner,
-            scheduleTimes,
-            scheduleRewards,
-            2,
-            veMainTokenCoefficient,
-            lockingVoteWeight,
-            maxNumberOfLocks
-         )
 
         // encode the function call to change the value in box.  To be performed if the vote passes
         encoded_function = web3.eth.abi.encodeFunctionCall({
@@ -218,27 +150,13 @@ describe('Proposal flow', () => {
                 type: 'bytes',
                 name: '_data'
             }]
-        }, [mainToken.address, EMPTY_BYTES, encoded_transfer_function]);
+        }, [FTHMToken.address, EMPTY_BYTES, encoded_transfer_function]);
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
 
     });
 
-    describe("Assign MainToken Governor and TimeLock roles", async() => {
-        // TODO: test _roles, Check that they can make transactions, revoke _roles, try again expecting bounces
-        it('Grant propser, executor and timelock admin roles to MainTokenGovernor', async() => {
-
-            await timelockController.grantRole(proposer_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(timelock_admin_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(executor_role, mainTokenGovernor.address, {"from": accounts[0]});
-        });
-
-    });
-
-
-
-    // TODO: Needs to revert when there is no value
     describe("Box contract", async() => {
 
         it('Retrieve returns a value previously stored', async() => {
@@ -249,7 +167,7 @@ describe('Proposal flow', () => {
             expect((await box.retrieve()).toString()).to.equal('42');
         });
 
-        it('Transfer ownership of the box', async() => {
+        it('Transfer ownership of the box to TimelockController', async() => {
             await box.transferOwnership(timelockController.address);
             
             const new_owner = await box.owner();
@@ -258,24 +176,36 @@ describe('Proposal flow', () => {
 
     });
 
+    describe("Staking MainToken to receive vMainToken token", async() => {
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            let txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
 
-    describe("Staking MainToken to receive veMainToken token", async() => {
+            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex, {"from": accounts[1]});
+        }
+        
 
         const _stakeMainGetVe = async (_account) => {
 
-            await mainTknToken.transfer(_account, T_TO_STAKE, {from: SYSTEM_ACC});
-
-            await mainTknToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
-
+            await _transferFromMultiSigTreasury(_account);
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
-            let unlockTime = await _getTimeStamp() + lockingPeriod;
+            let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, {from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
         }
 
-        it('Stake MainToken and receive veMainToken', async() => {
-            // Here Staker 1 and staker 2 receive veMainTokens for staking MainTokens
+        it('Stake MainToken and receive vMainToken', async() => {
+            // Here Staker 1 and staker 2 receive vMainTokens for staking MainTokens
             await _stakeMainGetVe(STAKER_1);
             await _stakeMainGetVe(STAKER_2);
 
@@ -290,10 +220,10 @@ describe('Proposal flow', () => {
 
         it('Should revert transfer if holder is not whitelisted to transfer', async() => {
 
-            let errorMessage = "VeMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
 
             await shouldRevert(
-                veMainToken.transfer(
+                vMainToken.transfer(
                     accounts[2],
                     "10",
                     {from: accounts[1]}
@@ -322,7 +252,6 @@ describe('Proposal flow', () => {
                 errorMessage
             );
         });
-
 
         it('Propose a change to the boxs store value', async() => {
 
@@ -379,7 +308,6 @@ describe('Proposal flow', () => {
             await mainTokenGovernor.castVote(proposalId, "1", {"from": STAKER_1});
         });
 
-
         it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
@@ -414,12 +342,27 @@ describe('Proposal flow', () => {
             );            
         });
 
-        it('Approve the proposal from accounts 0 AND 1', async() => {
-            await mainTokenGovernor.confirmProposal(proposalId, {"from": accounts[0]});
-            await mainTokenGovernor.confirmProposal(proposalId, {"from": accounts[1]});
+        
+        it('Create multiSig transaction to confirm proposal 1', async() => {
+            encodedConfirmation1 = _encodeConfirmation(proposalId);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation1, 
+                {"from": accounts[0]}
+            );
+            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
         });
 
-        it('Wait 40 blocks and then check that the proposal status is: Queued', async() => {
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
 
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
@@ -451,25 +394,39 @@ describe('Proposal flow', () => {
         it('Should retrieve the updated value proposed by governance for the new store value in box.sol', async() => {
 
             const new_val = await box.retrieve();
-
             // Test if the returned value is the new value
             expect((await box.retrieve()).toString()).to.equal(NEW_STORE_VALUE);
         });
     });
 
-    describe( "MultiSig Treasury", async() => {
-
-        it('Mint MainToken token to MultiSig treasury', async() => {
-            await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
-            expect((await mainToken.balanceOf(multiSigWallet.address, {"from": accounts[0]})).toString()).to.equal(T_TOKEN_TO_MINT);
-        });
-
-        // Need ot make exhaustive MultiSig tests 
-        // it('', async() => {  
-        // });
-    });
-
     describe("VC Treasury Distribution Through Governor", async() => {
+
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account), 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+        
+
+        const _stakeMainGetVe = async (_account) => {
+            
+            await _transferFromMultiSigTreasury(_account);
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+            await blockchain.increaseTime(20);
+
+            let unlockTime = lockingPeriod;
+
+            await stakingService.createLock(T_TO_STAKE, unlockTime, _account, {from: _account, gas: 600000});
+        }
 
         it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {
 
@@ -577,9 +534,37 @@ describe('Proposal flow', () => {
             );
         });
 
-        it('Approve the proposal from accounts 0 AND 1', async() => {
-            await mainTokenGovernor.confirmProposal(proposalId2, {"from": accounts[0]});
-            await mainTokenGovernor.confirmProposal(proposalId2, {"from": accounts[1]});
+        it('Create multiSig transaction to confirm proposal 1', async() => {
+            encodedConfirmation1 = _encodeConfirmation(proposalId2);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation1, 
+                {"from": accounts[0]}
+            );
+            txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex2, {"from": accounts[1]});
+        });
+
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 40) {   
+                await blockchain.mineBlock(timestamp + nextBlock); 
+                nextBlock++;              
+            }
+            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
         });
 
         it('Wait 40 blocks and then check that the proposal status is: Queued', async() => {
@@ -618,10 +603,20 @@ describe('Proposal flow', () => {
             // Execute:
             await multiSigWallet.executeTransaction(txIndex, {"from": accounts[0]});
             // Balance of account 5 should reflect the funds distributed from treasury in proposal 2
-            expect((await mainToken.balanceOf(STAKER_1, {"from": STAKER_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+            expect((await FTHMToken.balanceOf(STAKER_1, {"from": STAKER_1})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
 
-        
+        it('Mint MainToken token to everyone', async() => {
+
+            // This test is in preperation for front end UI tests which need accounts[0] to have a balance of more than 1000 voting tokens
+
+            await _stakeMainGetVe(accounts[0]);
+            await _stakeMainGetVe(accounts[0]);
+
+            await _stakeMainGetVe(accounts[9]);
+            await _stakeMainGetVe(accounts[9]);
+
+        });
     });
 });
 

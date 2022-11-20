@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.13;
 
 import "./Governor.sol";
 import "./extensions/GovernorSettings.sol";
@@ -21,21 +21,17 @@ contract MainTokenGovernor is
     constructor(
         IVotes _token,
         TimelockController _timelock,
-        address[] memory _signers,
-        uint _numConfirmationsRequired
+        address _multiSig,
+        uint256 _initialVotingDelay,
+        uint256 _votingPeriod,
+        uint256 _initialProposalThreshold
     )
-        Governor("MainTokenGovernor", _signers, _numConfirmationsRequired)
-        GovernorSettings(
-            1, /* 1 block */
-            20, /* Should be 1 week */
-            1000
-        )
+        Governor("MainTokenGovernor", _multiSig)
+        GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {}
-
-    // The following functions are overrides required by Solidity.
 
     function propose(
         address[] memory targets,
@@ -50,12 +46,7 @@ contract MainTokenGovernor is
         return super.proposalThreshold();
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(Governor, GovernorTimelockControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view override(Governor, GovernorTimelockControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -67,12 +58,7 @@ contract MainTokenGovernor is
         return super.votingPeriod();
     }
 
-    function quorum(uint256 blockNumber)
-        public
-        view
-        override(IGovernor, GovernorVotesQuorumFraction)
-        returns (uint256)
-    {
+    function quorum(uint256 blockNumber) public view override(IGovernor, GovernorVotesQuorumFraction) returns (uint256) {
         return super.quorum(blockNumber);
     }
 
@@ -87,7 +73,7 @@ contract MainTokenGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
-        require(numConfirmations[proposalId] >= numConfirmationsRequired, "MainTokenGovernor: Proposal not confirmed");
+        require(isConfirmed[proposalId], "MainTokenGovernor: Proposal not confirmed by council");
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 

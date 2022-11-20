@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MIT
-// Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
+// Original Copyright OpenZeppelin Contracts (last updated v4.5.0) +
+//              (governance/extensions/GovernorVotesQuorumFraction.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.13;
 
 import "./GovernorVotes.sol";
 
-/**
- * @dev Extension of {Governor} for voting weight extraction from an {ERC20Votes} token and a quorum expressed as a
- * fraction of the total supply.
- *
- * _Available since v4.3._
- */
 abstract contract GovernorVotesQuorumFraction is GovernorVotes {
     uint256 private _quorumNumerator;
 
@@ -42,16 +37,10 @@ abstract contract GovernorVotesQuorumFraction is GovernorVotes {
         _updateQuorumNumerator(newQuorumNumerator);
     }
 
-    /**
-     * @dev Returns the current quorum numerator. See {quorumDenominator}.
-     */
     function quorumNumerator() public view virtual returns (uint256) {
         return _quorumNumerator;
     }
 
-    /**
-     * @dev Returns the quorum denominator. Defaults to 100, but may be overridden.
-     */
     function quorumDenominator() public view virtual returns (uint256) {
         return 100;
     }
@@ -63,20 +52,8 @@ abstract contract GovernorVotesQuorumFraction is GovernorVotes {
         return (token.getPastTotalSupply(blockNumber) * quorumNumerator()) / quorumDenominator();
     }
 
-    /**
-     * @dev Changes the quorum numerator.
-     *
-     * Emits a {QuorumNumeratorUpdated} event.
-     *
-     * Requirements:
-     *
-     * - New numerator must be smaller or equal to the denominator.
-     */
     function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
-        require(
-            newQuorumNumerator <= quorumDenominator(),
-            "GovernorVotesQuorumFraction: quorumNumerator over quorumDenominator"
-        );
+        require(newQuorumNumerator <= quorumDenominator(), "GovernorVotesQuorumFraction: quorumNumerator over quorumDenominator");
 
         uint256 oldQuorumNumerator = _quorumNumerator;
         _quorumNumerator = newQuorumNumerator;

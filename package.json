@@ -13,20 +13,21 @@
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "lint": "solhint 'contracts/**/*.sol'",
     "pre-release": "npm run prettier && npm run lint && npm run test-with-timeout",
-    "migrate-reset": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run migrateAndConfigureForTests",
-    "migrate-reset-mainnet": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployMainnet",
-    "migrate-reset-kovan": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployKovan",
-    "migrate-reset-ropsten": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployRopsten",
-    "migrate-reset-ac-mainnet": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACMainnet",
-    "migrate-reset-ac-kovan": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACKovan",
-    "migrate-reset-ac-ropsten": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployACRopsten"
+    "migrate-reset": "coralX scenario --run migrateAndConfigureForTests",
+    "migrate-reset-sepolia": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deploySepolia",
+    "migrate-reset-apothem": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
+    "migrate-reset-xdc": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC",
+    "create-stablecoin-pool": "coralX scenario --run stablecoinGovUpdatePools"
   },
   "author": "",
   "license": "",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.4.1",
     "bignumber.js": "7.2.1",
-    "solc": "0.8.13"
+    "solc": "0.8.13",
+    "@openzeppelin/contracts": "^4.7.3",
+    "@openzeppelin/contracts-upgradeable": "^4.7.3",
+    "@openzeppelin/upgrades-core": "^1.20.4"  
   },
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.11",
@@ -35,6 +36,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.18",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "0.0.5",
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "ethers": "^5.7.0"
   }
 }

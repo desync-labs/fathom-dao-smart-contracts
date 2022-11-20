@@ -1,7 +1,5 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
-const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
@@ -13,15 +11,16 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 // Token variables
-const T_TOKEN_TO_MINT = "10000000000000000000000";
 const AMOUNT_OUT_TREASURY = "1000";
+const oneYr = 365 * 24 * 60 * 60;
 
-
+const BENEFICIARY = accounts[0];
 
 describe('MultiSig Wallet', () => {
 
     let mainToken
     let multiSigWallet
+    let tokenTimelock
 
     let encoded_transfer_function
     let encoded_remove_owner_function
@@ -29,16 +28,17 @@ describe('MultiSig Wallet', () => {
     let txIndex1
     let txIndex2
     let txIndex3
+    let txIndex4
     let initial_owners
     let owners_after_removal
     let owners_after_addition
 
-    
     before(async () => {
         await snapshot.revertToSnapshot();
 
         mainToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
+        tokenTimelock = await artifacts.initializeInterfaceAt("TokenTimelock", "TokenTimelock");
 
 
         // encoded transfer function call for the main token.
@@ -52,7 +52,7 @@ describe('MultiSig Wallet', () => {
                 type: 'uint256',
                 name: 'amount'
             }]
-        }, [accounts[5], AMOUNT_OUT_TREASURY]);
+        }, [tokenTimelock.address, AMOUNT_OUT_TREASURY]);
 
         encoded_remove_owner_function = web3.eth.abi.encodeFunctionCall({
             name: 'removeOwner',
@@ -70,7 +70,7 @@ describe('MultiSig Wallet', () => {
                 type: 'address',
                 name: 'owner'
             }]
-        }, [accounts[3]]);
+        }, [accounts[2]]);
 
         encoded_change_requirement_function = web3.eth.abi.encodeFunctionCall({
             name: 'changeRequirement',
@@ -81,31 +81,24 @@ describe('MultiSig Wallet', () => {
             }]
         }, ['1']);
 
-
-        // Mint tokens to treasury
-        await mainToken.mint(multiSigWallet.address, T_TOKEN_TO_MINT, { from: accounts[0]});
     });
 
-
     describe("MultiSig Ownership", async() => {
-
-        it('Create transaction to remove an owner using submitTransaction', async() => {
-
+        it('Create transaction to add an owner using submitTransaction', async() => {
             const result = await multiSigWallet.submitTransaction(
                 multiSigWallet.address, 
                 EMPTY_BYTES, 
-                encoded_remove_owner_function, 
+                encoded_add_owner_function, 
                 {"from": accounts[0]}
             );
             txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
         });
 
-        it('Create transaction to add an owner using submitTransaction', async() => {
-
+        it('Create transaction to remove an owner using submitTransaction', async() => {
             const result = await multiSigWallet.submitTransaction(
                 multiSigWallet.address, 
                 EMPTY_BYTES, 
-                encoded_add_owner_function, 
+                encoded_remove_owner_function, 
                 {"from": accounts[0]}
             );
             txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -123,11 +116,11 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to directly remove or add an owner', async() => {
-            let errorMessage = "MultiSig:  Only this wallet can use this funciton";
+            let errorMessage = "MultiSig: Only this wallet can use this funciton";
             initial_owners = await multiSigWallet.getOwners();
 
             await shouldRevert(
-                multiSigWallet.removeOwner(initial_owners[2], {"from": accounts[1]}),
+                multiSigWallet.removeOwner(initial_owners[1], {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
             );
@@ -160,7 +153,6 @@ describe('MultiSig Wallet', () => {
             await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[1]});
         });
 
-
         it('Revoke confirmation for tx 1 and expect transaction to fail when execution is tried, then reconfirm', async() => {
 
             await multiSigWallet.revokeConfirmation(txIndex1, {from: accounts[1]});
@@ -176,12 +168,12 @@ describe('MultiSig Wallet', () => {
             await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
         });
 
-        it('Execute the transaction to REMOVE an owner', async() => {
+        it('Execute the transaction to ADD an owner', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
 
             owners_after_removal = await multiSigWallet.getOwners();
 
-            expect((owners_after_removal).length).to.equal(2);
+            expect((owners_after_removal).length).to.equal(3);
             expect((owners_after_removal[0])).to.equal(accounts[0]);
             expect((owners_after_removal[1])).to.equal(accounts[1]);
         });
@@ -190,16 +182,73 @@ describe('MultiSig Wallet', () => {
             await multiSigWallet.executeTransaction(txIndex3, {"from": accounts[0]});
         });
 
-        it('Execute the transaction to ADD an owner, even though it was only signed by one account', async() => {
+        it('Execute the transaction to REMOVE an owner, even though it was only signed by one account', async() => {
             await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
             owners_after_addition = await multiSigWallet.getOwners();
 
-            expect((owners_after_addition).length).to.equal(3);
+            expect((owners_after_addition).length).to.equal(2);
             expect((owners_after_addition[0])).to.equal(accounts[0]);
             expect((owners_after_addition[1])).to.equal(accounts[1]);
-            expect((owners_after_addition[2])).to.equal(accounts[3]);
         });
 
+    });
+
+    describe("Token distribution with 1 year cliff", async() => {
+        it('Create transaction to release funds from MultiSig treasury to TokenTimelock', async() => {
+            const result = await multiSigWallet.submitTransaction(
+                mainToken.address, 
+                EMPTY_BYTES, 
+                encoded_transfer_function, 
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        });
+
+        it('Confirm and Execute the release of funds from MultiSig treasury to TokenTimelock', async() => {
+            // Here the accounts which have been designated a "Signer" role for the governor 
+            //      need to confirm each transaction before it can be executed.
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+            // Execute:
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+
+            expect((await mainToken.balanceOf(tokenTimelock.address, {"from": accounts[0]})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+        });
+
+        it('Shoud revert when trying to claim tokens too early', async() => {
+            let errorMessage = "TokenTimelock: current time is before release time";
+            initial_owners = await multiSigWallet.getOwners();
+
+            await shouldRevert(
+                tokenTimelock.release( {"from": BENEFICIARY}),
+                errTypes.revert,
+                errorMessage
+            );
+        });
+
+        it('Shoud revert when trying to claim tokens too early', async() => {
+            let errorMessage = "TokenTimelock: current time is before release time";
+            initial_owners = await multiSigWallet.getOwners();
+
+            await shouldRevert(
+                tokenTimelock.release( {"from": BENEFICIARY}),
+                errTypes.revert,
+                errorMessage
+            );
+        });
+        
+        it('Shoud release funds to beneficiary', async() => {
+
+            expect((await mainToken.balanceOf(BENEFICIARY, 
+                {"from": BENEFICIARY})).toString()).to.equal("0");
+            
+            await blockchain.increaseTime(oneYr);
+
+            await tokenTimelock.release( {"from": BENEFICIARY});
+
+            expect((await mainToken.balanceOf(BENEFICIARY, 
+                {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
+        });
     });
 });
 
