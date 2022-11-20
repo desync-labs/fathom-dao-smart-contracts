@@ -12,24 +12,18 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
         for (uint256 i = 0; i < streamScheduleRewardLength; i++) {
-            streams[streamId].schedule.reward[i] =
-                (streams[streamId].schedule.reward[i] * rewardTokenAmount) /
-                streams[streamId].maxDepositAmount;
+            streams[streamId].schedule.reward[i] = (streams[streamId].schedule.reward[i] * rewardTokenAmount) / streams[streamId].maxDepositAmount;
         }
     }
 
-    function _moveRewardsToPending(
-        address account,
-        uint256 streamId,
-        uint256 lockId
-    ) internal {
+    function _moveRewardsToPending(address account, uint256 streamId, uint256 lockId) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
         require(streamId != 0, "compound");
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];
         require(lock.tokenShares != 0, "No Stake");
-        uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) *
-            lock.positionStreamShares) / RPS_MULTIPLIER;
+        uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) * lock.positionStreamShares) /
+            RPS_MULTIPLIER;
 
         if (reward == 0) return; // All rewards claimed or stream schedule didn't start
         userAccount.pendings[streamId] += reward;
@@ -53,11 +47,11 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         LockedBalance[] storage locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
         require(locksLength > 0, "no lock");
-        for (uint256 i = 1; i <= locksLength; i++){
+        for (uint256 i = 1; i <= locksLength; i++) {
             _moveRewardsToPending(account, streamId, i);
         }
     }
-   
+
     function _updateStreamRPS() internal {
         if (touchedAt == block.timestamp) return; // Already updated by previous transaction
         if (totalShares != 0) {
@@ -83,11 +77,11 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     ) internal view {
         IRewardsHandler(rewardsCalculator).validateStreamParameters(
             streamOwner,
-            rewardToken, 
-            maxDepositAmount, 
-            minDepositAmount, 
-            scheduleTimes, 
-            scheduleRewards, 
+            rewardToken,
+            maxDepositAmount,
+            minDepositAmount,
+            scheduleTimes,
+            scheduleRewards,
             tau
         );
     }

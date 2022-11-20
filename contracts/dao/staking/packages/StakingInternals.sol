@@ -38,16 +38,11 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         voteLockCoef = _voteLockCoef;
     }
 
-    function _lock(
-        address account,
-        uint256 amount,
-        uint256 lockPeriod
-    ) internal {
+    function _lock(address account, uint256 amount, uint256 lockPeriod) internal {
         uint256 nVoteToken;
         User storage userAccount = users[account];
-        if (lockPeriod > 0){
-            nVoteToken = (amount * lockPeriod * POINT_MULTIPLIER)
-                             / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
+        if (lockPeriod > 0) {
+            nVoteToken = (amount * lockPeriod * POINT_MULTIPLIER) / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
 
             userAccount.voteTokenBalance += BoringMath.to128(nVoteToken);
             totalAmountOfVoteToken += nVoteToken;
@@ -79,12 +74,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @notice If the lock position is completely unlocked then the last lock is swapped with current locked
      * and last lock is popped off.
      */
-    function _unlock(
-        uint256 stakeValue,
-        uint256 amount,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unlock(uint256 stakeValue, uint256 amount, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         require(totalShares != 0, "No Shares");
@@ -119,12 +109,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @notice the amount of stream shares you receive decreases from 100% to 25%
      * @notice the amount of stream shares you receive depends upon when in the timeline you have staked
      */
-    function _stake(
-        address account,
-        uint256 amount,
-        uint256 nVoteToken,
-        uint256 lockId
-    ) internal {
+    function _stake(address account, uint256 amount, uint256 nVoteToken, uint256 lockId) internal {
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
 
@@ -148,14 +133,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         emit Staked(account, weightedAmountOfSharesPerStream, nVoteToken, lockId);
     }
 
-    function _unstake(
-        uint256 amount,
-        uint256 stakeValue,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unstake(uint256 amount, uint256 stakeValue, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
-        LockedBalance storage updateLock = locks[account][lockId -1];
+        LockedBalance storage updateLock = locks[account][lockId - 1];
         totalAmountOfStakedToken -= stakeValue;
         totalStreamShares -= updateLock.positionStreamShares;
         totalShares -= updateLock.tokenShares;
@@ -168,31 +148,26 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         userAccount.pendings[MAIN_STREAM] += amount;
         userAccount.releaseTime[MAIN_STREAM] = block.timestamp + streams[MAIN_STREAM].tau;
-        emit Unstaked(account, amount,lockId);
+        emit Unstaked(account, amount, lockId);
         ///@notice: Only update the lock if it has remaining stake
         if (amountToRestake > 0) {
-            _restakeThePosition(amountToRestake,lockId,updateLock,userAccount);
+            _restakeThePosition(amountToRestake, lockId, updateLock, userAccount);
         } else {
             _removeLockPosition(userAccount, account, lockId);
         }
     }
 
-    function _restakeThePosition(
-        uint256 amountToRestake,
-        uint256 lockId,
-        LockedBalance storage updateLock,
-        User storage userAccount
-    ) internal {
+    function _restakeThePosition(uint256 amountToRestake, uint256 lockId, LockedBalance storage updateLock, User storage userAccount) internal {
         uint256 amountOfTokenShares = _caclulateAutoCompoundingShares(amountToRestake);
         totalAmountOfStakedToken += amountToRestake;
-        updateLock.amountOfToken +=BoringMath.to128( amountToRestake);
+        updateLock.amountOfToken += BoringMath.to128(amountToRestake);
 
         updateLock.tokenShares += BoringMath.to128(amountOfTokenShares);
         totalShares += amountOfTokenShares;
 
-        ///@notice if you unstake, early or partial or complete, 
+        ///@notice if you unstake, early or partial or complete,
         ///        the number of vote tokens for lock position is set to zero
-        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfTokenShares, 0,block.timestamp);
+        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfTokenShares, 0, block.timestamp);
 
         updateLock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
         totalStreamShares += weightedAmountOfSharesPerStream;
@@ -224,11 +199,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         totalPenaltyBalance += penalty;
     }
 
-    function _removeLockPosition(
-        User storage userAccount,
-        address account,
-        uint256 lockId
-    ) internal {
+    function _removeLockPosition(User storage userAccount, address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
         uint256 lastLockId = locks[account].length;
         if (lastLockId != lockId && lastLockId > 1) {
@@ -258,15 +229,11 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         IVault(vault).payRewards(accountTo, mainToken, pendingPenalty);
     }
 
-    function _weightedShares(
-        uint256 amountOfTokenShares,
-        uint256 nVoteToken,
-        uint256 timestamp
-    ) internal view returns (uint256) {
+    function _weightedShares(uint256 amountOfTokenShares, uint256 nVoteToken, uint256 timestamp) internal view returns (uint256) {
         ///@notice Shares accomodate vote the amount of  tokenShares and vote Tokens to be released
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards
-        uint256 shares =  amountOfTokenShares + (voteShareCoef * nVoteToken) / 1000; 
+        uint256 shares = amountOfTokenShares + (voteShareCoef * nVoteToken) / 1000;
         uint256 slopeStart = streams[MAIN_STREAM].schedule.time[0] + ONE_MONTH;
         uint256 slopeEnd = slopeStart + ONE_YEAR;
         if (timestamp <= slopeStart) return shares * weight.maxWeightShares;
@@ -305,15 +272,15 @@ contract StakingInternals is StakingStorage, RewardsInternals {
      * @param lockEnd The timestamp when the lock will open
      * @param timestamp The current timestamp to calculate the remaining time
      */
-    function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view  returns (uint256) {
+    function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         uint256 slopeStart = lockEnd;
         if (timestamp >= slopeStart) return 0;
         uint256 remainingTime = slopeStart - timestamp;
         //why weight multiplier: Because if a person remaining time is less than 12 hours, the calculation
         //would only give minWeightPenalty, because 2900 * 12hours/4days = 0
         return (weight.penaltyWeightMultiplier *
-                weight.minWeightPenalty +
-               (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
-                maxLockPeriod);
+            weight.minWeightPenalty +
+            (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
+            maxLockPeriod);
     }
 }

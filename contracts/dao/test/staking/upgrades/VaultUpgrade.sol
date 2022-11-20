@@ -5,7 +5,7 @@ pragma solidity 0.8.13;
 
 import "../../../staking/vault/packages/VaultPackage.sol";
 
-interface IVaultUpgrade{
+interface IVaultUpgrade {
     function getIsSupportedToken(address token) external view returns (bool);
 }
 

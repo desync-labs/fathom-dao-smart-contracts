@@ -8,12 +8,10 @@ import "../interfaces/IStakingHandler.sol";
 import "../interfaces/IStakingStorage.sol";
 import "../../../common/security/IAdminPausable.sol";
 
-interface IStakingGetterHelper{
+interface IStakingGetterHelper {
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
-    function getLock(address account, uint lockId) 
-        external view 
-        returns (uint128,uint128,uint128,uint128, uint64,address);
+    function getLock(address account, uint lockId) external view returns (uint128, uint128, uint128, uint128, uint64, address);
 
     function getUserTotalDeposit(address account) external view returns (uint256);
 
@@ -22,5 +20,6 @@ interface IStakingGetterHelper{
     function getUserTotalVotes(address account) external view returns (uint256);
 
     function getFeesForEarlyUnlock(uint256 lockId, address account) external view returns (uint256);
+
     function getLocksLength(address account) external view returns (uint256);
 }

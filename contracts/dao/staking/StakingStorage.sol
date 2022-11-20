@@ -8,7 +8,7 @@ import "./StakingStructs.sol";
 import "./interfaces/IStakingStorage.sol";
 import "./library/StakingLibrary.sol";
 
-contract StakingStorage{
+contract StakingStorage {
     uint256 internal constant MAIN_STREAM = 0;
     //Set according to Tokenomics: 1e50 -> 1e50/1e18. So Max Supply is 1 * 1e32;
     uint256 internal constant RPS_MULTIPLIER = 1e50;
@@ -21,7 +21,7 @@ contract StakingStorage{
 
     uint256 public maxLockPositions;
     mapping(address => mapping(uint256 => bool)) public prohibitedEarlyWithdraw;
-    
+
     uint256 internal touchedAt;
 
     ///@notice The below three are used for autocompounding feature and weighted shares
@@ -49,7 +49,7 @@ contract StakingStorage{
     mapping(address => User) public users;
 
     Stream[] internal streams;
-    
+
     ///Mapping (user => LockedBalance) to keep locking information for each user
     mapping(address => LockedBalance[]) internal locks;
 }

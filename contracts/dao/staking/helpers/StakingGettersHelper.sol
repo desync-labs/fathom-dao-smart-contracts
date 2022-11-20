@@ -8,7 +8,7 @@ import "../interfaces/IStakingGetter.sol";
 import "../StakingStructs.sol";
 import "../../../common/access/AccessControl.sol";
 
-contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
+contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
     uint256 internal constant ONE_MONTH = 2629746;
     uint256 internal constant ONE_YEAR = 31536000;
@@ -22,39 +22,26 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
     function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);
         require(lockId <= locks.length, "out of index");
-        require(lockId > 0,"lockId cant be 0");
+        require(lockId > 0, "lockId cant be 0");
         return locks[lockId - 1];
     }
 
-    function getLocksLength(address account) public override view returns (uint256) {
+    function getLocksLength(address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         return locks.length;
     }
 
-    function getLock(address account, uint lockId) public view override
-        returns(uint128, uint128, uint128, uint128, uint64, address) {
+    function getLock(address account, uint lockId) public view override returns (uint128, uint128, uint128, uint128, uint64, address) {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
-        require(lockId > 0,"lockId cant be 0");
-        return(
-            lock.amountOfToken,
-            lock.amountOfVoteToken,
-            lock.tokenShares,
-            lock.positionStreamShares,
-            lock.end,
-            lock.owner
-        );
+        require(lockId > 0, "lockId cant be 0");
+        return (lock.amountOfToken, lock.amountOfVoteToken, lock.tokenShares, lock.positionStreamShares, lock.end, lock.owner);
     }
 
-    function getUserTotalDeposit(address account)
-        public
-        view
-        override
-        returns (uint256)
-    {   
+    function getUserTotalDeposit(address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
-        if(locks.length == 0){
+        if (locks.length == 0) {
             return 0;
         }
         uint totalDeposit = 0;
@@ -64,14 +51,9 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return totalDeposit;
     }
 
-    function getStreamClaimableAmount(uint256 streamId, address account)
-        public
-        view
-        override
-        returns (uint256)
-    {   
+    function getStreamClaimableAmount(uint256 streamId, address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
-        if(locks.length == 0){
+        if (locks.length == 0) {
             return 0;
         }
         uint totalRewards = 0;
@@ -81,14 +63,9 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return totalRewards;
     }
 
-    function getUserTotalVotes(address account)
-        public
-        view
-        override
-        returns (uint256)
-    {   
+    function getUserTotalVotes(address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
-        if(locks.length == 0){
+        if (locks.length == 0) {
             return 0;
         }
         uint totalVotes = 0;
@@ -98,16 +75,11 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return totalVotes;
     }
 
-    function getFeesForEarlyUnlock(uint256 lockId, address account) 
-        override 
-        public 
-        view
-        returns (uint256)
-    {
+    function getFeesForEarlyUnlock(uint256 lockId, address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         require(lockId <= locks.length, "out of index");
         LockedBalance memory lock = locks[lockId - 1];
-        require(lockId > 0,"lockId cant be 0");
+        require(lockId > 0, "lockId cant be 0");
         require(lock.end > block.timestamp, "lock opened, no penalty");
 
         uint256 totalAmountOfStakedToken = IStakingHelper(stakingContract).totalAmountOfStakedToken();
@@ -120,7 +92,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         return penalty;
     }
 
-    function _getAllLocks(address account) internal view returns(LockedBalance[] memory){
+    function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
         LockedBalance[] memory locks = IStakingHelper(stakingContract).getAllLocks(account);
         return locks;
     }
@@ -131,7 +103,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
         uint256 slopeStart = lockEnd;
         if (timestamp >= slopeStart) return 0;
         uint256 remainingTime = slopeStart - timestamp;
-        
+
         //why weight multiplier: Because if a person remaining time is less than 12 hours, the calculation
         //would only give minWeightPenalty, because 2900 * 12hours/4days = 0
         return (weight.penaltyWeightMultiplier *
@@ -140,7 +112,7 @@ contract StakingGettersHelper  is IStakingGetterHelper, AccessControl {
             maxLockPeriod);
     }
 
-    function _getWeight() internal view returns(Weight memory){
+    function _getWeight() internal view returns (Weight memory) {
         return IStakingHelper(stakingContract).getWeight();
     }
 }
