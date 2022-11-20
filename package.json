@@ -26,7 +26,8 @@
     "bignumber.js": "7.2.1",
     "solc": "0.8.13",
     "@openzeppelin/contracts": "^4.7.3",
-    "@openzeppelin/contracts-upgradeable": "^4.7.3"    
+    "@openzeppelin/contracts-upgradeable": "^4.7.3",
+    "@openzeppelin/upgrades-core": "^1.20.4"  
   },
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.11",

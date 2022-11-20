@@ -105,4 +105,21 @@ module.exports = async function(deployer) {
         RewardsCalculator.address,
         {gas: 8000000}
     );
+
+    console.log("....")
+
+    await stakingService.initializeStaking(
+        MultiSigWallet.address,
+        Vault.address,
+        MainToken.address,
+        VMainToken.address,
+        weightObject,
+        scheduleTimes,
+        scheduleRewards,
+        tau,
+        voteObject,
+        maxNumberOfLocks,
+        RewardsCalculator.address,
+        {gas: 8000000}
+    );
 }

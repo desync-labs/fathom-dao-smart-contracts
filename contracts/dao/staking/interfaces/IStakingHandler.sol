@@ -30,32 +30,43 @@ interface IStakingHandler {
         uint256[] memory scheduleRewards,
         uint256 tau
     ) external; // only STREAM_MANAGER_ROLE
+
     function cancelStreamProposal(uint256 streamId) external;
 
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
+
     function removeStream(uint256 streamId, address streamFundReceiver) external;
 
     function createLock(uint256 amount, uint256 lockPeriod, address account) external;
-    function createLockWithoutEarlyWithdraw(
-        uint256 amount, 
-        uint256 lockPeriod, 
-        address account,
-        bool flag
-    ) external;
 
-    function unlockPartially(uint256 lockId, uint256 amount)  external;
+    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) external;
+
+    function unlockPartially(uint256 lockId, uint256 amount) external;
+
     function unlock(uint256 lockId) external;
+
     function earlyUnlock(uint256 lockId) external;
 
     function claimRewards(uint256 streamId, uint256 lockId) external;
+
     function claimAllStreamRewardsForLock(uint256 lockId) external;
+
     function claimAllLockRewardsForStream(uint256 streamId) external;
 
-    function withdrawRewards(uint256 streamId) external;
-    function withdrawRewardsFromAllStreams() external;
+    function withdrawStream(uint256 streamId) external;
+
+    function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-    function setWeight(Weight memory _weight)  external;
 
     function updateVault(address _vault) external;
+
+    function updateConfig(
+        Weight calldata _weight,
+        address _voteToken,
+        address _rewardsCalculator,
+        VoteCoefficient calldata _voteCoef,
+        uint256 _maxLockPeriod,
+        uint256 _maxLockPositions
+    ) external;
 }

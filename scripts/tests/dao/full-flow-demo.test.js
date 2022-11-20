@@ -36,14 +36,14 @@ TO INCLUDE:
 const blockchain = require("../helpers/blockchain");
 const eventsHelper = require("../helpers/eventsHelper");
 const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
 } = require('../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
 
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -51,54 +51,38 @@ const NEW_STORE_VALUE = "142";
 
 // / proposal 2
 const PROPOSAL_DESCRIPTION_2 = "Proposal #2: Distribute funds from treasury to accounts[5]";
-const AMOUNT_OUT_TREASURY = "200";
 
 // Events
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-
-// Token variables
-const T_TOKEN_TO_MINT = "10000000000000000000000";
 
 
 const SYSTEM_ACC = accounts[0];
 const staker_1 = accounts[6];
 const staker_2 = accounts[3];
 const staker_9 = accounts[9];
-const stream_owner = accounts[2];
 
 const comity_1 = accounts[0];
 const comity_2 = accounts[1];
 
-const stream_manager = accounts[4];
 const stream_rewarder_1 = accounts[5];
 
 let vault_test_address;
 let treasury;
 
-const _createVoteWeights = (
-    voteShareCoef,
-    voteLockCoef) => {
-    return {
-        voteShareCoef: voteShareCoef,
-        voteLockCoef: voteLockCoef
-    }
+const _encodeWithdrawPenaltyFunction = (_account) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'withdrawPenalty',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'penaltyReceiver'
+        }]
+    }, [_account]);
+
+    return toRet;
 }
 
-const _createWeightObject = (
-    maxWeightShares,
-    minWeightShares,
-    maxWeightPenalty,
-    minWeightPenalty,
-    weightMultiplier) => {
-    return {
-        maxWeightShares: maxWeightShares,
-        minWeightShares: minWeightShares,
-        maxWeightPenalty: maxWeightPenalty,
-        minWeightPenalty: minWeightPenalty,
-        penaltyWeightMultiplier: weightMultiplier
-    }
-}
 
 const maxGasForTxn = 600000
 
@@ -121,18 +105,11 @@ const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
     return beforeBalanceBN.sub(depositAmountBN)
 }
 
-const _calculateAfterWithdrawingBalance = (pendingAmount, beforeBalance) => {
-    const pendingAmountBN = new web3.utils.BN(pendingAmount);
-    const beforeBalanceBN = new web3.utils.BN(beforeBalance)
-    return beforeBalanceBN.add(pendingAmountBN)
-}
-
 const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
 
 const _encodeConfirmation = async (_proposalId) => {
-    const timestamp = await blockchain.getLatestBlockTimestamp()
     return web3.eth.abi.encodeFunctionCall({
             name: 'confirmProposal',
             type: 'function',
@@ -142,14 +119,6 @@ const _encodeConfirmation = async (_proposalId) => {
             }]
         }, [_proposalId.toString()]);
     }
-
-const setTreasuryAddress = async (treasury,stakingService) => {
-    const storageSlot = 8;
-    await stakingService.adminSstoreAddress(
-        storageSlot,
-        treasury
-        )
-}
 
 const _encodeTransferFunction = (_account, t_to_stake) => {
     // encoded transfer function call for the main token.
@@ -183,11 +152,8 @@ const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
         },{
             type: 'address',
             name: 'account'
-        },{
-            type: 'bool',
-            name: 'flag'
         }]
-    }, [amount, lockPeriod, account, flag]);
+    }, [amount, lockPeriod, account]);
 
     return toRet;
 }
@@ -209,8 +175,67 @@ const _encodeStakeApproveFunction = (amount, spender) => {
     return toRet;
 }
 
+const _encodeAddSupportedTokenFunction = (_token) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'addSupportedToken',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_token'
+        }]
+    }, [_token]);
+
+    return toRet;
+}
+
+const _encodeProposeStreamFunction = (
+    _owner,
+    _rewardToken,
+    _maxDepositedAmount,
+    _minDepositedAmount,
+    _scheduleTimes,
+    _scheduleRewards,
+    _tau
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'proposeStream',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'streamOwner'
+        },{
+            type: 'address',
+            name: 'rewardToken'
+        },{
+            type: 'uint256',
+            name: 'maxDepositAmount'
+        },{
+            type: 'uint256',
+            name: 'minDepositAmount'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleTimes'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleRewards'
+        },{
+            type: 'uint256',
+            name: 'tau'
+        }]
+    }, [
+        _owner,
+        _rewardToken,
+        _maxDepositedAmount,
+        _minDepositedAmount,
+        _scheduleTimes,
+        _scheduleRewards,
+        _tau
+    ]);
+
+    return toRet;
+}
+
 describe("DAO Demo", () => {
-    const oneMonth = 30 * 24 * 60 * 60;
     const oneYear = 31556926;
     let stakingService;
     let stakingGetterService;
@@ -219,18 +244,11 @@ describe("DAO Demo", () => {
     let vMainToken;
 
     let streamReward1;
-    let vMainTokenAddress;
     let FTHMTokenAddress;
     let streamReward1Address;
 
-    let maxWeightShares;
-    let minWeightShares;
-    let maxWeightPenalty;
-    let minWeightPenalty;
-    let vMainTokenCoefficient;
     let lockingVoteWeight;
-    let totalAmountOfStreamShares;
-    let maxNumberOfLocks;
+    let proxyAddress;
 
     let encodedConfirmation1;
     let encodedConfirmation2;
@@ -266,10 +284,9 @@ describe("DAO Demo", () => {
     const sumToDeposit = web3.utils.toWei('1000', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('5000','ether');
-    const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
-
+        proxyAddress = JSON.parse(rawdata);
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
@@ -284,33 +301,14 @@ describe("DAO Demo", () => {
         timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
 
         await snapshot.revertToSnapshot();
-        maxWeightShares = 1024;
-        minWeightShares = 256;
-        maxWeightPenalty = 3000;
-        minWeightPenalty = 100;
-        weightMultiplier = 10;
-        maxNumberOfLocks = 10;
         
-        const weightObject =  _createWeightObject(
-            maxWeightShares,
-            minWeightShares,
-            maxWeightPenalty,
-            minWeightPenalty,
-            weightMultiplier)
-        //this is used for stream shares calculation.
-        vMainTokenCoefficient = 500;
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
-
-        stakingService = await artifacts.initializeInterfaceAt(
-            "StakingPackage",
-            "StakingPackage"
-        );
-
-        vaultService = await artifacts.initializeInterfaceAt(
-            "VaultPackage",
-            "VaultPackage"
-        );
+        
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
@@ -321,22 +319,12 @@ describe("DAO Demo", () => {
             "RewardsCalculator"
         )
 
-        await vaultService.initVault();
-        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
-        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
-
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
-        //TODO:
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
 
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         
-        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
-        //TODO:
-        minter_role = await vMainToken.MINTER_ROLE();
-        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
-
         vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
         streamReward1Address = streamReward1.address;
@@ -358,60 +346,28 @@ describe("DAO Demo", () => {
 
         await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
-        
-        await vMainToken.approve(stakingService.address,vMainTokensToApprove, {from: SYSTEM_ACC})
-
         const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
             
-        
         vault_test_address = vaultService.address;
 
         await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
 
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
+        const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
+            const result = await multiSigWallet.submitTransaction(
+                vaultService.address, 
+                EMPTY_BYTES, 
+                _encodeAddSupportedTokenFunction(_token), 
+                {"from": accounts[0]}
+            );
+            const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
 
-        const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
-            web3.utils.toWei("0", 'ether')
-        ]
-        const scheduleTimes = [
-            startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
-        ]
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
 
-        //TODO:
-        await vaultService.addSupportedToken(FTHMTokenAddress)
-        await vaultService.addSupportedToken(streamReward1Address)
-        const voteObject = _createVoteWeights(
-            vMainTokenCoefficient,
-            lockingVoteWeight
-        )
-        await stakingService.initializeStaking(
-            vault_test_address,
-            FTHMTokenAddress,
-            vMainTokenAddress,
-            weightObject,
-            stream_owner,
-            scheduleTimes,
-            scheduleRewards,
-            2,
-            voteObject,
-            maxNumberOfLocks,
-            rewardsCalculator.address
-         )
-         // set treasury address
-         await setTreasuryAddress(
-            treasury,
-            stakingService
-        )
+            await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+        }
 
-
+        await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
         // encode the function call to change the value in box.  To be performed if the vote passes
         encoded_function = web3.eth.abi.encodeFunctionCall({
             name: 'store',
@@ -424,12 +380,6 @@ describe("DAO Demo", () => {
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
-
-        const treasuryRole = await stakingService.TREASURY_ROLE();
-        await stakingService.grantRole(treasuryRole, multiSigWallet.address, {from: SYSTEM_ACC});
-        await stakingService.grantRole(treasuryRole, staker_1, {from: SYSTEM_ACC});
-        await stakingService.grantRole(treasuryRole, staker_2, {from: SYSTEM_ACC});
-
     })
 
     
@@ -451,7 +401,7 @@ describe("DAO Demo", () => {
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
             const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
-            //console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
+            console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
         it('Should create a lock possition with lockId = 2 for staker_1', async() => {
@@ -466,7 +416,7 @@ describe("DAO Demo", () => {
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
             const staker1VeTokenBal = (await vMainToken.balanceOf(staker_1)).toString()
-            //console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 / 2 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
+            console.log(".........Released VOTE tokens to staker 1 based upon locking period (1 / 2 year) and locking amount  (1000 Protocol Tokens) ",_convertToEtherBalance(staker1VeTokenBal), 'VOTE Tokens')
         });
 
         
@@ -503,16 +453,45 @@ describe("DAO Demo", () => {
                 startTime + oneYear
             ]
 
-            const result = await stakingService.proposeStream(
-                stream_rewarder_1,
-                streamReward1Address,
-                maxRewardProposalAmountForAStream,
-                minRewardProposalAmountForAStream,
-                scheduleTimes,
-                scheduleRewards,
-                10
-                ,{from: SYSTEM_ACC}
-            )
+            const _proposeStreamFromMultiSigTreasury = async (
+                _stream_rewarder_1,
+                _streamReward1Address,
+                _maxRewardProposalAmountForAStream,
+                _minRewardProposalAmountForAStream,
+                _scheduleTimes,
+                _scheduleRewards,
+                _tau
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeProposeStreamFunction(
+                        _stream_rewarder_1,
+                        _streamReward1Address,
+                        _maxRewardProposalAmountForAStream,
+                        _minRewardProposalAmountForAStream,
+                        _scheduleTimes,
+                        _scheduleRewards,
+                        _tau
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+                await _proposeStreamFromMultiSigTreasury(
+                    stream_rewarder_1,
+                    streamReward1Address,
+                    maxRewardProposalAmountForAStream,
+                    minRewardProposalAmountForAStream,
+                    scheduleTimes,
+                    scheduleRewards,
+                    10
+                );
 
             await blockchain.mineBlock(await _getTimeStamp() + 10);
         });
@@ -522,7 +501,6 @@ describe("DAO Demo", () => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1});
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_1});
-
         });
 
         it('Should get correct Rewards', async() => {
@@ -557,14 +535,9 @@ describe("DAO Demo", () => {
 
     });
 
-
-
     describe('Governance', async() => {
-
-
         it('Consider a contract owned by the governor called: Box', async() => {
 
-            console.log("=================================== MAX ==================================")
             // Store a value
             await box.store(5);
 
@@ -576,11 +549,7 @@ describe("DAO Demo", () => {
 
         });
 
-        it('', async() => {
-            // Grant propser, executor and timelock admin roles to MainTokenGovernor
-            await timelockController.grantRole(proposer_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(timelock_admin_role, mainTokenGovernor.address, {"from": accounts[0]});
-            await timelockController.grantRole(executor_role, mainTokenGovernor.address, {"from": accounts[0]});
+        it('Transfer ownership of the box to TimelockController', async() => {
 
             await box.transferOwnership(timelockController.address);
             
@@ -747,7 +716,26 @@ describe("DAO Demo", () => {
             const beforeBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             console.log(".........The balance of treasury before withdrawing the penalty due to early withdrawal",_convertToEtherBalance(beforeBalanceOfTreasury.toString()))
             let beforeTotalPenaltyBalance = await stakingService.totalPenaltyBalance();
-            await stakingService.withdrawPenalty(treasury);
+
+            const _withdrawEarlyPenalty = async(
+                _penaltyReceiver
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeWithdrawPenaltyFunction(
+                        _penaltyReceiver
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _withdrawEarlyPenalty(multiSigWallet.address)
             
             afterBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             console.log(".........The balance of treasury after withdrawing the penalty due to early withdrawal",_convertToEtherBalance(afterBalanceOfTreasury.toString()))
@@ -763,8 +751,6 @@ describe("DAO Demo", () => {
     describe("VC Treasury Distribution Through Governor", async() => {
 
         it('Prepare encoded funciton calls', async() =>{
-
-            console.log("=================================== MAX ==================================" );
 
             encoded_transfer_function = web3.eth.abi.encodeFunctionCall({
                 name: 'transfer',
@@ -1009,15 +995,20 @@ describe("DAO Demo", () => {
         it("Wait one year and unlock more than was staked, because of staking rewards", async() => {
 
             const oneYr = 365 * 24 * 60 * 60;
+            const threeSec = 3 * 60;
 
             const amount2 = 200000*10**18;
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_1});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_1});
             expect(parseInt(await FTHMToken.balanceOf(comity_1))).to.be.above(amount2);
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_2});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_2});
             expect(parseInt(await FTHMToken.balanceOf(comity_2))).to.be.above(amount2);
 
         })

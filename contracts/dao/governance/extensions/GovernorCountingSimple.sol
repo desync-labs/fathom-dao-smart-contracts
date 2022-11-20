@@ -26,23 +26,9 @@ abstract contract GovernorCountingSimple is Governor {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
-    function proposalVotes(uint256 proposalId)
-        public
-        view
-        virtual
-        returns (
-            uint256 againstVotes,
-            uint256 forVotes,
-            uint256 abstainVotes
-        )
-    {
+    function proposalVotes(uint256 proposalId) public view virtual returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
         return (proposalvote.againstVotes, proposalvote.forVotes, proposalvote.abstainVotes);
-    }
-
-    // solhint-disable-next-line func-name-mixedcase
-    function COUNTING_MODE() public pure virtual override returns (string memory) {
-        return "support=bravo&quorum=for,abstain";
     }
 
     function _countVote(

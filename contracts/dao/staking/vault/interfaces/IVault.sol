@@ -2,7 +2,9 @@
 pragma solidity 0.8.13;
 
 interface IVault {
-    function initVault(address _admin, address _rewardsOperator, address[] calldata supportedTokens) external;
+    function initVault(address[] calldata supportedTokens) external;
+
+    function initAdminAndOperator(address _admin, address _rewardsOperator) external;
 
     function addSupportedToken(address _token) external;
 

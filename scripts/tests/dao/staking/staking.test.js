@@ -2,14 +2,10 @@ const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 const BN = web3.utils.BN
 const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
-const should = chai.use(require('chai-bn')(BN)).should();
-
-const utils = require('../../helpers/utils');
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-
-
-
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
 
 const maxGasForTxn = 600000
 const {
@@ -30,7 +26,6 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
-const treasury = SYSTEM_ACC;
 
 
 const _createVoteWeights = (
@@ -98,12 +93,51 @@ const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
 
-const setTreasuryAddress = async (treasury,stakingService) => {
-    const storageSlot = 8;
-    await stakingService.adminSstoreAddress(
-        storageSlot,
-        treasury
-        )
+const _encodeProposeStreamFunction = (
+    _owner,
+    _rewardToken,
+    _maxDepositedAmount,
+    _minDepositedAmount,
+    _scheduleTimes,
+    _scheduleRewards,
+    _tau
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'proposeStream',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'streamOwner'
+        },{
+            type: 'address',
+            name: 'rewardToken'
+        },{
+            type: 'uint256',
+            name: 'maxDepositAmount'
+        },{
+            type: 'uint256',
+            name: 'minDepositAmount'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleTimes'
+        },{
+            type: 'uint256[]',
+            name: 'scheduleRewards'
+        },{
+            type: 'uint256',
+            name: 'tau'
+        }]
+    }, [
+        _owner,
+        _rewardToken,
+        _maxDepositedAmount,
+        _minDepositedAmount,
+        _scheduleTimes,
+        _scheduleRewards,
+        _tau
+    ]);
+
+    return toRet;
 }
 
 
@@ -125,6 +159,45 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
 
     return toRet;
 }
+
+const _encodeWithdrawPenaltyFunction = (_account) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'withdrawPenalty',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'penaltyReceiver'
+        }]
+    }, [_account]);
+
+    return toRet;
+}
+
+const _encodeAddSupportedTokenFunction = (_token) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'addSupportedToken',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_token'
+        }]
+    }, [_token]);
+
+    return toRet;
+}
+
+const _encodeAdminPause = (flag) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'adminPause',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'flags'
+        }]}, [flag]);
+
+    return toRet;
+}
+
 
 describe("Staking Test", () => {
 
@@ -156,7 +229,8 @@ describe("Staking Test", () => {
     let totalAmountOfStreamShares;
     let maxNumberOfLocks;
     let _flags;
-    
+    let proxyAddress;
+
     const sumToDeposit = web3.utils.toWei('100', 'ether');
     const sumToTransfer = web3.utils.toWei('4000', 'ether');
     const sumToApprove = web3.utils.toWei('3000','ether');
@@ -165,6 +239,7 @@ describe("Staking Test", () => {
 
     before(async() => {
         await snapshot.revertToSnapshot();
+        proxyAddress = JSON.parse(rawdata);
         maxWeightShares = 1024;
         minWeightShares = 256;
         maxWeightPenalty = 3000;
@@ -184,16 +259,10 @@ describe("Staking Test", () => {
         vMainTokenCoefficient = 500;
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
-        
-        stakingService = await artifacts.initializeInterfaceAt(
-            "StakingPackage",
-            "StakingPackage"
-        );
-
-        vaultService = await artifacts.initializeInterfaceAt(
-            "VaultPackage",
-            "VaultPackage"
-        );
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
@@ -210,17 +279,11 @@ describe("Staking Test", () => {
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
-        
+
         await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
         
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
-        
-        
-        await vMainToken.addToWhitelist(stakingService.address, {from: SYSTEM_ACC})
-        
-        minter_role = await vMainToken.MINTER_ROLE();
-        await vMainToken.grantRole(minter_role, stakingService.address, {from: SYSTEM_ACC});
 
         vMainTokenAddress = vMainToken.address;
         FTHMTokenAddress = FTHMToken.address;
@@ -277,36 +340,24 @@ describe("Staking Test", () => {
             startTime + 4 * oneYear,
         ]
         
-        await vaultService.initVault();
-        await vaultService.addSupportedToken(FTHMTokenAddress)
-        await vaultService.addSupportedToken(streamReward1Address)
-        await vaultService.addSupportedToken(streamReward2Address)
-        
-        const admin_role = await vaultService.REWARDS_OPERATOR_ROLE();
-        await vaultService.grantRole(admin_role, stakingService.address, {from: SYSTEM_ACC});
 
-        const voteObject = _createVoteWeights(
-            vMainTokenCoefficient,
-            lockingVoteWeight
-        )
+        const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
+            const result = await multiSigWallet.submitTransaction(
+                vaultService.address, 
+                EMPTY_BYTES, 
+                _encodeAddSupportedTokenFunction(_token), 
+                {"from": accounts[0]}
+            );
+            const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
 
-        await stakingService.initializeStaking(
-            vault_test_address,
-            FTHMTokenAddress,
-            vMainTokenAddress,
-            weightObject,
-            stream_owner,
-            scheduleTimes,
-            scheduleRewards,
-            2,
-            voteObject,
-            maxNumberOfLocks,
-            rewardsCalculator.address
-         )
-        await setTreasuryAddress(
-            treasury,
-            stakingService
-        )
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+        }
+
+        await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
+        await _addSupportedTokenFromMultiSigTreasury(streamReward2Address);
     });
 
     describe('Creating Locks and Unlocking before any stream reward tokens are issued, and release vote token', async() => {
@@ -322,8 +373,8 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
-                // later to be used in the expectedNVFTHM calculation.  
-                // This mitigates an error created from the slight change in block time.
+            // later to be used in the expectedNVFTHM calculation.  
+            // This mitigates an error created from the slight change in block time.
 
             
             const expectedFTHMBalanceStaker1 = _calculateRemainingBalance(sumToDeposit, beforeFTHMBalance.toString())
@@ -365,12 +416,7 @@ describe("Staking Test", () => {
             actualShares.should.be.bignumber.equal(expectedShares)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
-        })
-
-        // it("Should update total vote token balance.", async() => {
-        //     const totalAmountOfVFTHM = (await stakingService.totalAmountOfVoteToken()).toString();
-        //     expectedTotalAmountOfVFTHM.should.be.bignumber.equal(totalAmountOfVFTHM);
-        // })
+        });
 
         it("Should have correct total number of staked protocol tokens", async() => {
             //2 deposits:
@@ -381,8 +427,7 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
             const totalShares = await stakingService.totalShares();
             expect(totalShares).to.eql(totalAmountOfStakedToken)
-        })
-
+        });
 
         it("Setup a lock position for staker_2, staker_3, staker_4", async() => {
             const unlockTime =  500;
@@ -413,9 +458,6 @@ describe("Staking Test", () => {
             assert.equal(eventArgs3[2].toString(),expectedLockId)
         })
 
-
-
-
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
             
             const errorMessage = "lock not open";
@@ -427,7 +469,6 @@ describe("Staking Test", () => {
             );
             //  staker_1 would have to use the function earlyUnlock() to unlock before the lock period has passed.
         })
-
 
         it("Setup a third locked position with a 5 second lock period: LockId = 3 - staker_1", async() => {
             const unlockTime =  5;
@@ -443,8 +484,6 @@ describe("Staking Test", () => {
             assert(result.toString(), shouldBeTotal.toString())
             
         })
-
-        
         
         it("Should completely unlock LockId = 1 - staker_1, replace LockId 1 with LockId 3 in the locks array for staker_1", async() => {
             // The lock array for staker_1 should reduce in length by 1 on the backend.
@@ -489,8 +528,6 @@ describe("Staking Test", () => {
             );
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         }) 
-        
-        
 
         it("Should unlock completely locked positions for user - staker_3", async() => {
             await stakingService.unlock(1, {from: staker_3});
@@ -505,8 +542,6 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         });
 
-
-
         it("Should unlock completely locked positions for user - staker_4", async() => {
             await stakingService.unlock(1, {from: staker_4});
             const errorMessage = "out of index";
@@ -516,8 +551,6 @@ describe("Staking Test", () => {
                 errTypes.revert,  
                 errorMessage
             );
-            
-
         });
 
         it("Should unlock completely for locked position 1 - staker_1", async() => {
@@ -534,10 +567,10 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalShares.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
-            // console.log("----- After all the locks are completely unlocked ------")
-            // console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
-            // console.log("totalShares: ", totalShares.toString());
-            // console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
+            console.log("----- After all the locks are completely unlocked ------")
+            console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
+            console.log("totalShares: ", totalShares.toString());
+            console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
         });
     });
     
@@ -568,7 +601,37 @@ describe("Staking Test", () => {
                 startTime + 5 * oneMonth
             ]
 
-            const result = await stakingService.proposeStream(
+            const _proposeStreamFromMultiSigTreasury = async (
+                _stream_rewarder_1,
+                _streamReward1Address,
+                _maxRewardProposalAmountForAStream,
+                _minRewardProposalAmountForAStream,
+                _scheduleTimes,
+                _scheduleRewards,
+                _tau
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeProposeStreamFunction(
+                        _stream_rewarder_1,
+                        _streamReward1Address,
+                        _maxRewardProposalAmountForAStream,
+                        _minRewardProposalAmountForAStream,
+                        _scheduleTimes,
+                        _scheduleRewards,
+                        _tau
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_1,
                 streamReward1Address,
                 maxRewardProposalAmountForAStream,
@@ -576,8 +639,8 @@ describe("Staking Test", () => {
                 scheduleTimes,
                 scheduleRewards,
                 10
-                ,{from: SYSTEM_ACC}  
-            )
+            );
+            
             await blockchain.mineBlock(await _getTimeStamp() + 10)
         })
 
@@ -606,7 +669,37 @@ describe("Staking Test", () => {
                 startTime + oneYear
             ]
 
-            const result = await stakingService.proposeStream(
+            const _proposeStreamFromMultiSigTreasury = async (
+                _stream_rewarder_2,
+                _streamReward2Address,
+                _maxRewardProposalAmountForAStream,
+                _minRewardProposalAmountForAStream,
+                _scheduleTimes,
+                _scheduleRewards,
+                _tau
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeProposeStreamFunction(
+                        _stream_rewarder_2,
+                        _streamReward2Address,
+                        _maxRewardProposalAmountForAStream,
+                        _minRewardProposalAmountForAStream,
+                        _scheduleTimes,
+                        _scheduleRewards,
+                        _tau
+                    ), 
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_2,
                 streamReward2Address,
                 maxRewardProposalAmountForAStream,
@@ -614,9 +707,7 @@ describe("Staking Test", () => {
                 scheduleTimes,
                 scheduleRewards,
                 10
-                ,{from: SYSTEM_ACC}
-            )
-
+            );
             await blockchain.mineBlock(await _getTimeStamp() + 10)
         })
 
@@ -654,7 +745,7 @@ describe("Staking Test", () => {
             const rewardsPeriodBN = new web3.utils.toBN(rewardsPeriod)
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             
-            await stakingService.claimRewards(2,lockId,{from:staker_2, gas: maxGasForTxn});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_2, gas: maxGasForTxn});
             const lockInfo = await stakingGetterService.getLockInfo(staker_2,1)
             const positionStreamSharesBN = new web3.utils.toBN((await lockInfo.positionStreamShares).toString())
             const rewardsAmountTotal = new web3.utils.toBN(RewardProposalAmountForAStream)
@@ -667,7 +758,7 @@ describe("Staking Test", () => {
             console.log("expected Rewards for staker_2: ",_convertToEtherBalance(expectedRewards))
 
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const pendingRewards = (await stakingService.getUsersPendingRewards(staker_2,2)).toString()
+            const pendingRewards = (await stakingService.getUsersPendingRewards(staker_2, 2)).toString()
             console.log("pending rewards for staker_ 2:",_convertToEtherBalance(pendingRewards));
 
             // Minute changes in blocktimes effect the rewards calculations.  
@@ -676,21 +767,17 @@ describe("Staking Test", () => {
 
         it('Claim rewards for stream 2 staker_3,staker_4', async() => {
             //Time stamp increased = 20 * 24 * 60 * 60
-            const lockId = 1
-            let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
+            const lockId = 1;
+            const stream = 2;
+            let result1 = await stakingService.claimAllLockRewardsForStream(stream,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
-            //console.log("gas for claiming first rewards:",result1.gasUsed.toString())
-            //console.log("gas for claiming first rewards:",result2.gasUsed.toString())
-            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,2)).toString()
+            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
             console.log("pending rewards staker_3 - 1st Claim: lockId -1",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4,2)).toString()
+            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4, stream)).toString()
             console.log("pending rewards staker_4 - 1st Claim: lockId -1",_convertToEtherBalance(pendingRewards));
-            //  Rewards balance has been increased, but the rewards still need to be withdrawn
-            
-            
         })
         
         it('Second claim rewards for stream 2 staker_3, staker_4', async() => {
@@ -699,33 +786,44 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(timestamp + mineToTimestamp);
 
             const lockId = 1
-            await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
+            const stream = 2;
+            await stakingService.claimRewards(stream,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20)
-            await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
-            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,2)).toString()
+            await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
+            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
             console.log("pending rewards staker_3 - 2nd Claim: lockId -1",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4,2)).toString()
+            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4, stream)).toString()
             console.log("pending rewards staker_4 - 2nd Claim: lockId - 1",_convertToEtherBalance(pendingRewards));
         })
         
         it("Should withdraw stream rewards for all stream 2 stakers", async() => {
             let timestamp = await _getTimeStamp();
-            let mineToTimestamp = 15
+            let mineToTimestamp = 15;
             await blockchain.mineBlock(timestamp + mineToTimestamp);
+
+            const stream = 2;
+
+            let beforeBalanceStaker2 = await streamReward2.balanceOf(staker_2)
+            console.log("balance of stream reward token 2, staker _2, before claim: ",_convertToEtherBalance(beforeBalanceStaker2.toString()))
+            await stakingService.withdrawAllStreams({from: staker_2})
+            let afterBalanceStaker2 = await streamReward2.balanceOf(staker_2)
+            console.log("balance of stream reward token 2, staker _2, after claim: ",_convertToEtherBalance(afterBalanceStaker2.toString()))
             
-            await stakingService.withdrawRewards(2, {from: staker_2})
+            let beforeBalanceStaker3 = await streamReward2.balanceOf(staker_3)
+            console.log("balance of stream reward token 2, staker _3, before claim: ",_convertToEtherBalance(beforeBalanceStaker3.toString()))
+            await stakingService.withdrawStream(stream, {from: staker_3})
+            let afterBalanceStaker3 = await streamReward2.balanceOf(staker_3)
+            console.log("balance of stream reward token 2, staker _3, after claim: ",_convertToEtherBalance(afterBalanceStaker3.toString()))
             
-            let beforeBalanceStaker2 = await streamReward2.balanceOf(staker_3)
-            console.log("balance of stream reward token 2, staker _3, before withdraw: ",_convertToEtherBalance(beforeBalanceStaker2.toString()))
-            
-            await stakingService.withdrawRewards(2, {from: staker_3})
-            let afterBalanceStaker2 = await streamReward2.balanceOf(staker_3)
-            console.log("balance of stream reward token 2, staker _3, after withdraw: ",_convertToEtherBalance(afterBalanceStaker2.toString()))
-            await stakingService.withdrawRewards(2, {from: staker_4})
-            
-            assert.equal((await stakingService.getUsersPendingRewards(staker_2,2)).toString(),"0")
-            assert.equal((await stakingService.getUsersPendingRewards(staker_3,2)).toString(),"0")
-            assert.equal((await stakingService.getUsersPendingRewards(staker_3,2)).toString(),"0")
+            let beforeBalanceStaker4 = await streamReward2.balanceOf(staker_4)
+            console.log("balance of stream reward token 2, staker _4, before claim: ",_convertToEtherBalance(beforeBalanceStaker4.toString()))
+            await stakingService.withdrawStream(stream, {from: staker_4})
+            let afterBalanceStaker4 = await streamReward2.balanceOf(staker_4)
+            console.log("balance of stream reward token 2, staker _4, after claim: ",_convertToEtherBalance(afterBalanceStaker4.toString()))
+
+            assert.equal((await stakingService.getUsersPendingRewards(staker_2, 2)).toString(),"0")
+            assert.equal((await stakingService.getUsersPendingRewards(staker_3, 2)).toString(),"0")
+            assert.equal((await stakingService.getUsersPendingRewards(staker_3, 2)).toString(),"0")
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
      
@@ -762,9 +860,9 @@ describe("Staking Test", () => {
             let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
-            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,2)).toString();
+            let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString();
             console.log("pending rewards staker_3 - 1st Claim: lockId -2",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4,2)).toString()
+            pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
             console.log("pending rewards staker_4 - 1st Claim: lockId -2",_convertToEtherBalance(pendingRewards));
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
@@ -778,9 +876,9 @@ describe("Staking Test", () => {
             let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
-            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,2)).toString();
+            let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString();
             console.log("pending rewards staker_3 - 2nd Claim: lockId - 2",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4,2)).toString()
+            pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
             console.log("pending rewards staker_4 - 2nd Claim: lockId - 2",_convertToEtherBalance(pendingRewards));
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
@@ -808,7 +906,7 @@ describe("Staking Test", () => {
             await stakingService.claimRewards(streamId,lockId,{from:staker_3});
             
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-            await stakingService.withdrawRewards(streamId, {from: staker_3})
+            await stakingService.withdrawStream(streamId, {from: staker_3})
 
             //-- main logic --  starts from here:
             timestamp = await _getTimeStamp();
@@ -823,7 +921,7 @@ describe("Staking Test", () => {
             mineToTimestamp = 100
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
             //lockId 3 all rewards for streamId 2 withdrawn
-            await stakingService.withdrawRewards(streamId, {from: staker_3})
+            await stakingService.withdrawStream(streamId, {from: staker_3})
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
             //lockId is unlocked:
             await stakingService.unlock(lockId, {from : staker_3, gas: 600000});
@@ -834,8 +932,6 @@ describe("Staking Test", () => {
             pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
             console.log("pending rewards for lockId 3 (previously 4) after unlocking:",_convertToEtherBalance(pendingRewards));
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
-
-            
         })
 
         it("Should get all unlocked main token for staker - 3", async() => {
@@ -850,7 +946,7 @@ describe("Staking Test", () => {
             let beforeBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
 
             await blockchain.mineBlock(15 + await _getTimeStamp())
-            await stakingService.withdrawRewards(streamId, {from: staker_3})
+            await stakingService.withdrawStream(streamId, {from: staker_3})
 
             const afterBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
             
@@ -861,12 +957,7 @@ describe("Staking Test", () => {
         it("Should apply penalty to early withdrawal - larger penalty for earlier withdrawl", async() => {
             const lockId = 4
             const streamId = 0
-            await blockchain.mineBlock(await _getTimeStamp() + 20)
-            await stakingService.withdrawRewards(streamId, {from: staker_3})
-
-            pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
-            console.log("Pending user accounts after withdraw: ",pendingStakedFTHM.toString())
-
+            
             const lockingPeriod = 365 * 24 * 60 * 60;
             unlockTime =  lockingPeriod;
             await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
@@ -874,9 +965,10 @@ describe("Staking Test", () => {
             const penalty = await stakingGetterService.getFeesForEarlyUnlock(lockId, staker_3);
             console.log("penalty for staker if he early unlocks now", _convertToEtherBalance(penalty.toString()))
             await stakingService.earlyUnlock(lockId, {from: staker_3})
-
+            const balanceOfFTHM = await FTHMToken.balanceOf(staker_3)
+            console.log(_convertToEtherBalance(balanceOfFTHM.toString()))
+            
             pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
-
         })
 
         
@@ -932,7 +1024,6 @@ describe("Staking Test", () => {
         it("Should apply penalty to early withdrawal", async() => {
             const lockId = 1
             const streamId = 0
-            await stakingService.withdrawRewards(streamId, {from: staker_3})
             await blockchain.mineBlock(await _getTimeStamp() + 20)
             const lockingPeriod = 60 * 60
             let unlockTime =  lockingPeriod;
@@ -986,11 +1077,31 @@ describe("Staking Test", () => {
         })
 
         it('Should withdraw penalty to treasury', async() =>{
+
+            const treasury = multiSigWallet.address
+            const _withdrawEarlyPenalty = async(
+                _penaltyReceiver
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeWithdrawPenaltyFunction(
+                        _penaltyReceiver
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
             await blockchain.mineBlock(10 + await _getTimeStamp());
             const beforeBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             let totalPenaltyBalance = await stakingService.totalPenaltyBalance();
-            await stakingService.withdrawPenalty(treasury);
             
+            await _withdrawEarlyPenalty(multiSigWallet.address)
             const afterBalanceOfTreasury = await FTHMToken.balanceOf(treasury);
             const expectedDifferenceInBalance = _calculateRemainingBalance(beforeBalanceOfTreasury.toString(),afterBalanceOfTreasury.toString())
             expectedDifferenceInBalance.should.be.bignumber.equal(totalPenaltyBalance.toString())
@@ -1002,7 +1113,25 @@ describe("Staking Test", () => {
         it('Paused contract should not make lock position', async() => {
             const toPauseFlag = 1
 
-            await stakingService.adminPause(toPauseFlag, { from: SYSTEM_ACC})
+            const _pauseStakingContract = async(
+                _flag
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeAdminPause(
+                        _flag
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _pauseStakingContract(toPauseFlag)
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
@@ -1016,7 +1145,25 @@ describe("Staking Test", () => {
 
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0
-            await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
+            const _unpauseStakingContract = async(
+                _flag
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeAdminPause(
+                        _flag
+                    ), {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _unpauseStakingContract(toUnPauseFlag)
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
@@ -1025,13 +1172,32 @@ describe("Staking Test", () => {
         })
 
         it('Should should  make lock position with 0 lock period', async() => {
-            const toUnPauseFlag = 0
-
-            await stakingService.adminPause(toUnPauseFlag, { from: SYSTEM_ACC})
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should not be initalizable twice', async() => {
+
+            const errorMessage = "Vault: Already Initialized";
+            await shouldRevert(
+                vaultService.initVault([FTHMToken.address], {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
+        })
+
+        it('Should not be initalizable twice vault init owner', async() => {
+
+            const errorMessage = "Initializable: contract is already initialized";
+            await shouldRevert(
+                vaultService.initAdminAndOperator(multiSigWallet.address,stakingService.address, {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
         })
     })
 });

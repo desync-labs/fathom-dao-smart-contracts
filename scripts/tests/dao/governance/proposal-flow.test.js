@@ -7,6 +7,8 @@ const {
 } = require('../../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const fs = require('fs');
+const rawdata = fs.readFileSync('./addresses.json');
 
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -64,10 +66,7 @@ describe('Proposal flow', () => {
     let box
     let FTHMToken
     let multiSigWallet
-    
-    let proposer_role
-    let executor_role
-    let timelock_admin_role
+    let proxyAddress;
 
     let proposalId
     let proposalId2
@@ -85,28 +84,20 @@ describe('Proposal flow', () => {
     let lockingPeriod;
     
     before(async () => {
+        
         await snapshot.revertToSnapshot();
-
+        proxyAddress = JSON.parse(rawdata);
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
         box = await artifacts.initializeInterfaceAt("Box", "Box");
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken", "MainToken");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
-        
-        proposer_role = await timelockController.PROPOSER_ROLE();
-        executor_role = await timelockController.EXECUTOR_ROLE();
-        timelock_admin_role = await timelockController.TIMELOCK_ADMIN_ROLE();
 
-        stakingService = await artifacts.initializeInterfaceAt(
-            "StakingPackage",
-            "StakingPackage"
-        );
-
-        vaultService = await artifacts.initializeInterfaceAt(
-            "VaultPackage",
-            "VaultPackage"
-        );
+        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
+        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
+        vaultService = await IVault.at(proxyAddress.VaultProxy)
 
         rewardsCalculator = await artifacts.initializeInterfaceAt(
             "RewardsCalculator",
@@ -166,7 +157,6 @@ describe('Proposal flow', () => {
 
     });
 
-    // TODO: Needs to revert when there is no value
     describe("Box contract", async() => {
 
         it('Retrieve returns a value previously stored', async() => {
@@ -177,7 +167,7 @@ describe('Proposal flow', () => {
             expect((await box.retrieve()).toString()).to.equal('42');
         });
 
-        it('Transfer ownership of the box', async() => {
+        it('Transfer ownership of the box to TimelockController', async() => {
             await box.transferOwnership(timelockController.address);
             
             const new_owner = await box.owner();
@@ -186,10 +176,7 @@ describe('Proposal flow', () => {
 
     });
 
-
     describe("Staking MainToken to receive vMainToken token", async() => {
-
-    
         const _transferFromMultiSigTreasury = async (_account) => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 

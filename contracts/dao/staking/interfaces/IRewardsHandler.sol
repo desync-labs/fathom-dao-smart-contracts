@@ -13,8 +13,8 @@ interface IRewardsHandler {
         uint256 minDepositAmount,
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
-        uint256 tau) external view;
-        
+        uint256 tau
+    ) external view;
 
     function getRewardsAmount(Schedule memory schedule, uint256 lastUpdate) external view returns (uint256);
 }

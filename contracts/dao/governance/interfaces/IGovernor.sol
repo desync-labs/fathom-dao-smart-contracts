@@ -36,14 +36,7 @@ abstract contract IGovernor is IERC165 {
     event VoteCast(address indexed voter, uint256 indexed proposalId, uint8 support, uint256 weight, string reason);
     // Note: `support` values should be seen as buckets. Their interpretation depends on the voting module used.
     // `params` are additional encoded parameters. Their intepepretation also depends on the voting module used.
-    event VoteCastWithParams(
-        address indexed voter,
-        uint256 indexed proposalId,
-        uint8 support,
-        uint256 weight,
-        string reason,
-        bytes params
-    );
+    event VoteCastWithParams(address indexed voter, uint256 indexed proposalId, uint8 support, uint256 weight, string reason, bytes params);
 
     function propose(
         address[] memory targets,
@@ -61,11 +54,7 @@ abstract contract IGovernor is IERC165 {
 
     function castVote(uint256 proposalId, uint8 support) public virtual returns (uint256 balance);
 
-    function castVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string memory reason
-    ) public virtual returns (uint256 balance);
+    function castVoteWithReason(uint256 proposalId, uint8 support, string memory reason) public virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParams(
         uint256 proposalId,
@@ -74,13 +63,7 @@ abstract contract IGovernor is IERC165 {
         bytes memory params
     ) public virtual returns (uint256 balance);
 
-    function castVoteBySig(
-        uint256 proposalId,
-        uint8 support,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public virtual returns (uint256 balance);
+    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) public virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
@@ -92,15 +75,7 @@ abstract contract IGovernor is IERC165 {
         bytes32 s
     ) public virtual returns (uint256 balance);
 
-    function getProposals(uint _numIndexes)
-        public
-        view
-        virtual
-        returns (
-            string[] memory,
-            string[] memory,
-            string[] memory
-        );
+    function getProposals(uint _numIndexes) public view virtual returns (string[] memory, string[] memory, string[] memory);
 
     function getDescription(uint _proposalId) public view virtual returns (string memory);
 
@@ -124,11 +99,7 @@ abstract contract IGovernor is IERC165 {
 
     function getVotes(address account, uint256 blockNumber) public view virtual returns (uint256);
 
-    function getVotesWithParams(
-        address account,
-        uint256 blockNumber,
-        bytes memory params
-    ) public view virtual returns (uint256);
+    function getVotesWithParams(address account, uint256 blockNumber, bytes memory params) public view virtual returns (uint256);
 
     function hasVoted(uint256 proposalId, address account) public view virtual returns (bool);
 
@@ -153,8 +124,6 @@ abstract contract IGovernor is IERC165 {
      * https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams[`URLSearchParams`]
      * JavaScript class.
      */
-    // solhint-disable-next-line func-name-mixedcase
-    function COUNTING_MODE() public pure virtual returns (string memory);
 
     function hashProposal(
         address[] memory targets,
