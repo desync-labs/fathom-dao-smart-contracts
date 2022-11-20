@@ -177,21 +177,16 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account, bool flag) public override pausable(1) {
-        prohibitedEarlyWithdraw[account][locks[account].length + 1] = flag;
-        createLock(amount, lockPeriod, account);
+    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
+        prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+        _createLock(amount, lockPeriod, account);
     }
 
-    function createLock(uint256 amount, uint256 lockPeriod, address account) public override nonReentrant pausable(1) {
-        require(locks[account].length <= maxLockPositions, "max locks");
-        require(amount > 0, "amount 0");
-        require(lockPeriod <= maxLockPeriod, "max lock period");
-        _updateStreamRPS();
-        _lock(account, amount, lockPeriod);
-        IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
+    function createLock(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
+        _createLock(amount, lockPeriod, account);
     }
 
-    function unlock(uint256 lockId) public override nonReentrant pausable(1) {
+    function unlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
@@ -200,7 +195,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
     }
 
-    function unlockPartially(uint256 lockId, uint256 amount) public override nonReentrant pausable(1) {
+    function unlockPartially(uint256 lockId, uint256 amount) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
@@ -209,7 +204,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         _unlock(stakeValue, amount, lockId, msg.sender);
     }
 
-    function earlyUnlock(uint256 lockId) public override nonReentrant pausable(1) {
+    function earlyUnlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         require(prohibitedEarlyWithdraw[msg.sender][lockId] == false, "early infeasible");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
@@ -281,6 +276,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
     function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE) {
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
+    }
+
+    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
+        require(locks[account].length <= maxLockPositions, "max locks");
+        require(amount > 0, "amount 0");
+        require(lockPeriod <= maxLockPeriod, "max lock period");
+        _updateStreamRPS();
+        _lock(account, amount, lockPeriod);
+        IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
     }
 
     function _verifyUnlock(uint256 lockId) internal view {

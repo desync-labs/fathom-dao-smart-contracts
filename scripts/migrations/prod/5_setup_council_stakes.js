@@ -55,7 +55,7 @@ module.exports = async function(deployer) {
     await multiSigWallet.executeTransaction(txIndex, {gas: 8000000});
 
     await mainToken.approve(stakingService.address, T_TO_TRANSFER, {gas: 8000000});
-
+    
     await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, accounts[0], {gas: 600000});
     await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, COUNCIL_1, {gas: 600000});
     await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, COUNCIL_2, {gas: 600000});

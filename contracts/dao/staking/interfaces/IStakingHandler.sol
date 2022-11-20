@@ -39,7 +39,7 @@ interface IStakingHandler {
 
     function createLock(uint256 amount, uint256 lockPeriod, address account) external;
 
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account, bool flag) external;
+    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) external;
 
     function unlockPartially(uint256 lockId, uint256 amount) external;
 

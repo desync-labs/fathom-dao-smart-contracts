@@ -2,9 +2,6 @@ const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 const BN = web3.utils.BN
 const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
-const should = chai.use(require('chai-bn')(BN)).should();
-
-const utils = require('../../helpers/utils');
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
 const fs = require('fs');
@@ -266,15 +263,6 @@ describe("Staking Test", () => {
         stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
         const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
         vaultService = await IVault.at(proxyAddress.VaultProxy)
-        // stakingService = await artifacts.initializeInterfaceAt(
-        //     "StakingPackage",
-        //     "StakingPackage"
-        // );
-
-        // vaultService = await artifacts.initializeInterfaceAt(
-        //     "VaultPackage",
-        //     "VaultPackage"
-        // );
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
@@ -370,8 +358,6 @@ describe("Staking Test", () => {
 
         await _addSupportedTokenFromMultiSigTreasury(streamReward1Address);
         await _addSupportedTokenFromMultiSigTreasury(streamReward2Address);
-       // await vaultService.initVault(multiSigWallet.address, stakingService.address, [FTHMToken.address], {gas: 8000000});
-      //  await vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000});
     });
 
     describe('Creating Locks and Unlocking before any stream reward tokens are issued, and release vote token', async() => {
@@ -387,8 +373,8 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
-                // later to be used in the expectedNVFTHM calculation.  
-                // This mitigates an error created from the slight change in block time.
+            // later to be used in the expectedNVFTHM calculation.  
+            // This mitigates an error created from the slight change in block time.
 
             
             const expectedFTHMBalanceStaker1 = _calculateRemainingBalance(sumToDeposit, beforeFTHMBalance.toString())
@@ -430,12 +416,7 @@ describe("Staking Test", () => {
             actualShares.should.be.bignumber.equal(expectedShares)
             expectedTotalAmountOfVFTHM = expectedTotalAmountOfVFTHM.add(expectedNVFTHM)
 
-        })
-
-        // it("Should update total vote token balance.", async() => {
-        //     const totalAmountOfVFTHM = (await stakingService.totalAmountOfVoteToken()).toString();
-        //     expectedTotalAmountOfVFTHM.should.be.bignumber.equal(totalAmountOfVFTHM);
-        // })
+        });
 
         it("Should have correct total number of staked protocol tokens", async() => {
             //2 deposits:
@@ -446,8 +427,7 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
             const totalShares = await stakingService.totalShares();
             expect(totalShares).to.eql(totalAmountOfStakedToken)
-        })
-
+        });
 
         it("Setup a lock position for staker_2, staker_3, staker_4", async() => {
             const unlockTime =  500;
@@ -478,9 +458,6 @@ describe("Staking Test", () => {
             assert.equal(eventArgs3[2].toString(),expectedLockId)
         })
 
-
-
-
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
             
             const errorMessage = "lock not open";
@@ -492,7 +469,6 @@ describe("Staking Test", () => {
             );
             //  staker_1 would have to use the function earlyUnlock() to unlock before the lock period has passed.
         })
-
 
         it("Setup a third locked position with a 5 second lock period: LockId = 3 - staker_1", async() => {
             const unlockTime =  5;
@@ -508,8 +484,6 @@ describe("Staking Test", () => {
             assert(result.toString(), shouldBeTotal.toString())
             
         })
-
-        
         
         it("Should completely unlock LockId = 1 - staker_1, replace LockId 1 with LockId 3 in the locks array for staker_1", async() => {
             // The lock array for staker_1 should reduce in length by 1 on the backend.
@@ -554,8 +528,6 @@ describe("Staking Test", () => {
             );
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         }) 
-        
-        
 
         it("Should unlock completely locked positions for user - staker_3", async() => {
             await stakingService.unlock(1, {from: staker_3});
@@ -570,8 +542,6 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         });
 
-
-
         it("Should unlock completely locked positions for user - staker_4", async() => {
             await stakingService.unlock(1, {from: staker_4});
             const errorMessage = "out of index";
@@ -581,8 +551,6 @@ describe("Staking Test", () => {
                 errTypes.revert,  
                 errorMessage
             );
-            
-
         });
 
         it("Should unlock completely for locked position 1 - staker_1", async() => {
@@ -599,10 +567,10 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalShares.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
-            // console.log("----- After all the locks are completely unlocked ------")
-            // console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
-            // console.log("totalShares: ", totalShares.toString());
-            // console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
+            console.log("----- After all the locks are completely unlocked ------")
+            console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
+            console.log("totalShares: ", totalShares.toString());
+            console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
         });
     });
     

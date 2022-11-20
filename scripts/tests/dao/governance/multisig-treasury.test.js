@@ -1,7 +1,5 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
-const { assert } = require("chai");
-const BigNumber = require("bignumber.js");
 const {
     shouldRevert,
     errTypes
@@ -13,7 +11,6 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 // Token variables
-const T_TOKEN_TO_MINT = "10000000000000000000000";
 const AMOUNT_OUT_TREASURY = "1000";
 const oneYr = 365 * 24 * 60 * 60;
 
@@ -36,7 +33,6 @@ describe('MultiSig Wallet', () => {
     let owners_after_removal
     let owners_after_addition
 
-    
     before(async () => {
         await snapshot.revertToSnapshot();
 
@@ -57,7 +53,6 @@ describe('MultiSig Wallet', () => {
                 name: 'amount'
             }]
         }, [tokenTimelock.address, AMOUNT_OUT_TREASURY]);
-
 
         encoded_remove_owner_function = web3.eth.abi.encodeFunctionCall({
             name: 'removeOwner',
@@ -88,12 +83,8 @@ describe('MultiSig Wallet', () => {
 
     });
 
-
     describe("MultiSig Ownership", async() => {
-
-
         it('Create transaction to add an owner using submitTransaction', async() => {
-
             const result = await multiSigWallet.submitTransaction(
                 multiSigWallet.address, 
                 EMPTY_BYTES, 
@@ -104,9 +95,6 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Create transaction to remove an owner using submitTransaction', async() => {
-
-            
-
             const result = await multiSigWallet.submitTransaction(
                 multiSigWallet.address, 
                 EMPTY_BYTES, 
@@ -115,7 +103,6 @@ describe('MultiSig Wallet', () => {
             );
             txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
         });
-
 
         it('Create transaction to change the number of required signatures using submitTransaction', async() => {
 
@@ -166,7 +153,6 @@ describe('MultiSig Wallet', () => {
             await multiSigWallet.confirmTransaction(txIndex3, {"from": accounts[1]});
         });
 
-
         it('Revoke confirmation for tx 1 and expect transaction to fail when execution is tried, then reconfirm', async() => {
 
             await multiSigWallet.revokeConfirmation(txIndex1, {from: accounts[1]});
@@ -207,14 +193,8 @@ describe('MultiSig Wallet', () => {
 
     });
 
-    
-
-
     describe("Token distribution with 1 year cliff", async() => {
-
-
         it('Create transaction to release funds from MultiSig treasury to TokenTimelock', async() => {
-
             const result = await multiSigWallet.submitTransaction(
                 mainToken.address, 
                 EMPTY_BYTES, 
@@ -224,10 +204,8 @@ describe('MultiSig Wallet', () => {
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
         });
 
-        
         it('Confirm and Execute the release of funds from MultiSig treasury to TokenTimelock', async() => {
-            
-            // Here the acocunts which have been designated a "Signer" role for the governor 
+            // Here the accounts which have been designated a "Signer" role for the governor 
             //      need to confirm each transaction before it can be executed.
             await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
@@ -236,7 +214,6 @@ describe('MultiSig Wallet', () => {
 
             expect((await mainToken.balanceOf(tokenTimelock.address, {"from": accounts[0]})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
-
 
         it('Shoud revert when trying to claim tokens too early', async() => {
             let errorMessage = "TokenTimelock: current time is before release time";
@@ -249,7 +226,6 @@ describe('MultiSig Wallet', () => {
             );
         });
 
-        
         it('Shoud revert when trying to claim tokens too early', async() => {
             let errorMessage = "TokenTimelock: current time is before release time";
             initial_owners = await multiSigWallet.getOwners();
@@ -273,10 +249,7 @@ describe('MultiSig Wallet', () => {
             expect((await mainToken.balanceOf(BENEFICIARY, 
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
-
     });
-
-    
 });
 
 
