@@ -790,7 +790,7 @@ describe("Staking Test", () => {
             console.log("expected Rewards for staker_2: ",_convertToEtherBalance(expectedRewards))
 
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const pendingRewards = (await streamReward2.balanceOf(staker_2)).toString()
+            const pendingRewards = (await stakingService.getUsersPendingRewards(staker_2, 2)).toString()
             console.log("pending rewards for staker_ 2:",_convertToEtherBalance(pendingRewards));
 
             // Minute changes in blocktimes effect the rewards calculations.  
@@ -799,15 +799,16 @@ describe("Staking Test", () => {
 
         it('Claim rewards for stream 2 staker_3,staker_4', async() => {
             //Time stamp increased = 20 * 24 * 60 * 60
-            const lockId = 1
-            let result1 = await stakingService.claimAllLockRewardsForStream(2,{from:staker_3, gas: maxGasForTxn});
+            const lockId = 1;
+            const stream = 2;
+            let result1 = await stakingService.claimAllLockRewardsForStream(stream,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
-            let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString()
+            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
             console.log("pending rewards staker_3 - 1st Claim: lockId -1",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
+            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4, stream)).toString()
             console.log("pending rewards staker_4 - 1st Claim: lockId -1",_convertToEtherBalance(pendingRewards));
         })
         
@@ -817,29 +818,44 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(timestamp + mineToTimestamp);
 
             const lockId = 1
-            await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
+            const stream = 2;
+            await stakingService.claimRewards(stream,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20)
-            await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
-            let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString()
+            await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
+            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
             console.log("pending rewards staker_3 - 2nd Claim: lockId -1",_convertToEtherBalance(pendingRewards));
-            pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
+            pendingRewards = (await stakingService.getUsersPendingRewards(staker_4, stream)).toString()
             console.log("pending rewards staker_4 - 2nd Claim: lockId - 1",_convertToEtherBalance(pendingRewards));
         })
         
         it("Should withdraw stream rewards for all stream 2 stakers", async() => {
             let timestamp = await _getTimeStamp();
-            let mineToTimestamp = 15
+            let mineToTimestamp = 15;
             await blockchain.mineBlock(timestamp + mineToTimestamp);
+
+            const stream = 2;
+
+            let beforeBalanceStaker2 = await streamReward2.balanceOf(staker_2)
+            console.log("balance of stream reward token 2, staker _2, before claim: ",_convertToEtherBalance(beforeBalanceStaker2.toString()))
+            await stakingService.withdrawAllStreams({from: staker_2})
+            let afterBalanceStaker2 = await streamReward2.balanceOf(staker_2)
+            console.log("balance of stream reward token 2, staker _2, after claim: ",_convertToEtherBalance(afterBalanceStaker2.toString()))
             
             let beforeBalanceStaker3 = await streamReward2.balanceOf(staker_3)
-            console.log("balance of stream reward token 2, staker _3, after claim: ",_convertToEtherBalance(beforeBalanceStaker3.toString()))
+            console.log("balance of stream reward token 2, staker _3, before claim: ",_convertToEtherBalance(beforeBalanceStaker3.toString()))
+            await stakingService.withdrawStream(stream, {from: staker_3})
+            let afterBalanceStaker3 = await streamReward2.balanceOf(staker_3)
+            console.log("balance of stream reward token 2, staker _3, after claim: ",_convertToEtherBalance(afterBalanceStaker3.toString()))
             
+            let beforeBalanceStaker4 = await streamReward2.balanceOf(staker_4)
+            console.log("balance of stream reward token 2, staker _4, before claim: ",_convertToEtherBalance(beforeBalanceStaker4.toString()))
+            await stakingService.withdrawStream(stream, {from: staker_4})
             let afterBalanceStaker4 = await streamReward2.balanceOf(staker_4)
-            console.log("balance of stream reward token 2, staker _2, after claim: ",_convertToEtherBalance(afterBalanceStaker4.toString()))
-            
-            assert.equal((await stakingService.getUsersPendingRewards(staker_2,2)).toString(),"0")
-            assert.equal((await stakingService.getUsersPendingRewards(staker_3,2)).toString(),"0")
-            assert.equal((await stakingService.getUsersPendingRewards(staker_3,2)).toString(),"0")
+            console.log("balance of stream reward token 2, staker _4, after claim: ",_convertToEtherBalance(afterBalanceStaker4.toString()))
+
+            assert.equal((await stakingService.getUsersPendingRewards(staker_2, 2)).toString(),"0")
+            assert.equal((await stakingService.getUsersPendingRewards(staker_3, 2)).toString(),"0")
+            assert.equal((await stakingService.getUsersPendingRewards(staker_3, 2)).toString(),"0")
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
      
@@ -922,6 +938,7 @@ describe("Staking Test", () => {
             await stakingService.claimRewards(streamId,lockId,{from:staker_3});
             
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
+            await stakingService.withdrawStream(streamId, {from: staker_3})
 
             //-- main logic --  starts from here:
             timestamp = await _getTimeStamp();
@@ -930,10 +947,13 @@ describe("Staking Test", () => {
 
             //lockId 3 rewards claimed
             await stakingService.claimRewards(streamId,lockId,{from:staker_3});
+            let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
+            console.log("pending rewards for lock Id 3 at first claim",_convertToEtherBalance(pendingRewards));
 
             mineToTimestamp = 100
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
             //lockId 3 all rewards for streamId 2 withdrawn
+            await stakingService.withdrawStream(streamId, {from: staker_3})
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
             //lockId is unlocked:
             await stakingService.unlock(lockId, {from : staker_3, gas: 600000});
@@ -941,6 +961,8 @@ describe("Staking Test", () => {
 
             //so Now, the previous lockId 4 is lockId 3:
             await stakingService.claimRewards(streamId,lockId,{from:staker_3});
+            pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
+            console.log("pending rewards for lockId 3 (previously 4) after unlocking:",_convertToEtherBalance(pendingRewards));
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
         })
 
@@ -956,6 +978,7 @@ describe("Staking Test", () => {
             let beforeBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
 
             await blockchain.mineBlock(15 + await _getTimeStamp())
+            await stakingService.withdrawStream(streamId, {from: staker_3})
 
             const afterBalanceOfStaker_3 = await FTHMToken.balanceOf(staker_3);
             
@@ -966,8 +989,7 @@ describe("Staking Test", () => {
         it("Should apply penalty to early withdrawal - larger penalty for earlier withdrawl", async() => {
             const lockId = 4
             const streamId = 0
-            await blockchain.mineBlock(await _getTimeStamp() + 20)
-
+            
             const lockingPeriod = 365 * 24 * 60 * 60;
             unlockTime =  lockingPeriod;
             await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
@@ -978,6 +1000,7 @@ describe("Staking Test", () => {
             const balanceOfFTHM = await FTHMToken.balanceOf(staker_3)
             console.log(_convertToEtherBalance(balanceOfFTHM.toString()))
             
+            pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
         })
 
         
@@ -1039,6 +1062,9 @@ describe("Staking Test", () => {
             await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.earlyUnlock(lockId, {from: staker_3})
+
+            pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
+            console.log("Pending user accounts with early withdrawal: ",_convertToEtherBalance(pendingStakedFTHM.toString()))
 
             const errorMessage = "out of index";
 

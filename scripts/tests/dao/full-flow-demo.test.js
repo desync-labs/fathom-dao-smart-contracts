@@ -1096,15 +1096,20 @@ describe("DAO Demo", () => {
         it("Wait one year and unlock more than was staked, because of staking rewards", async() => {
 
             const oneYr = 365 * 24 * 60 * 60;
+            const threeSec = 3 * 60;
 
             const amount2 = 200000*10**18;
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_1});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_1});
             expect(parseInt(await FTHMToken.balanceOf(comity_1))).to.be.above(amount2);
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.unlock(1, {from: comity_2});
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            await stakingService.withdrawStream(0, {from: comity_2});
             expect(parseInt(await FTHMToken.balanceOf(comity_2))).to.be.above(amount2);
 
         })

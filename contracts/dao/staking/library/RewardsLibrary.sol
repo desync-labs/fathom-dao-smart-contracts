@@ -5,7 +5,7 @@ pragma solidity 0.8.13;
 
 import "../StakingStructs.sol";
 
-library RewardsLibrary{
+library RewardsLibrary {
     // solhint-disable not-rely-on-time
     function _validateStreamParameters(
         address streamOwner,

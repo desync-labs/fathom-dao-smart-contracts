@@ -2,12 +2,14 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 pragma solidity 0.8.13;
-import "../vault/packages/VaultPackage.sol";
+
+import "../../../staking/vault/packages/VaultPackage.sol";
+
 interface IVaultUpgrade{
-     function getIsSupportedToken(address token) view external returns (bool);
+    function getIsSupportedToken(address token) external view returns (bool);
 }
-contract VaultUpgrade is VaultPackage,IVaultUpgrade {
-    
+
+contract VaultUpgrade is VaultPackage, IVaultUpgrade {
     function getIsSupportedToken(address token) public view override returns (bool) {
         return isSupportedToken[token];
     }

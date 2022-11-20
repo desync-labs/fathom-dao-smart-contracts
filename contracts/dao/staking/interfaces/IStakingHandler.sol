@@ -51,16 +51,18 @@ interface IStakingHandler {
     function claimAllStreamRewardsForLock(uint256 lockId) external;
     function claimAllLockRewardsForStream(uint256 streamId) external;
 
-    function withdrawAllRewards() external;
+    function withdrawStream(uint256 streamId) external;
+    function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-    function setWeight(Weight memory _weight)  external;
 
     function updateVault(address _vault) external;
-
-    function setVoteToken(address _voteToken)  external;
-    function setRewardsCalculator(address _rewardsCalculator) external;
-    function setVoteCoefficient(VoteCoefficient memory voteCoef) external;
-    function setMaxLockPeriod(uint256 _maxLockPeriod)  external;
-    function setMaxLockPositions(uint256 _maxLockPositions) external;
+    function updateConfig(
+        Weight calldata _weight,
+        address _voteToken,
+        address _rewardsCalculator,
+        VoteCoefficient calldata _voteCoef,
+        uint256 _maxLockPeriod,
+        uint256 _maxLockPositions
+    ) external;
 }

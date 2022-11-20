@@ -53,8 +53,8 @@ contract StakingHandlers is
         _validateStreamParameters(
             _admin,
             _mainToken,
-            scheduleRewards[0],
-            scheduleRewards[0],
+            scheduleRewards[MAIN_STREAM],
+            scheduleRewards[MAIN_STREAM],
             scheduleTimes,
             scheduleRewards,
             tau
@@ -86,8 +86,8 @@ contract StakingHandlers is
             })
         );
         maxLockPeriod = ONE_YEAR;
-        emit StreamProposed(streamId, _admin, mainToken, scheduleRewards[0]);
-        emit StreamCreated(streamId, _admin, mainToken, scheduleRewards[0]);
+        emit StreamProposed(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
+        emit StreamCreated(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
     }
     /**
      * @dev An admin of the staking contract can whitelist (propose) a stream.
@@ -147,7 +147,7 @@ contract StakingHandlers is
 
     function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
+        require(stream.status == StreamStatus.PROPOSED, "not proposed");
         require(stream.schedule.time[0] >= block.timestamp, "prop expire");
 
         require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
@@ -168,7 +168,7 @@ contract StakingHandlers is
 
     function cancelStreamProposal(uint256 streamId) public override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
+        require(stream.status == StreamStatus.PROPOSED, "not proposed");
         stream.status = StreamStatus.INACTIVE;
 
         emit StreamProposalCancelled(streamId, stream.owner, stream.rewardToken);
@@ -221,17 +221,15 @@ contract StakingHandlers is
         _updateStreamRPS();
         uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
-        _withdrawMainToken();
     }
 
     function unlockPartially(uint256 lockId, uint256 amount) public override nonReentrant pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end <= block.timestamp, "!lockopen");
+        require(lock.end <= block.timestamp, "lock not open");
         _updateStreamRPS();
         uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
         _unlock(stakeValue, amount, lockId, msg.sender);
-        _withdrawMainToken();
     }
 
     function earlyUnlock(uint256 lockId) public override nonReentrant pausable(1) {
@@ -241,14 +239,12 @@ contract StakingHandlers is
         require(lock.end > block.timestamp, "lock opened");
         _updateStreamRPS();
         _earlyUnlock(lockId, msg.sender);
-        _withdrawMainToken();
     }
 
     function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
         _updateStreamRPS();
         _moveRewardsToPending(msg.sender, streamId, lockId);
-        _withdraw(streamId);
     }
     
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
@@ -256,21 +252,21 @@ contract StakingHandlers is
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
-        for (uint256 i = 0; i < streams.length; i++) {
-            _withdraw(i);
-        }
     }
 
     function claimAllLockRewardsForStream(uint256 streamId) public override pausable(1) {
         _updateStreamRPS();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
+    }
+
+    function withdrawStream(uint256 streamId) public override pausable(1) {
+        User storage userAccount = users[msg.sender];
+        require(userAccount.pendings[streamId] != 0, "no pendings");
+        require(block.timestamp > userAccount.releaseTime[streamId], "not released");
         _withdraw(streamId);
     }
-    /**
-     * @dev withdraw all claimed balances which have passed pending period.
-     * This function will reach gas limit with too many streams
-     */
-    function withdrawAllRewards() public override pausable(1) {
+
+    function withdrawAllStreams() public override pausable(1) {
         User storage userAccount = users[msg.sender];
         for (uint256 i = 0; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i]) {
@@ -279,32 +275,20 @@ contract StakingHandlers is
         }
     }
 
-    function setWeight(Weight memory _weight) override public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
-        require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
+    function updateConfig(
+        Weight memory _weight,
+        address _voteToken,
+        address _rewardsCalculator,
+        VoteCoefficient memory _voteCoef,
+        uint256 _maxLockPeriod,
+        uint256 _maxLockPositions
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         weight = _weight;
-    }
-
-    function setVoteToken(address _voteToken) override public onlyRole(DEFAULT_ADMIN_ROLE){
-        require(_voteToken != address(0), "zero addr");
         voteToken = _voteToken;
-    }
-
-    function setRewardsCalculator(address _rewardsCalculator) override public onlyRole(DEFAULT_ADMIN_ROLE){
-        require(_rewardsCalculator != address(0), "zero addr");
         rewardsCalculator = _rewardsCalculator;
-    }  
-
-    function setVoteCoefficient(VoteCoefficient memory voteCoef) override public onlyRole(DEFAULT_ADMIN_ROLE){
-        voteShareCoef = voteCoef.voteShareCoef;
-        voteLockCoef = voteCoef.voteLockCoef;
-    }  
-
-    function setMaxLockPeriod(uint256 _maxLockPeriod) override public onlyRole(DEFAULT_ADMIN_ROLE){
+        voteShareCoef = _voteCoef.voteShareCoef;
+        voteLockCoef = _voteCoef.voteLockCoef;
         maxLockPeriod = _maxLockPeriod;
-    }
-
-    function setMaxLockPositions(uint256 _maxLockPositions) override public onlyRole(DEFAULT_ADMIN_ROLE){
         maxLockPositions = _maxLockPositions;
     }
 
@@ -324,11 +308,6 @@ contract StakingHandlers is
     function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE) {
         require(totalPenaltyBalance > 0, "no penalty");
         _withdrawPenalty(penaltyReceiver);
-    }
-
-    function _withdrawMainToken() internal{
-        // main stream id = 0
-        _withdraw(0);
     }
 
     function _verifyUnlock(uint256 lockId) internal view  {

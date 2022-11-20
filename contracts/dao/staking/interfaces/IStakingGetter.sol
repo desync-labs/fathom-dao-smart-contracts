@@ -7,8 +7,6 @@ import "../StakingStructs.sol";
 interface IStakingGetter {
     function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
 
-    function getPending(uint256 streamId, address account) external view returns (uint256);
-
     function getStream(uint256 streamId)
         external
         view

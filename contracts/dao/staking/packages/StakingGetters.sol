@@ -30,10 +30,6 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         uint256 userSharesOfLock = lock.positionStreamShares;
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
-    
-    function getPending(uint256 streamId, address account) external view override returns (uint256) {
-        return users[account].pendings[streamId];
-    }
 
     function getStream(uint256 streamId)
         external

@@ -451,7 +451,7 @@ describe("Staking Test and Upgrade Test", () => {
     
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
-            const StakingUpgrade = artifacts.require('./dao/staking/upgrades/StakingUpgrade.sol');
+            const StakingUpgrade = artifacts.require('./dao/test/staking/upgrades/StakingUpgrade.sol');
             await _proposeUpgrade(
                 proxyAddress.StakingProxy,
                 stakingUpgrade.address
@@ -485,7 +485,7 @@ describe("Staking Test and Upgrade Test", () => {
     
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
-            const VaultUpgrade = artifacts.require('./dao/staking/upgrades/VaultUpgrade.sol');
+            const VaultUpgrade = artifacts.require('./dao/test/staking/upgrades/VaultUpgrade.sol');
             await _proposeUpgrade(
                 proxyAddress.VaultProxy,
                 vaultUpgrade.address

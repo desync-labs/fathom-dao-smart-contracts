@@ -1,5 +1,5 @@
-const PackageStakingUpgrade = artifacts.require('./dao/staking/upgrades/StakingUpgrade.sol');
-const PackageVaultUpgrade = artifacts.require('./dao/staking/upgrades/VaultUpgrade.sol');
+const PackageStakingUpgrade = artifacts.require('./dao/test/staking/upgrades/StakingUpgrade.sol');
+const PackageVaultUpgrade = artifacts.require('./dao/test/staking/upgrades/VaultUpgrade.sol');
 
 module.exports = async function(deployer) {
     let promises = [

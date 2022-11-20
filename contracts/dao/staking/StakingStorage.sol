@@ -9,6 +9,7 @@ import "./interfaces/IStakingStorage.sol";
 import "./library/StakingLibrary.sol";
 
 contract StakingStorage{
+    uint256 internal constant MAIN_STREAM = 0;
     //Set according to Tokenomics: 1e50 -> 1e50/1e18. So Max Supply is 1 * 1e32;
     uint256 internal constant RPS_MULTIPLIER = 1e50;
     uint128 internal constant POINT_MULTIPLIER = 1e18;
@@ -19,7 +20,7 @@ contract StakingStorage{
     ///@notice Checks if the staking is initialized
 
     uint256 public maxLockPositions;
-    mapping(address => mapping(uint256 => bool)) prohibitedEarlyWithdraw;
+    mapping(address => mapping(uint256 => bool)) public prohibitedEarlyWithdraw;
     
     uint256 internal touchedAt;
 

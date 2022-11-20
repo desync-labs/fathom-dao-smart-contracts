@@ -154,7 +154,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 lockId,
         address account
     ) internal {
-        
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId -1];
         totalAmountOfStakedToken -= stakeValue;
@@ -167,14 +166,13 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         uint256 amountToRestake = stakeValue - amount;
 
-        userAccount.pendings[0] += amount;
-        userAccount.releaseTime[0] = block.timestamp + streams[0].tau;
+        userAccount.pendings[MAIN_STREAM] += amount;
+        userAccount.releaseTime[MAIN_STREAM] = block.timestamp + streams[MAIN_STREAM].tau;
         emit Unstaked(account, amount,lockId);
         ///@notice: Only update the lock if it has remaining stake
         if (amountToRestake > 0) {
             _restakeThePosition(amountToRestake,lockId,updateLock,userAccount);
-            }
-        else {
+        } else {
             _removeLockPosition(userAccount, account, lockId);
         }
     }
@@ -222,7 +220,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
         uint256 penalty = (weighingCoef * amount) / 100000;
         User storage userAccount = users[account];
-        userAccount.pendings[0] -= penalty;
+        userAccount.pendings[MAIN_STREAM] -= penalty;
         totalPenaltyBalance += penalty;
     }
 
@@ -269,7 +267,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards
         uint256 shares =  amountOfTokenShares + (voteShareCoef * nVoteToken) / 1000; 
-        uint256 slopeStart = streams[0].schedule.time[0] + ONE_MONTH;
+        uint256 slopeStart = streams[MAIN_STREAM].schedule.time[0] + ONE_MONTH;
         uint256 slopeEnd = slopeStart + ONE_YEAR;
         if (timestamp <= slopeStart) return shares * weight.maxWeightShares;
         if (timestamp >= slopeEnd) return shares * weight.minWeightShares;
