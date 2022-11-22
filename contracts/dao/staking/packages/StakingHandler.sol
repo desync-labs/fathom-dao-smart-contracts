@@ -70,7 +70,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
-                rewardDepositAmount: 0,
+                rewardDepositAmount: scheduleRewards[0],
                 rewardClaimedAmount: 0,
                 schedule: schedule,
                 status: StreamStatus.ACTIVE,
@@ -191,7 +191,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
         _updateStreamRPS();
-        uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
     }
 
@@ -200,7 +200,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
         _updateStreamRPS();
-        uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, amount, lockId, msg.sender);
     }
 

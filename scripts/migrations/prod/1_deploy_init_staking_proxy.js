@@ -48,7 +48,7 @@ const _getTimeStamp = async () => {
 const oneYear = 31556926;
 
 const maxWeightShares = 1024;
-const minWeightShares = 256;
+const minWeightShares = 768;
 const maxWeightPenalty = 3000;
 const minWeightPenalty = 100;
 const weightMultiplier = 10;
@@ -71,7 +71,7 @@ module.exports = async function(deployer) {
         );
         
         
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
+        const startTime =  await _getTimeStamp() + 3 * 24 * 60 * 60;
 
         const scheduleTimes = [
             startTime,

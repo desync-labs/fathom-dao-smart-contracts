@@ -18,10 +18,9 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
 
     function _moveRewardsToPending(address account, uint256 streamId, uint256 lockId) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
-        require(streamId != 0, "compound");
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];
-        require(lock.tokenShares != 0, "No Stake");
+        require(lock.amountOfToken != 0, "No Stake");
         uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) * lock.positionStreamShares) /
             RPS_MULTIPLIER;
 
@@ -30,19 +29,19 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         userAccount.rpsDuringLastClaimForLock[lockId][streamId] = streams[streamId].rps;
         userAccount.releaseTime[streamId] = block.timestamp + streams[streamId].tau;
         // If the stream is blacklisted, remaining unclaimed rewards will be transfered out.
+        require(streams[streamId].rewardClaimedAmount + reward <= streams[streamId].rewardDepositAmount, "insufficient rewards");
         streams[streamId].rewardClaimedAmount += reward;
         emit Pending(streamId, account, userAccount.pendings[streamId]);
     }
 
     function _moveAllStreamRewardsToPending(address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
-        for (uint256 i = 1; i < streamsLength; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             if (streams[i].status == StreamStatus.ACTIVE) _moveRewardsToPending(account, i, lockId);
         }
     }
 
     function _moveAllLockPositionRewardsToPending(address account, uint256 streamId) internal {
-        require(streamId != 0, "compound");
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         LockedBalance[] storage locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
@@ -54,9 +53,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
 
     function _updateStreamRPS() internal {
         if (touchedAt == block.timestamp) return; // Already updated by previous transaction
-        if (totalShares != 0) {
-            totalAmountOfStakedToken += _getRewardsAmount(0, touchedAt);
-            for (uint256 i = 1; i < streams.length; i++) {
+        if (totalAmountOfStakedToken != 0) {
+            for (uint256 i = 0; i < streams.length; i++) {
                 if (streams[i].status == StreamStatus.ACTIVE) {
                     streams[i].rps = _getLatestRewardsPerShare(i);
                 }

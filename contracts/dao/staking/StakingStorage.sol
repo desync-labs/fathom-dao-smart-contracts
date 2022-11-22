@@ -26,7 +26,6 @@ contract StakingStorage {
 
     ///@notice The below three are used for autocompounding feature and weighted shares
     uint256 public totalAmountOfStakedToken;
-    uint256 public totalShares;
     uint256 public totalStreamShares;
     ///@notice voteToken -> vote Token
     uint256 public totalAmountOfVoteToken;

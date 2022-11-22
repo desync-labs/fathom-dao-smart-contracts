@@ -998,16 +998,19 @@ describe("DAO Demo", () => {
 
             const oneYr = 365 * 24 * 60 * 60;
             const threeSec = 3 * 60;
-
+            
             const amount2 = 200000*10**18;
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
+            await stakingService.claimAllStreamRewardsForLock(1, {from: comity_1})
             await stakingService.unlock(1, {from: comity_1});
             await blockchain.mineBlock(await _getTimeStamp() + threeSec);
+            
             await stakingService.withdrawStream(0, {from: comity_1});
             expect(parseInt(await FTHMToken.balanceOf(comity_1))).to.be.above(amount2);
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
+            await stakingService.claimAllStreamRewardsForLock(1, {from: comity_2})
             await stakingService.unlock(1, {from: comity_2});
             await blockchain.mineBlock(await _getTimeStamp() + threeSec);
             await stakingService.withdrawStream(0, {from: comity_2});

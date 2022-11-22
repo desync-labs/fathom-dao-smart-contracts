@@ -31,12 +31,12 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return locks.length;
     }
 
-    function getLock(address account, uint lockId) public view override returns (uint128, uint128, uint128, uint128, uint64, address) {
+    function getLock(address account, uint lockId) public view override returns (uint128, uint128, uint128, uint64, address) {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
         require(lockId > 0, "lockId cant be 0");
-        return (lock.amountOfToken, lock.amountOfVoteToken, lock.tokenShares, lock.positionStreamShares, lock.end, lock.owner);
+        return (lock.amountOfToken, lock.amountOfVoteToken, lock.positionStreamShares, lock.end, lock.owner);
     }
 
     function getUserTotalDeposit(address account) public view override returns (uint256) {
@@ -82,10 +82,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         require(lockId > 0, "lockId cant be 0");
         require(lock.end > block.timestamp, "lock opened, no penalty");
 
-        uint256 totalAmountOfStakedToken = IStakingHelper(stakingContract).totalAmountOfStakedToken();
-        uint256 totalShares = IStakingHelper(stakingContract).totalShares();
 
-        uint256 amount = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 amount = lock.amountOfToken;
         uint256 lockEnd = lock.end;
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
         uint256 penalty = (weighingCoef * amount) / 100000;

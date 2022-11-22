@@ -375,8 +375,6 @@ describe("Staking Test and Upgrade Test", () => {
             let result = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStakedToken = result;
             assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
-            const totalShares = await stakingService.totalShares();
-            expect(totalShares).to.eql(totalAmountOfStakedToken)
             console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedToken.toString()))
         })
 
@@ -510,7 +508,6 @@ describe("Staking Test and Upgrade Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
-
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
             console.log(".........After all the locks are completely unlocked.........")
