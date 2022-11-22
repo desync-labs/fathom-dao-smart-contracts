@@ -4,8 +4,7 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-const fs = require('fs');
-const rawdata = fs.readFileSync('./addresses.json');
+
 
 const maxGasForTxn = 600000
 const {
@@ -239,7 +238,6 @@ describe("Staking Test", () => {
 
     before(async() => {
         await snapshot.revertToSnapshot();
-        proxyAddress = JSON.parse(rawdata);
         maxWeightShares = 1024;
         minWeightShares = 256;
         maxWeightPenalty = 3000;
@@ -259,10 +257,15 @@ describe("Staking Test", () => {
         vMainTokenCoefficient = 500;
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
-        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
-        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
-        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-        vaultService = await IVault.at(proxyAddress.VaultProxy)
+        stakingService = await artifacts.initializeInterfaceAt(
+            "IStaking",
+            "StakingProxy"
+        )
+
+        vaultService = await artifacts.initializeInterfaceAt(
+            "IVault",
+            "VaultProxy"
+        )
 
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",

@@ -1,19 +1,18 @@
-const fs = require('fs');
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
 
 const blockchain = require("../../tests/helpers/blockchain");
-const upgrades = require("../../helpers/upgrades");
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
+const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 const StakingPackage = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-
-const rawdata = fs.readFileSync('../../../addresses.json');
-let proxyAddress = JSON.parse(rawdata);
+const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.sol');
+const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
+const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 
 const _createWeightObject = (
     maxWeightShares,
@@ -61,6 +60,8 @@ const lockingVoteWeight = 365 * 24 * 60 * 60;
 
 module.exports = async function(deployer) {
     try{
+        const vaultService = await IVault.at(VaultProxy.address)
+
         const weightObject =  _createWeightObject(
             maxWeightShares,
             minWeightShares,
@@ -68,7 +69,8 @@ module.exports = async function(deployer) {
             minWeightPenalty,
             weightMultiplier
         );
-
+        
+        
         const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
 
         const scheduleTimes = [
@@ -92,7 +94,6 @@ module.exports = async function(deployer) {
             lockingVoteWeight
         );
 
-        const vaultService = await IVault.at(proxyAddress.VaultProxy)
 
         let toInitialize =  web3.eth.abi.encodeFunctionCall({
             name: 'initializeStaking',
@@ -156,18 +157,11 @@ module.exports = async function(deployer) {
                 weightObject, scheduleTimes, scheduleRewards, tau, 
                 voteObject, maxNumberOfLocks, RewardsCalculator.address]);
         
-        [proxyAdminAddr, proxyAddr] = await upgrades.deployProxy(
-            deployer, 
-            StakingPackage.address, 
-            toInitialize, 
-            "StakingProxyAdmin",
-            "StakingProxy"
-        );
+        await deployer.deploy(StakingProxyAdmin, {gas:8000000});
+        await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});
         
-        await vaultService.initAdminAndOperator(MultiSigWallet.address,proxyAddr)
-    
+        await vaultService.initAdminAndOperator(MultiSigWallet.address,StakingProxy.address)
     } catch(error) {
         console.log(error)
     }
-
 }

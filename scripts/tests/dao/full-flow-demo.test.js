@@ -42,8 +42,7 @@ const {
 } = require('../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const fs = require('fs');
-const rawdata = fs.readFileSync('./addresses.json');
+
 
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -286,7 +285,6 @@ describe("DAO Demo", () => {
     const sumToApprove = web3.utils.toWei('5000','ether');
 
     before(async() => {
-        proxyAddress = JSON.parse(rawdata);
         timelockController = await artifacts.initializeInterfaceAt("TimelockController", "TimelockController");
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
         mainTokenGovernor = await artifacts.initializeInterfaceAt("MainTokenGovernor", "MainTokenGovernor");
@@ -305,11 +303,15 @@ describe("DAO Demo", () => {
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
-        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
-        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
-        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-        vaultService = await IVault.at(proxyAddress.VaultProxy)
+        stakingService = await artifacts.initializeInterfaceAt(
+            "IStaking",
+            "StakingProxy"
+        )
 
+        vaultService = await artifacts.initializeInterfaceAt(
+            "IVault",
+            "VaultProxy"
+        )
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
             "StakingGettersHelper"

@@ -8,6 +8,7 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/deployment', '--network', 'apothem'],
     ['execute', '--path', 'scripts/migrations/setup', '--network', 'apothem'],
     ['execute', '--path', 'scripts/migrations/prod', '--network', 'apothem'],
+    ['execute', '--path', 'scripts/migrations/saveAddress', '--network', 'apothem']
   ],
   deployXDC: [
     ['execute', '--path', 'scripts/migrations/deployment', '--network', 'xdc'],
@@ -20,6 +21,7 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/setup'],
     ['execute', '--path', 'scripts/migrations/test'],
     ['execute', '--path', 'scripts/migrations/upgrades'],
+    ['execute', '--path', 'scripts/migrations/saveAddress'],
   ],
   createStablecoinPool: [
     ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']
