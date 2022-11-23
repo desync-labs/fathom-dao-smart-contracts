@@ -23,10 +23,10 @@ module.exports = async function(deployer) {
         vaultImplementation: VaultPackage.address,
         rewardsCalculator: RewardsCalculator.address,
         stakingProxyAdmin: StakingProxyAdmin.address,
-        stakingPackage: StakingProxy.address,
+        staking: StakingProxy.address,
         vaultProxyAdmin: VaultProxyAdmin.address,
-        vaultPackage: VaultProxy.address,
-        stakingGettersHelper: StakingGettersHelper.address
+        vault: VaultProxy.address,
+        stakingGetter: StakingGettersHelper.address
     }
     
     let data = JSON.stringify(addresses);
