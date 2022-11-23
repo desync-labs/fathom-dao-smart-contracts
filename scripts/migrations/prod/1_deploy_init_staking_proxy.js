@@ -82,10 +82,10 @@ module.exports = async function(deployer) {
         ];
 
         const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
+            web3.utils.toWei('20000', 'ether'),
+            web3.utils.toWei('10000', 'ether'),
+            web3.utils.toWei('5000', 'ether'),
+            web3.utils.toWei('2500', 'ether'),
             web3.utils.toWei("0", 'ether')
         ];
 

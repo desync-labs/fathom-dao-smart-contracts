@@ -348,11 +348,7 @@ describe("DAO Demo", () => {
 
         await _transferFromMultiSigTreasury(staker_1, sumToTransfer);
         await _transferFromMultiSigTreasury(staker_2, sumToTransfer);
-        const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
-            
         vault_test_address = vaultService.address;
-
-        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
 
         const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
             const result = await multiSigWallet.submitTransaction(
@@ -1003,6 +999,7 @@ describe("DAO Demo", () => {
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.claimAllStreamRewardsForLock(1, {from: comity_1})
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
             await stakingService.unlock(1, {from: comity_1});
             await blockchain.mineBlock(await _getTimeStamp() + threeSec);
             
@@ -1011,6 +1008,7 @@ describe("DAO Demo", () => {
 
             await blockchain.mineBlock(await _getTimeStamp() + oneYr);
             await stakingService.claimAllStreamRewardsForLock(1, {from: comity_2})
+            await blockchain.mineBlock(await _getTimeStamp() + threeSec);
             await stakingService.unlock(1, {from: comity_2});
             await blockchain.mineBlock(await _getTimeStamp() + threeSec);
             await stakingService.withdrawStream(0, {from: comity_2});

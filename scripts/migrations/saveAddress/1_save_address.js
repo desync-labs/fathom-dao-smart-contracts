@@ -19,13 +19,13 @@ module.exports = async function(deployer) {
         multiSigWallet: MultiSigWallet.address,
         fthmToken: MainToken.address,
         fthmGovernor: MainTokenGovernor.address,
-        stakingPackage: PackageStaking.address,
-        vaultPackage: VaultPackage.address,
+        stakingImplementation: PackageStaking.address,
+        vaultImplementation: VaultPackage.address,
         rewardsCalculator: RewardsCalculator.address,
         stakingProxyAdmin: StakingProxyAdmin.address,
-        stakingProxy: StakingProxy.address,
+        stakingPackage: StakingProxy.address,
         vaultProxyAdmin: VaultProxyAdmin.address,
-        vaultProxy: VaultProxy.address,
+        vaultPackage: VaultProxy.address,
         stakingGettersHelper: StakingGettersHelper.address
     }
     

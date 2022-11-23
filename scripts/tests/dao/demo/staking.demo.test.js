@@ -280,9 +280,6 @@ describe("Staking Test and Upgrade Test", () => {
         
         await vMainToken.approve(stakingService.address, vMainTokensToApprove, {from: SYSTEM_ACC})
 
-        const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
-        
-        await _transferFromMultiSigTreasury(vaultService.address, twentyPercentOfFTHMTotalSupply);
         const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 

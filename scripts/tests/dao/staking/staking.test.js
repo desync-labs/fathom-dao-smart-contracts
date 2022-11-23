@@ -315,14 +315,8 @@ describe("Staking Test", () => {
         await _transferFromMultiSigTreasury(stream_manager, sumForProposer);
         
         await vMainToken.approve(stakingService.address,vMainTokensToApprove, {from: SYSTEM_ACC})
-
-        const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
-            
         
         vault_test_address = vaultService.address;
-
-        await _transferFromMultiSigTreasury(vault_test_address, twentyPercentOfFTHMTotalSupply);
-
         const sumToTransfer2 = web3.utils.toWei('25000', 'ether');
         await _transferFromMultiSigTreasury(accounts[9], sumToTransfer2);
 
@@ -847,15 +841,20 @@ describe("Staking Test", () => {
         it('Claim rewards for stream 2 staker_3,staker_4', async() => {
             let timestamp = await _getTimeStamp();
             let mineToTimestamp = 1* 24 * 60 * 60
+            const streamId = 2
             //22days
             await blockchain.mineBlock(timestamp + mineToTimestamp);
             const lockId = 2    
-            const claimableRewards = await stakingService.getStreamClaimableAmountPerLock(2, staker_3, lockId);
-            console.log("Claimable rewards: ", _convertToEtherBalance(claimableRewards.toString()))
-            
-            let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
+            const claimableRewards_staker3 = await stakingService.getStreamClaimableAmountPerLock(streamId, staker_3, lockId);
+            const claimableRewards_staker4 = await stakingService.getStreamClaimableAmountPerLock(streamId, staker_4, lockId); 
+            console.log("Claimable rewards for staker_3:  ", _convertToEtherBalance(claimableRewards_staker3.toString()))
+            console.log("Claimable rewards for staker_4:  ", _convertToEtherBalance(claimableRewards_staker4.toString()))
+            let result1 = await stakingService.claimRewards(streamId,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimRewards(streamId,lockId,{from:staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.withdrawStream(streamId, {from:staker_3})
+            await stakingService.withdrawStream(streamId, {from:staker_4})
             let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString();
             console.log("pending rewards staker_3 - 1st Claim: lockId -2",_convertToEtherBalance(pendingRewards));
             pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
@@ -866,13 +865,17 @@ describe("Staking Test", () => {
         it('Time passes and the second claim of rewards for stream 2 staker_3,staker_4 is claimed', async() => {
             let timestamp = await _getTimeStamp();
             let mineToTimestamp = 1* 24 * 60 * 60
+            const streamId = 2
             //23days
             await blockchain.mineBlock(timestamp + mineToTimestamp);
             const lockId = 2
             
-            let result1 = await stakingService.claimRewards(2,lockId,{from:staker_3, gas: maxGasForTxn});
+            let result1 = await stakingService.claimRewards(streamId,lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(2,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimRewards(streamId,lockId,{from:staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.withdrawStream(streamId, {from:staker_3})
+            await stakingService.withdrawStream(streamId, {from:staker_4})
             let pendingRewards = (await streamReward2.balanceOf(staker_3)).toString();
             console.log("pending rewards staker_3 - 2nd Claim: lockId - 2",_convertToEtherBalance(pendingRewards));
             pendingRewards = (await streamReward2.balanceOf(staker_4)).toString()
@@ -1051,10 +1054,10 @@ describe("Staking Test", () => {
             const totalRewardsDistributed =   parseInt(staker_2Balance) 
                                             + parseInt(staker_3Balance)
                                             + parseInt(staker_4Balance) - 3 * parseInt(initialBalanceOfEachStaker)
-            //2000-1000 -> First year
+            //20000-10000 -> First year
             const toBeReleasedInFirstYearRewards = 10000;
             expect(totalRewardsDistributed).to.be.above(toBeReleasedInFirstYearRewards);
-            console.log("total rewards released: after 370 + ~20 days - early unstake penalty", totalRewardsDistributed)
+            console.log("total rewards released in FTHM Token - after 370 + ~20 days - early unstake penalty", totalRewardsDistributed)
         })
 
         // The following tests are just to check individual test cases
