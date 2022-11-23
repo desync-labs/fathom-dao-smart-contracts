@@ -215,12 +215,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
 
     function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
+        require(lockId != 0, "lockId cant be zero");
         _updateStreamRPS();
         _moveRewardsToPending(msg.sender, streamId, lockId);
     }
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
+        require(lockId != 0, "lockId cant be zero");
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
