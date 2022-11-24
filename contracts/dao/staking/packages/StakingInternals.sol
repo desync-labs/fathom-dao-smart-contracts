@@ -50,7 +50,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         LockedBalance memory _newLock = LockedBalance({
             amountOfToken: BoringMath.to128(amount),
             amountOfVoteToken: BoringMath.to128(nVoteToken),
-            tokenShares: 0,
             positionStreamShares: 0,
             end: BoringMath.to64(lockPeriod + block.timestamp),
             owner: account
@@ -77,8 +76,8 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     function _unlock(uint256 stakeValue, uint256 amount, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
-        require(totalShares != 0, "No Shares");
-        require(updateLock.tokenShares != 0, "No Shares");
+        require(totalAmountOfStakedToken != 0, "Zero total tokens");
+        require(updateLock.amountOfToken != 0, "No token");
         uint256 nVoteToken = updateLock.amountOfVoteToken;
         /// if you unstake, early or partial or complete,
         /// the number of vote tokens for lock position is set to zero
@@ -113,23 +112,16 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
 
-        uint256 amountOfTokenShares = _caclulateAutoCompoundingShares(amount);
-
         totalAmountOfStakedToken += amount;
-        totalShares += amountOfTokenShares;
-
-        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfTokenShares, nVoteToken, block.timestamp);
+        uint256 weightedAmountOfSharesPerStream = _weightedShares(amount, nVoteToken, block.timestamp);
 
         totalStreamShares += weightedAmountOfSharesPerStream;
-
         lock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
-        lock.tokenShares += BoringMath.to128(amountOfTokenShares);
 
         uint256 streamsLength = streams.length;
-        for (uint256 i = 1; i < streamsLength; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
         }
-
         emit Staked(account, weightedAmountOfSharesPerStream, nVoteToken, lockId);
     }
 
@@ -138,10 +130,8 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         LockedBalance storage updateLock = locks[account][lockId - 1];
         totalAmountOfStakedToken -= stakeValue;
         totalStreamShares -= updateLock.positionStreamShares;
-        totalShares -= updateLock.tokenShares;
 
         updateLock.positionStreamShares = 0;
-        updateLock.tokenShares = 0;
         updateLock.amountOfToken = 0;
 
         uint256 amountToRestake = stakeValue - amount;
@@ -158,21 +148,16 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     }
 
     function _restakeThePosition(uint256 amountToRestake, uint256 lockId, LockedBalance storage updateLock, User storage userAccount) internal {
-        uint256 amountOfTokenShares = _caclulateAutoCompoundingShares(amountToRestake);
         totalAmountOfStakedToken += amountToRestake;
         updateLock.amountOfToken += BoringMath.to128(amountToRestake);
-
-        updateLock.tokenShares += BoringMath.to128(amountOfTokenShares);
-        totalShares += amountOfTokenShares;
-
         ///@notice if you unstake, early or partial or complete,
         ///        the number of vote tokens for lock position is set to zero
-        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountOfTokenShares, 0, block.timestamp);
+        uint256 weightedAmountOfSharesPerStream = _weightedShares(amountToRestake, 0, block.timestamp);
 
         updateLock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
         totalStreamShares += weightedAmountOfSharesPerStream;
         uint256 streamsLength = streams.length;
-        for (uint256 i = 1; i < streamsLength; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             // The new shares should not claim old rewards
             userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
         }
@@ -190,7 +175,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
     function _earlyUnlock(uint256 lockId, address account) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
         uint256 lockEnd = lock.end;
-        uint256 amount = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 amount = lock.amountOfToken;
         _unlock(amount, amount, lockId, account);
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
         uint256 penalty = (weighingCoef * amount) / 100000;
@@ -205,11 +190,11 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         if (lastLockId != lockId && lastLockId > 1) {
             LockedBalance storage lastIndexLockedBalance = locks[account][lastLockId - 1];
             locks[account][lockId - 1] = lastIndexLockedBalance;
-            for (uint256 i = 1; i < streamsLength; i++) {
+            for (uint256 i = 0; i < streamsLength; i++) {
                 userAccount.rpsDuringLastClaimForLock[lockId][i] = userAccount.rpsDuringLastClaimForLock[lastLockId][i];
             }
         }
-        for (uint256 i = 1; i < streamsLength; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             delete userAccount.rpsDuringLastClaimForLock[lastLockId][i];
         }
         locks[account].pop();
@@ -245,25 +230,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             (slopeEnd - slopeStart);
     }
 
-    /**
-     * @dev calculate auto compounding shares
-     * @notice totalAmountOfStakedToken => increases when Main tokens are rewarded.(_updateStreamRPS())
-     * @notice thus amount of shares for new user, decreases.
-     * @notice creating compound affect for users already staking.
-     */
-    function _caclulateAutoCompoundingShares(uint256 amount) internal view returns (uint256) {
-        uint256 _amountOfShares = 0;
-        if (totalShares == 0) {
-            _amountOfShares = amount;
-        } else {
-            uint256 numerator = amount * totalShares;
-            _amountOfShares = numerator / totalAmountOfStakedToken;
-            if (_amountOfShares * totalAmountOfStakedToken < numerator) {
-                _amountOfShares += 1;
-            }
-        }
-        return _amountOfShares;
-    }
 
     /**
      * @dev Calculates the penalty for early withdrawal

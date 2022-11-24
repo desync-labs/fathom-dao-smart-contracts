@@ -70,7 +70,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
-                rewardDepositAmount: 0,
+                rewardDepositAmount: scheduleRewards[0],
                 rewardClaimedAmount: 0,
                 schedule: schedule,
                 status: StreamStatus.ACTIVE,
@@ -191,7 +191,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
         _updateStreamRPS();
-        uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
     }
 
@@ -200,7 +200,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
         _updateStreamRPS();
-        uint256 stakeValue = (totalAmountOfStakedToken * lock.tokenShares) / totalShares;
+        uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, amount, lockId, msg.sender);
     }
 
@@ -215,12 +215,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
 
     function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
+        require(lockId != 0, "lockId cant be zero");
         _updateStreamRPS();
         _moveRewardsToPending(msg.sender, streamId, lockId);
     }
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
+        require(lockId != 0, "lockId cant be zero");
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);

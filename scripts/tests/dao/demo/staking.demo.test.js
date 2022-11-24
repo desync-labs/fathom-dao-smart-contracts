@@ -4,8 +4,6 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-const fs = require('fs');
-const rawdata = fs.readFileSync('./addresses.json');
 
 
 const maxGasForTxn = 600000
@@ -177,6 +175,8 @@ describe("Staking Test and Upgrade Test", () => {
     let lockingVoteWeight;
     let rewardsCalculator;
     let proxyAddress;
+    let vaultProxyAdmin;
+    let stakingProxyAdmin;
 
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
@@ -187,7 +187,6 @@ describe("Staking Test and Upgrade Test", () => {
 
     before(async() => {
         await snapshot.revertToSnapshot();
-        proxyAddress = JSON.parse(rawdata);
         maxWeightShares = 1024;
         minWeightShares = 256;
         maxWeightPenalty = 3000;
@@ -201,11 +200,15 @@ describe("Staking Test and Upgrade Test", () => {
         //this is used for calculation of release of voteToken
         lockingVoteWeight = 365 * 24 * 60 * 60;
         
-        const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
-        stakingService = await PackageStaking.at(proxyAddress.StakingProxy)
+        stakingService = await artifacts.initializeInterfaceAt(
+            "IStaking",
+            "StakingProxy"
+        )
 
-        const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-        vaultService = await IVault.at(proxyAddress.VaultProxy)
+        vaultService = await artifacts.initializeInterfaceAt(
+            "IVault",
+            "VaultProxy"
+        )
         stakingGetterService = await artifacts.initializeInterfaceAt(
             "StakingGettersHelper",
             "StakingGettersHelper"
@@ -224,6 +227,16 @@ describe("Staking Test and Upgrade Test", () => {
         vaultUpgrade = await artifacts.initializeInterfaceAt(
             "VaultUpgrade",
             "VaultUpgrade"
+        )
+
+        vaultProxyAdmin = await artifacts.initializeInterfaceAt(
+            "VaultProxyAdmin",
+            "VaultProxyAdmin"
+        )
+
+        stakingProxyAdmin = await artifacts.initializeInterfaceAt(
+            "StakingProxyAdmin",
+            "StakingProxyAdmin"
         )
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -267,9 +280,6 @@ describe("Staking Test and Upgrade Test", () => {
         
         await vMainToken.approve(stakingService.address, vMainTokensToApprove, {from: SYSTEM_ACC})
 
-        const twentyPercentOfFTHMTotalSupply = web3.utils.toWei('200000', 'ether');
-        
-        await _transferFromMultiSigTreasury(vaultService.address, twentyPercentOfFTHMTotalSupply);
         const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
@@ -362,8 +372,6 @@ describe("Staking Test and Upgrade Test", () => {
             let result = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStakedToken = result;
             assert.equal(totalAmountOfStakedToken.toString(),expectedTotalAmountOfStakedFTHM.toString())
-            const totalShares = await stakingService.totalShares();
-            expect(totalShares).to.eql(totalAmountOfStakedToken)
             console.log(".........Total Amount Of Staked Protocol Token ", _convertToEtherBalance(totalAmountOfStakedToken.toString()))
         })
 
@@ -420,7 +428,7 @@ describe("Staking Test and Upgrade Test", () => {
                 _impl
             ) => {
                 const result = await multiSigWallet.submitTransaction(
-                    proxyAddress.StakingProxyAdmin, 
+                    stakingProxyAdmin.address, 
                     EMPTY_BYTES, 
                     _encodeUpgradeFunction(
                         _proxy,
@@ -437,11 +445,11 @@ describe("Staking Test and Upgrade Test", () => {
             }
             const StakingUpgrade = artifacts.require('./dao/test/staking/upgrades/StakingUpgrade.sol');
             await _proposeUpgrade(
-                proxyAddress.StakingProxy,
+                stakingService.address,
                 stakingUpgrade.address
             )
             
-            stakingService = await StakingUpgrade.at(proxyAddress.StakingProxy)
+            stakingService = await StakingUpgrade.at(stakingService.address)
             //getLockInfo New function added to StakingUpgrade.
             console.log((await stakingService.getLockInfo(staker_1,1)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
@@ -454,7 +462,7 @@ describe("Staking Test and Upgrade Test", () => {
                 _impl
             ) => {
                 const result = await multiSigWallet.submitTransaction(
-                    proxyAddress.VaultProxyAdmin, 
+                    vaultProxyAdmin.address, 
                     EMPTY_BYTES, 
                     _encodeUpgradeFunction(
                         _proxy,
@@ -471,11 +479,11 @@ describe("Staking Test and Upgrade Test", () => {
             }
             const VaultUpgrade = artifacts.require('./dao/test/staking/upgrades/VaultUpgrade.sol');
             await _proposeUpgrade(
-                proxyAddress.VaultProxy,
+                vaultService.address,
                 vaultUpgrade.address
             )
             
-            vaultService = await VaultUpgrade.at(proxyAddress.VaultProxy)
+            vaultService = await VaultUpgrade.at(vaultService.address)
             console.log((await vaultService.getIsSupportedToken(FTHMToken.address)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
@@ -497,7 +505,6 @@ describe("Staking Test and Upgrade Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
-
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
             console.log(".........After all the locks are completely unlocked.........")
