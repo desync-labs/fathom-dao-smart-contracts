@@ -1,0 +1,59 @@
+# GOVERNANCE
+
+type Proposal @entity {
+  id: String!
+  proposalId: BigInt!
+  proposer: Bytes!
+  # targets: [Bytes!]!x
+  values: [BigInt!]!
+  signatures: [String!]!
+  calldatas: [Bytes!]!
+  startBlock: BigInt!
+  endBlock: BigInt! 
+  description: String! 
+  againstVotes: BigInt!
+  forVotes: BigInt!
+  abstainVotes: BigInt!
+}
+
+# STAKING
+
+type ProtocolStat @entity {
+  id: ID! 
+  totalStakeFTHM: BigInt! 
+  totalVotes: BigInt!
+  totalStakeEvents: BigInt!
+  totalUnstakeEvents: BigInt!
+}
+
+type Staker @entity {
+  id: String!
+  address: Bytes!
+  totalStaked: BigInt!
+  accruedRewards: BigInt!
+  accruedVotes: BigInt! 
+  stakes: [StakedEvent!]! @derivedFrom(field: "staker")
+}
+
+type StakedEvent @entity {
+  id: ID!
+  account: Bytes! 
+  streamShares: BigInt!
+  nVoteToken: BigInt!
+  lockId: BigInt!
+  staker: Staker!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! 
+  transaction: Bytes!
+}
+
+type UnstakedEvent @entity {
+  id: ID!
+  account: Bytes! 
+  amount: BigInt!
+  lockId: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! 
+  transaction: Bytes!
+}
+
