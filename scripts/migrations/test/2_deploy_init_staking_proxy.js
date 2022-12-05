@@ -1,9 +1,6 @@
-const fs = require('fs');
-
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
 
 const blockchain = require("../../tests/helpers/blockchain");
-const upgrades = require("../../helpers/upgrades");
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
@@ -13,9 +10,9 @@ const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
-
-const rawdata = fs.readFileSync('../../../addresses.json');
-let proxyAddress = JSON.parse(rawdata);
+const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.sol');
+const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
+const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 
 const _createWeightObject = (
     maxWeightShares,
@@ -51,7 +48,7 @@ const _getTimeStamp = async () => {
 const oneYear = 31556926;
 
 const maxWeightShares = 1024;
-const minWeightShares = 256;
+const minWeightShares = 768;
 const maxWeightPenalty = 3000;
 const minWeightPenalty = 100;
 const weightMultiplier = 10;
@@ -63,8 +60,8 @@ const lockingVoteWeight = 365 * 24 * 60 * 60;
 
 module.exports = async function(deployer) {
     try{
-        const stakingService = await IStaking.at(StakingPackage.address);
-        
+        const vaultService = await IVault.at(VaultProxy.address)
+
         const weightObject =  _createWeightObject(
             maxWeightShares,
             minWeightShares,
@@ -72,8 +69,9 @@ module.exports = async function(deployer) {
             minWeightPenalty,
             weightMultiplier
         );
-
-        const startTime =  await _getTimeStamp() + 3 * 24 * 24 * 60;
+        
+        
+        const startTime =  await _getTimeStamp() + 3 * 24 * 60 * 60;
 
         const scheduleTimes = [
             startTime,
@@ -84,10 +82,10 @@ module.exports = async function(deployer) {
         ];
 
         const scheduleRewards = [
-            web3.utils.toWei('2000', 'ether'),
-            web3.utils.toWei('1000', 'ether'),
-            web3.utils.toWei('500', 'ether'),
-            web3.utils.toWei('250', 'ether'),
+            web3.utils.toWei('20000', 'ether'),
+            web3.utils.toWei('10000', 'ether'),
+            web3.utils.toWei('5000', 'ether'),
+            web3.utils.toWei('2500', 'ether'),
             web3.utils.toWei("0", 'ether')
         ];
 
@@ -96,7 +94,6 @@ module.exports = async function(deployer) {
             lockingVoteWeight
         );
 
-        const vaultService = await IVault.at(proxyAddress.VaultProxy)
 
         let toInitialize =  web3.eth.abi.encodeFunctionCall({
             name: 'initializeStaking',
@@ -160,17 +157,11 @@ module.exports = async function(deployer) {
                 weightObject, scheduleTimes, scheduleRewards, tau, 
                 voteObject, maxNumberOfLocks, RewardsCalculator.address]);
         
-        [proxyAdminAddr, proxyAddr] = await upgrades.deployProxy(
-            deployer, 
-            StakingPackage.address, 
-            toInitialize, 
-            "StakingProxyAdmin",
-            "StakingProxy")
-            
-        await vaultService.initAdminAndOperator(MultiSigWallet.address,proxyAddr)
-    
+        await deployer.deploy(StakingProxyAdmin, {gas:8000000});
+        await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});
+        
+        await vaultService.initAdminAndOperator(MultiSigWallet.address,StakingProxy.address)
     } catch(error) {
         console.log(error)
     }
-
 }

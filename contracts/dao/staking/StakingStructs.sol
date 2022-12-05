@@ -47,7 +47,6 @@ struct VoteCoefficient {
 struct LockedBalance {
     uint128 amountOfToken;
     uint128 amountOfVoteToken;
-    uint128 tokenShares;
     uint128 positionStreamShares;
     uint64 end;
     address owner;
