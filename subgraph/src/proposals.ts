@@ -15,11 +15,6 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
     proposal.startBlock = event.params.startBlock;
     proposal.endBlock = event.params.endBlock;
     proposal.description = event.params.description;
-    // proposal.targets = []
-    // for (let i = 0; i < event.params.targets.length; ++i) {
-    //     proposal.targets.push(event.params.targets[i])
-    // }
-    // proposal.targets = event.params.targets;
     proposal.values = event.params.values;
     proposal.signatures = event.params.signatures;
     proposal.calldatas = event.params.calldatas;
@@ -40,6 +35,7 @@ export function voteCastWithParamsHandler(event: VoteCastWithParams): void {
 function voteCast(proposalId: string, support: number): void {
     let proposal = Proposal.load(proposalId)
     
+    // increment vote type count
     if (proposal != null) {
         switch(u32(support)) {
             case VoteType.Against:
