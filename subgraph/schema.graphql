@@ -4,7 +4,6 @@ type Proposal @entity {
   id: String!
   proposalId: BigInt!
   proposer: Bytes!
-  # targets: [Bytes!]!x
   values: [BigInt!]!
   signatures: [String!]!
   calldatas: [Bytes!]!
