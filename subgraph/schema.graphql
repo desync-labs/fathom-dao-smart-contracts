@@ -23,6 +23,7 @@ type ProtocolStat @entity {
   totalVotes: BigInt!
   totalStakeEvents: BigInt!
   totalUnstakeEvents: BigInt!
+  stakingAPR: BigInt!
 }
 
 type Staker @entity {
@@ -31,7 +32,9 @@ type Staker @entity {
   totalStaked: BigInt!
   accruedRewards: BigInt!
   accruedVotes: BigInt! 
+  claimedAmount: BigInt!
   stakes: [StakedEvent!]! @derivedFrom(field: "staker")
+  lockPositions: [LockPosition!]! @derivedFrom(field: "staker")
 }
 
 type StakedEvent @entity {
@@ -51,6 +54,19 @@ type UnstakedEvent @entity {
   account: Bytes! 
   amount: BigInt!
   lockId: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! 
+  transaction: Bytes!
+}
+
+type LockPosition @entity {
+  id: Bytes!
+  account: Bytes! 
+  streamShares: BigInt!
+  nVoteToken: BigInt!
+  amount: BigInt!
+  lockId: BigInt!
+  staker: Staker!
   blockNumber: BigInt!
   blockTimestamp: BigInt! 
   transaction: Bytes!
