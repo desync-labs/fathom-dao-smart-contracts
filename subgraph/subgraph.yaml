@@ -55,6 +55,4 @@ dataSources:
           handler: pendingHandler
         - event: StreamCreated(indexed uint256,indexed address,indexed address,uint256)
           handler: streamCreatedHandler
-
-
       file: ./src/staking.ts

@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {ProposalCreated, VoteCast, VoteCastWithParams} from "../generated/Governor/Governor"
 import { Proposal } from "../generated/schema";
 
@@ -14,13 +14,34 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
     proposal.proposalId = event.params.proposalId;
     proposal.startBlock = event.params.startBlock;
     proposal.endBlock = event.params.endBlock;
-    proposal.description = event.params.description;
     proposal.values = event.params.values;
     proposal.signatures = event.params.signatures;
     proposal.calldatas = event.params.calldatas;
+    proposal.targets = [];
+
+    let x: string[] = [];
+    for (let i = 0;  i < event.params.targets.length; i++) {
+        x.push(event.params.targets[i].toHexString());
+    }
+    proposal.targets = x;
     proposal.againstVotes = BigInt.fromString('0');
     proposal.forVotes = BigInt.fromString('0');
     proposal.abstainVotes = BigInt.fromString('0');
+
+
+
+    // var str = event.params.description; 
+    
+    // var splitted = str.split("----------------", 2); 
+    // // console.log(splitted)
+    // proposal.title = splitted[0];
+    // proposal.description = splitted[1];
+
+    proposal.title = event.params.description;
+    proposal.description = event.params.description;
+
+
+
     proposal.save()
 }
 
