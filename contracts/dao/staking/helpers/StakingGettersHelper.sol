@@ -82,7 +82,6 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         require(lockId > 0, "lockId cant be 0");
         require(lock.end > block.timestamp, "lock opened, no penalty");
 
-
         uint256 amount = lock.amountOfToken;
         uint256 lockEnd = lock.end;
         uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);

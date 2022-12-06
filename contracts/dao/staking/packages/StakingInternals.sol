@@ -122,7 +122,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         for (uint256 i = 0; i < streamsLength; i++) {
             userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
         }
-        emit Staked(account,amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
+        emit Staked(account, amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
     }
 
     function _unstake(uint256 amount, uint256 stakeValue, uint256 lockId, address account) internal {
@@ -138,7 +138,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         userAccount.pendings[MAIN_STREAM] += amount;
         userAccount.releaseTime[MAIN_STREAM] = block.timestamp + streams[MAIN_STREAM].tau;
-        
+
         ///@notice: Only update the lock if it has remaining stake
         if (amountToRestake > 0) {
             _restakeThePosition(amountToRestake, lockId, updateLock, userAccount);
@@ -231,7 +231,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             (shares * (weight.maxWeightShares - weight.minWeightShares) * (slopeEnd - timestamp)) /
             (slopeEnd - slopeStart);
     }
-
 
     /**
      * @dev Calculates the penalty for early withdrawal
