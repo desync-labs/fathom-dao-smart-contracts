@@ -1,5 +1,5 @@
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { Staked, Unstaked, StakingPackage, Pending, StreamCreated } from "../generated/StakingPackage/StakingPackage"
+import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstaked } from "../generated/StakingPackage/StakingPackage"
 import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
 import { StakingGetter } from "../generated/StakingPackage/StakingGetter"
 import { ERC20 } from "../generated/StakingPackage/ERC20"
@@ -33,7 +33,7 @@ export function stakeHandler(event: Staked): void {
     stakedEvent.blockTimestamp = event.block.timestamp
     stakedEvent.transaction = event.transaction.hash
 
-    let lockPosition = new LockPosition(event.params.account)
+    let lockPosition = new LockPosition(protocolStats.totalStakeEvents.toString())
     lockPosition.account = event.params.account
     lockPosition.streamShares = event.params.streamShares
     lockPosition.nVoteToken = event.params.nVoteToken
@@ -53,6 +53,7 @@ export function stakeHandler(event: Staked): void {
         staker.totalStaked = BigInt.fromString('0')
         staker.accruedRewards = BigInt.fromString('0')
         staker.accruedVotes = BigInt.fromString('0')
+        staker.claimedAmount = BigInt.fromString('0')
     }
 
     // define contracts
@@ -69,14 +70,16 @@ export function stakeHandler(event: Staked): void {
     // call contract to set Total Staked and Total Votes for protocol
     protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
     protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
-    const streamId = new BigInt(0) //fthm Stream
-    protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
+    const streamId = BigInt.fromString('0') //fthm Stream
+    protocolStats.stakingAPR = BigInt.fromString('0')
+    protocolStats.oneDayRewards = BigInt.fromString('0')
     protocolStats.save()
 
     // set staker
     stakedEvent.staker = event.params.account.toHexString()
+    lockPosition.staker = event.params.account.toHexString()
     stakedEvent.save()
-
+    lockPosition.save()
     staker.save()
 }
 
@@ -102,8 +105,10 @@ export function unstakeHandler(event: Unstaked): void {
         protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
         protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
-        const streamId = new BigInt(0) //fthm Stream
-        protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
+        const streamId = BigInt.fromString('0')//fthm Stream
+      //  protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
+        protocolStats.stakingAPR = BigInt.fromString('0')
+        protocolStats.oneDayRewards = BigInt.fromString('0')
         protocolStats.save()
 
         // store UnstakedEvent data
@@ -115,13 +120,14 @@ export function unstakeHandler(event: Unstaked): void {
         unstakedEvent.blockTimestamp = event.block.timestamp
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
-        completeUnstake(event.params.account,event.params.lockId)
+        //TODO: Ask Zach
+   //     completeUnstake(event.params.account,event.params.lockId)
     }
     
 }
 
 
-export function partialUnstakeHandler(event: Unstaked): void {
+export function partialUnstakeHandler(event: PartialUnstaked): void {
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
     let stakingGetter = StakingGetter.bind(Address.fromString(Constants.STAKING_GETTER))
@@ -154,7 +160,8 @@ export function partialUnstakeHandler(event: Unstaked): void {
         unstakedEvent.blockTimestamp = event.block.timestamp
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
-        partialUnstakeLockPosition(event.params.account,event.params.lockId, event.params.amount)
+        //TODO: Ask Zach
+      //  partialUnstakeLockPosition(event.params.account,event.params.lockId, event.params.amount)
     }
     
 }
@@ -163,6 +170,7 @@ export function pendingHandler(event: Pending): void {
    let staker = Staker.load(event.params.account.toHexString())
    if (staker != null){
         staker.claimedAmount = event.params.pendings
+        staker.save()
    }
 }
 
@@ -173,6 +181,7 @@ export function streamCreatedHandler(event: StreamCreated): void {
     let schedule = stakingPackage.getStreamSchedule(event.params.streamId)
     stream.time = schedule.getScheduleTimes()
     stream.reward = schedule.getScheduleRewards()
+    stream.save()
 }
 
 

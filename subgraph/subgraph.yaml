@@ -8,7 +8,7 @@ dataSources:
     source:
       address: "0x456F87A25d7F24a7aE8191c2319EfD01fb3161E3"
       abi: Governor
-      startBlock: 40798450
+      startBlock: 42201579
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -32,7 +32,7 @@ dataSources:
     source:
       address: "0x45Ef978f70F54eE12149a44128cBe1DBF5040335"
       abi: StakingPackage
-      startBlock: 41257974
+      startBlock: 42201579
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

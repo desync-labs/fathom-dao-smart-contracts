@@ -61,7 +61,7 @@ type UnstakedEvent @entity {
 }
 
 type LockPosition @entity {
-  id: Bytes!
+  id: ID!
   account: Bytes! 
   streamShares: BigInt!
   nVoteToken: BigInt!
