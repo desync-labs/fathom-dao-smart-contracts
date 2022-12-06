@@ -1,6 +1,9 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { BigInt, Address } from "@graphprotocol/graph-ts";
 import {ProposalCreated, VoteCast, VoteCastWithParams} from "../generated/Governor/Governor"
 import { Proposal } from "../generated/schema";
+import { Constants } from "./Utils/Constants"
+import { Governor } from "../generated/Governor/Governor"
+
 
 enum VoteType {
     Against,
@@ -17,18 +20,20 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
     proposal.values = event.params.values;
     proposal.signatures = event.params.signatures;
     proposal.calldatas = event.params.calldatas;
-    proposal.targets = [];
-
-    let x: string[] = [];
-    for (let i = 0;  i < event.params.targets.length; i++) {
-        x.push(event.params.targets[i].toHexString());
-    }
-    proposal.targets = x;
     proposal.againstVotes = BigInt.fromString('0');
     proposal.forVotes = BigInt.fromString('0');
     proposal.abstainVotes = BigInt.fromString('0');
+    proposal.targets = [];
 
+    let targets: string[] = [];
+    for (let i = 0;  i < event.params.targets.length; i++) {
+        targets.push(event.params.targets[i].toHexString());
+    }
+    proposal.targets = targets;
 
+    let governorContract = Governor.bind(Address.fromString(Constants.GOVERNANCE))
+    proposal.deadline =  governorContract.proposalDeadline(event.params.proposalId)
+    
 
     // var str = event.params.description; 
     
@@ -37,7 +42,7 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
     // proposal.title = splitted[0];
     // proposal.description = splitted[1];
 
-    proposal.title = event.params.description;
+    // proposal.title = event.params.description;
     proposal.description = event.params.description;
 
 

@@ -6,11 +6,12 @@ type Proposal @entity {
   proposer: Bytes!
   startBlock: BigInt!
   endBlock: BigInt! 
-  title: String! 
+  # title: String! 
   description: String! 
   againstVotes: BigInt!
   forVotes: BigInt!
   abstainVotes: BigInt!
+  deadline: BigInt!
   values: [BigInt!]!
   signatures: [String!]!
   calldatas: [Bytes!]!

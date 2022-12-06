@@ -5,6 +5,8 @@ export class Constants{
     public static STAKING_GETTER:string = '0xF1ef4b91C88E2F37F292497A71D2C083E88FE988'
     public static VFTHM:string = '0xd81A5Cb1BAdB6a49f3b9B531a581372AF5aEE014'
 
+    public static GOVERNANCE:string = '0x456F87A25d7F24a7aE8191c2319EfD01fb3161E3'
+
     public static WAD:BigInt = BigInt.fromI64(10**18)
     public static RAY:BigInt = BigInt.fromI64( 10**27)
     public static RAD:BigInt = BigInt.fromI64( 10**45)
