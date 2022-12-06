@@ -115,6 +115,7 @@ export function unstakeHandler(event: Unstaked): void {
     
 }
 
+
 export function partialUnstakeHandler(event: Unstaked): void {
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
@@ -160,6 +161,7 @@ export function pendingHandler(event: Pending): void {
    }
 }
 
+
 export function streamCreatedHandler(event: StreamCreated): void {
     let stream  = new Stream(event.params.streamId.toHexString())
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
@@ -194,7 +196,24 @@ function partialUnstakeLockPosition(account: Bytes, lockId: BigInt, amount: BigI
     }
 }
 
+function getOneDayReward(streamId: BigInt):number{
+    let stream  = Stream.load(streamId.toHexString())
+    let now = Math.floor(Date.now() /1000)
+    const oneDay = 86400
+    const streamStart = stream.time[0].toI32()
+    const streamEnd = stream.time[stream[0].time.length -1].toI32()
+    if (now <= streamStart){
+        return 0
+    }
+
+    if (now >= streamEnd - oneDay){
+        return 0
+    }
+
+}
+
 function getAPR(streamId: BigInt): void{
+
     // const getOneDayReward = (streamId) => {
     //     const streamSchedule = await staking.getStreamSchedule(streamId)
     //     const now = Math.floor(Date.now() / 1000)
