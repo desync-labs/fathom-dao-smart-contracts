@@ -1,9 +1,9 @@
 import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
 
 export class Constants{
-    public static STAKING_CONTRACT:string = '0x70f03000879377A52BCbd5280dC98D9356f9478A' //new contract-> 0x471d48B3451BA381B708aCaa83f2c9298C2bA34D
-    public static STAKING_GETTER:string = '0x8B9Bdbd0a506Ed600395107B619CBcdE658D7288' //new contract -> 0x4FAB53ddb960565E380c109AC475C945C829b891
-    public static VFTHM:string = '0x046fbf910512003a08e170631b9BcDf5235191B6' //new contract ->0xA41Cd4fB85Db24cB018B95373cf61E01a753af03
+    public static STAKING_CONTRACT:string = '0x471d48B3451BA381B708aCaa83f2c9298C2bA34D' //new contract-> 0x5983b8fB81b0a820BE1137602915Ce40eE21180D
+    public static STAKING_GETTER:string = '0x8B9Bdbd0a506Ed600395107B619CBcdE658D7288' //new contract -> 0xd2b08EB54E24C937FcF8040D0f251063d4a65DEc
+    public static VFTHM:string = '0x046fbf910512003a08e170631b9BcDf5235191B6' //new contract ->0x904e791Adf62af3a9741D6581E506608bFb93f96
 
     public static WAD:BigInt = BigInt.fromI64(10**18)
     public static RAY:BigInt = BigInt.fromI64( 10**27)
