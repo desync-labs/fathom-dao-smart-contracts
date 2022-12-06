@@ -67,8 +67,15 @@ type LockPosition @entity {
   amount: BigInt!
   lockId: BigInt!
   staker: Staker!
+  end: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt! 
   transaction: Bytes!
+}
+
+type Stream @entity {
+  id: ID!
+  time: [BigInt!]!
+  reward: [BigInt!]!
 }
 

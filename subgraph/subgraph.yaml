@@ -47,12 +47,14 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: Staked(address,indexed uint256,indexed uint256,indexed uint256)
+        - event: Staked(address,uint256,indexed uint256,indexed uint256,indexed uint256,uint256)
           handler: stakeHandler
         - event:  Unstaked(indexed address,indexed uint256,indexed uint256)
           handler: unstakeHandler
         - event: Pending(indexed uint256,indexed address,indexed uint256)
           handler: pendingHandler
+        - event: StreamCreated(indexed uint256,indexed address,indexed address,uint256)
+          handler: streamCreatedHandler
 
 
       file: ./src/staking.ts

@@ -1,6 +1,6 @@
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { Staked, Unstaked, StakingPackage, Pending } from "../generated/StakingPackage/StakingPackage"
-import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition} from "../generated/schema";
+import { Staked, Unstaked, StakingPackage, Pending, StreamCreated } from "../generated/StakingPackage/StakingPackage"
+import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
 import { StakingGetter } from "../generated/StakingPackage/StakingGetter"
 import { ERC20 } from "../generated/StakingPackage/ERC20"
 import { Constants } from "./Utils/Constants"
@@ -27,7 +27,7 @@ export function stakeHandler(event: Staked): void {
     let stakedEvent = new StakedEvent(protocolStats.totalStakeEvents.toString())
     stakedEvent.account = event.params.account
     stakedEvent.streamShares = event.params.streamShares
-    stakedEvent.nVoteToken = event.params.nVEMainTkn
+    stakedEvent.nVoteToken = event.params.nVoteToken
     stakedEvent.lockId = event.params.lockId
     stakedEvent.blockNumber = event.block.number
     stakedEvent.blockTimestamp = event.block.timestamp
@@ -36,9 +36,10 @@ export function stakeHandler(event: Staked): void {
     let lockPosition = new LockPosition(event.params.account)
     lockPosition.account = event.params.account
     lockPosition.streamShares = event.params.streamShares
-    lockPosition.nVoteToken = event.params.nVEMainTkn
-    //TODO Add amount
+    lockPosition.nVoteToken = event.params.nVoteToken
+    lockPosition.amount = event.params.amount
     lockPosition.lockId = event.params.lockId
+    lockPosition.end = event.params.end
     lockPosition.blockNumber = event.block.number
     lockPosition.blockTimestamp = event.block.timestamp
     lockPosition.transaction = event.transaction.hash
@@ -65,8 +66,8 @@ export function stakeHandler(event: Staked): void {
     staker.accruedVotes = vfthmToken.balanceOf(Address.fromBytes(staker.address))
 
     // call contract to set Total Staked and Total Votes for protocol
-    protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedMAINTkn();
-    protocolStats.totalVotes = stakingPackage.totalAmountOfveMAINTkn();
+    protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+    protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
     protocolStats.save()
 
     // set staker
@@ -95,8 +96,8 @@ export function unstakeHandler(event: Unstaked): void {
     let protocolStats = ProtocolStat.load(Constants.STAKING_CONTRACT)
     if (protocolStats != null) {
         // call contract to set TOTAL STAKED FOR PROTOCOL 
-        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedMAINTkn();
-        protocolStats.totalVotes = stakingPackage.totalAmountOfveMAINTkn();
+        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+        protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
         protocolStats.save()
 
@@ -133,8 +134,8 @@ export function partialUnstakeHandler(event: Unstaked): void {
     let protocolStats = ProtocolStat.load(Constants.STAKING_CONTRACT)
     if (protocolStats != null) {
         // call contract to set TOTAL STAKED FOR PROTOCOL 
-        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedMAINTkn();
-        protocolStats.totalVotes = stakingPackage.totalAmountOfveMAINTkn();
+        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+        protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
         protocolStats.save()
 
@@ -157,6 +158,14 @@ export function pendingHandler(event: Pending): void {
    if (staker != null){
         staker.claimedAmount = event.params.pendings
    }
+}
+
+export function streamCreatedHandler(event: StreamCreated): void {
+    let stream  = new Stream(event.params.streamId.toHexString())
+    let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
+    let schedule = stakingPackage.getStreamSchedule(event.params.streamId)
+    stream.time = schedule.getScheduleTimes()
+    stream.reward = schedule.getScheduleRewards()
 }
 
 
@@ -185,8 +194,33 @@ function partialUnstakeLockPosition(account: Bytes, lockId: BigInt, amount: BigI
     }
 }
 
-function getAPR(): void{
+function getAPR(streamId: BigInt): void{
+    // const getOneDayReward = (streamId) => {
+    //     const streamSchedule = await staking.getStreamSchedule(streamId)
+    //     const now = Math.floor(Date.now() / 1000)
+    //     const oneDay = 86400
+    //     const streamStart = schedule[0][0].toNumber()
+    //     const streamEnd = schedule[0][schedule[0].length - 1].toNumber()
+    //     if (now <= streamStart) return ethers.BigNumber.from(0) // didn't start
+    //     if (now >= streamEnd - oneDay) return ethers.BigNumber.from(0) // ended
+    //     const currentIndex = schedule[0].findIndex(indexTime => now < indexTime) - 1
+    //     const indexDuration = schedule[0][currentIndex + 1] - schedule[0][currentIndex]
+    //     const indexRewards = schedule[1][currentIndex].sub(schedule[1][currentIndex + 1])
+    //     const oneDayReward = indexRewards.mul(oneDay).div(indexDuration)
+    //     return oneDayReward
+    // }
+    // ```
     
+    // APR calculation:
+    // ```js
+    //     const oneDayReward = await getOneDayReward(streamId)
+    //     const totalStaked = await staking.getTotalAmountOfStakedAurora()
+    
+    //     // streamTokenPrice can be queried from coingecko.
+    //     const totalStakedValue = Number(ethers.utils.formatUnits(totalStaked, 18)) * streamTokenPrice
+    //     const oneYearStreamRewardValue = Number(ethers.utils.formatUnits(oneDayReward, 18)) * 365 * streamTokenPrice
+    //     const streamAPR = oneYearStreamRewardValue * 100 / totalStakedValue
+    //     const totalAPR = allStreamsCumulatedOneYearRewardValue * 100 / totalStakedValue  
 }
 
 function getDailyRewards(): void {
