@@ -122,7 +122,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         for (uint256 i = 0; i < streamsLength; i++) {
             userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
         }
-        emit Staked(account,amount, weightedAmountOfSharesPerStream, nVoteToken, lockId);
+        emit Staked(account,amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
     }
 
     function _unstake(uint256 amount, uint256 stakeValue, uint256 lockId, address account) internal {
