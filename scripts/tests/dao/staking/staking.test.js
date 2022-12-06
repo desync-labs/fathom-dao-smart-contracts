@@ -361,10 +361,10 @@ describe("Staking Test", () => {
             const expectedFTHMBalanceStaker1 = _calculateRemainingBalance(sumToDeposit, beforeFTHMBalance.toString())
             const afterFTHMBalance = await FTHMToken.balanceOf(staker_1);
             
-            let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
+            let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             const expectedLockId = 1
             
-            assert.equal(eventArgs[2].toString(),expectedLockId)
+            assert.equal(eventArgs[1].toString(),expectedLockId)
             assert.equal(afterFTHMBalance.toString(),expectedFTHMBalanceStaker1.toString())
 
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -384,14 +384,14 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
             
-            let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256)");
-            const actualNVFTHM = web3.utils.toBN(eventArgs[1]);
-
+            let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
+            const lockInfo = await stakingGetterService.getLockInfo(staker_1,2)
+            const actualNVFTHM = web3.utils.toBN(lockInfo.amountOfVoteToken.toString())
             //lockingVoteWeight = 365 * 24 * 60 * 60;
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
             
             const expectedShares = _calculateNumberOfStreamShares(sumToDeposit, vMainTokenCoefficient, actualNVFTHM, maxWeightShares);
-            const actualShares = web3.utils.toBN(eventArgs[0])
+            const actualShares = web3.utils.toBN(lockInfo.positionStreamShares.toString())
             
             actualNVFTHM.should.be.bignumber.equal(expectedNVFTHM)
             actualShares.should.be.bignumber.equal(expectedShares)
@@ -427,14 +427,14 @@ describe("Staking Test", () => {
             let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_4, {from: staker_4});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
-            let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");
-            let eventArgs2 = eventsHelper.getIndexedEventArgs(result2, "Staked(address,uint256,uint256,uint256)");
-            let eventArgs3 = eventsHelper.getIndexedEventArgs(result3, "Staked(address,uint256,uint256,uint256)");
+            let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
+            let eventArgs2 = eventsHelper.getIndexedEventArgs(result2, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
+            let eventArgs3 = eventsHelper.getIndexedEventArgs(result3, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
 
             // Check that the lock id is being assigned correctly.  For each staker, their first respective lockId is 1
-            assert.equal(eventArgs1[2].toString(),expectedLockId)
-            assert.equal(eventArgs2[2].toString(),expectedLockId)
-            assert.equal(eventArgs3[2].toString(),expectedLockId)
+            assert.equal(eventArgs1[1].toString(),expectedLockId)
+            assert.equal(eventArgs2[1].toString(),expectedLockId)
+            assert.equal(eventArgs3[1].toString(),expectedLockId)
         })
 
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
@@ -1105,7 +1105,7 @@ describe("Staking Test", () => {
             const sumToDeposit = web3.utils.toWei('20000', 'ether');
             let result1 = await stakingService.createLock(sumToDeposit,unlockTime,accounts[9], {from: accounts[9], gas: maxGasForTxn});
             
-            let eventArgs = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256)");
+            let eventArgs = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             const actualNVFTHM = web3.utils.toBN(eventArgs[1])
             console.log("Are 20000 VOTE TOKENS released?: ", _convertToEtherBalance(actualNVFTHM.toString()))    
 
