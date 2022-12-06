@@ -4,15 +4,17 @@ type Proposal @entity {
   id: String!
   proposalId: BigInt!
   proposer: Bytes!
-  values: [BigInt!]!
-  signatures: [String!]!
-  calldatas: [Bytes!]!
   startBlock: BigInt!
   endBlock: BigInt! 
+  title: String! 
   description: String! 
   againstVotes: BigInt!
   forVotes: BigInt!
   abstainVotes: BigInt!
+  values: [BigInt!]!
+  signatures: [String!]!
+  calldatas: [Bytes!]!
+  targets: [String!]!
 }
 
 # STAKING
@@ -23,7 +25,7 @@ type ProtocolStat @entity {
   totalVotes: BigInt!
   totalStakeEvents: BigInt!
   totalUnstakeEvents: BigInt!
-  stakingAPR: BigInt!
+  # stakingAPR: BigInt!
 }
 
 type Staker @entity {
