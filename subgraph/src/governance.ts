@@ -1,8 +1,7 @@
-import { BigInt, Address } from "@graphprotocol/graph-ts";
-import {ProposalCreated, VoteCast, VoteCastWithParams} from "../generated/Governor/Governor"
-import { Proposal } from "../generated/schema";
+import { BigInt } from "@graphprotocol/graph-ts";
+import { ProposalCreated, VoteCast, VoteCastWithParams } from "../generated/Governor/Governor"
+import { Proposal, GovernanceStat } from "../generated/schema";
 import { Constants } from "./utils/constants"
-import { Governor } from "../generated/Governor/Governor"
 
 
 enum VoteType {
@@ -12,6 +11,16 @@ enum VoteType {
 }
 
 export function proposalCreatedHandler(event: ProposalCreated): void {
+    // load ProtocolStat (create if first stake event)
+    let governanceStat = GovernanceStat.load(Constants.GOVERNANCE)
+    if (governanceStat == null) {
+        governanceStat = new GovernanceStat(Constants.GOVERNANCE)
+        governanceStat.totalProposalsCount = BigInt.fromString('0') 
+    }
+    // increment Total Proposals Count
+    governanceStat.totalProposalsCount = governanceStat.totalProposalsCount.plus(BigInt.fromString('1'))
+    governanceStat.save()
+
     let proposal = new Proposal(event.params.proposalId.toHexString())
     proposal.proposer = event.params.proposer;
     proposal.proposalId = event.params.proposalId;
@@ -23,29 +32,17 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
     proposal.againstVotes = BigInt.fromString('0');
     proposal.forVotes = BigInt.fromString('0');
     proposal.abstainVotes = BigInt.fromString('0');
-    proposal.targets = [];
+    proposal.description = event.params.description;
+    proposal.blockNumber = event.block.number;
+    proposal.blockTimestamp = event.block.timestamp;
+    proposal.transaction = event.transaction.hash;
 
+    proposal.targets = [];
     let targets: string[] = [];
     for (let i = 0;  i < event.params.targets.length; i++) {
         targets.push(event.params.targets[i].toHexString());
     }
     proposal.targets = targets;
-
-    let governorContract = Governor.bind(Address.fromString(Constants.GOVERNANCE))
-    proposal.deadline =  governorContract.proposalDeadline(event.params.proposalId)
-    
-
-    // var str = event.params.description; 
-    
-    // var splitted = str.split("----------------", 2); 
-    // // console.log(splitted)
-    // proposal.title = splitted[0];
-    // proposal.description = splitted[1];
-
-    // proposal.title = event.params.description;
-    proposal.description = event.params.description;
-
-
 
     proposal.save()
 }

@@ -25,7 +25,7 @@ dataSources:
           handler: voteCastHandler
         - event: VoteCastWithParams(indexed address,indexed uint256,uint8,uint256,string,bytes)
           handler: voteCastWithParamsHandler
-      file: ./src/proposals.ts
+      file: ./src/governance.ts
 
   - kind: ethereum
     name: StakingPackage

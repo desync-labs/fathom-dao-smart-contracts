@@ -1,21 +1,27 @@
 # GOVERNANCE
 
+type GovernanceStat @entity {
+  id: ID! 
+  totalProposalsCount: BigInt!
+}
+
 type Proposal @entity {
   id: ID!
   proposalId: BigInt!
   proposer: Bytes!
   startBlock: BigInt!
   endBlock: BigInt! 
-  # title: String! 
   description: String! 
   againstVotes: BigInt!
   forVotes: BigInt!
   abstainVotes: BigInt!
-  deadline: BigInt!
   values: [BigInt!]!
   signatures: [String!]!
   calldatas: [Bytes!]!
   targets: [String!]!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! 
+  transaction: Bytes!
 }
 
 # STAKING
