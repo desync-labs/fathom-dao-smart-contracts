@@ -194,26 +194,30 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
     if (staker != null) {
         log.info('User with id {} Found',[account.toHexString()])
         let lengthOfLockPositions = staker.lockPositionIds.length
-        log.info('lengthOfLockPositions is {}',[lengthOfLockPositions.toString()])
-        if(lengthOfLockPositions>0){
-            let lastLockPosition = staker.lockPositionIds[lengthOfLockPositions - 1]
-            let lockPosition = LockPosition.load(lastLockPosition)
+        if (lengthOfLockPositions > 0){
+            log.info('lengthOfLockPositions is {}',[lengthOfLockPositions.toString()])
+            let lastLockPositionIndex = staker.lockPositionIds[lengthOfLockPositions - 1]
+            let lastLockPosition = LockPosition.load(lastLockPositionIndex)
             let lockIdInt = lockId.toI32();
             let lockPositionIds = staker.lockPositionIds 
-            lockPositionIds[lockIdInt - 1] = lastLockPosition
+            let lockPosition = LockPosition.load(lockPositionIds[lockIdInt - 1])
+            
+            lockPositionIds[lockIdInt - 1] = lastLockPositionIndex
             lockPositionIds.pop()
             staker.lockPositionIds = lockPositionIds
-            if (lockPosition != null){
+            if (lockPosition != null && lastLockPosition != null){
                 lockPosition.staker = null;
                 lockPosition.account = null;
-                lockPosition.save()
-                
+                lastLockPosition.lockId = lockPosition.lockId
+                lastLockPosition.save()
+                lockPosition.save()            
             }
             staker.lockPositionCount = staker.lockPositionCount.minus(BigInt.fromString('1'))
             staker.save()
         }
+        
     }
-}
+ }
 
 function partialUnstakeLockPosition(account: Bytes, lockId: BigInt, amount: BigInt):void{
     log.info('Partial Unstake for {} account',[account.toHexString()])
