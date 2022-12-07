@@ -1,9 +1,9 @@
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
 import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstaked } from "../generated/StakingPackage/StakingPackage"
 import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
-import { StakingGetter } from "../generated/StakingPackage/StakingGetter"
+import { StakingGetters } from "../generated/StakingPackage/StakingGetters"
 import { ERC20 } from "../generated/StakingPackage/ERC20"
-import { Constants } from "./Utils/Constants"
+import { Constants } from "./utils/constants"
 //TODO Still:
 //APR -Subik -Easy -> Done
 //Daily Rewards - Subik - Easy -> Done
@@ -26,6 +26,7 @@ export function stakeHandler(event: Staked): void {
     // Create stake event
     let stakedEvent = new StakedEvent(protocolStats.totalStakeEvents.toString())
     stakedEvent.account = event.params.account
+    stakedEvent.amount = event.params.amount
     stakedEvent.streamShares = event.params.streamShares
     stakedEvent.nVoteToken = event.params.nVoteToken
     stakedEvent.lockId = event.params.lockId
@@ -58,17 +59,16 @@ export function stakeHandler(event: Staked): void {
 
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
-    let stakingGetter = StakingGetter.bind(Address.fromString(Constants.STAKING_GETTER))
     let vfthmToken = ERC20.bind(Address.fromString(Constants.VFTHM))
 
-    // call contract to set Total Staked for user
-    staker.totalStaked = stakingGetter.getUserTotalDeposit(Address.fromBytes(staker.address))
+    // add amount to user's total staked
+    staker.totalStaked = staker.totalStaked.plus(event.params.amount)
 
     // call VFTHM contract to get balance for user
     staker.accruedVotes = vfthmToken.balanceOf(Address.fromBytes(staker.address))
 
-    // call contract to set Total Staked and Total Votes for protocol
-    protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+    // add amount to overall total staked
+    protocolStats.totalStakeFTHM = protocolStats.totalStakeFTHM.plus(event.params.amount)
     protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
     const streamId = BigInt.fromString('0') //fthm Stream
     protocolStats.stakingAPR = BigInt.fromString('0')
@@ -86,23 +86,23 @@ export function stakeHandler(event: Staked): void {
 export function unstakeHandler(event: Unstaked): void {
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
-    let stakingGetter = StakingGetter.bind(Address.fromString(Constants.STAKING_GETTER))
     let vfthmToken = ERC20.bind(Address.fromString(Constants.VFTHM))
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
     if (staker != null) {
-        // call contract to set TOTAL STAKED FOR USER
-        staker.totalStaked = stakingGetter.getUserTotalDeposit(event.params.account)
+        // subtract amount from user's total staked
+        staker.totalStaked = staker.totalStaked.minus(event.params.amount)
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.save()
     }
 
     // update protocol stats
     let protocolStats = ProtocolStat.load(Constants.STAKING_CONTRACT)
     if (protocolStats != null) {
-        // call contract to set TOTAL STAKED FOR PROTOCOL 
-        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+        // subtract amount from overall total staked
+        protocolStats.totalStakeFTHM = protocolStats.totalStakeFTHM.minus(event.params.amount);
         protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
         const streamId = BigInt.fromString('0')//fthm Stream
@@ -121,7 +121,7 @@ export function unstakeHandler(event: Unstaked): void {
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
         //TODO: Ask Zach
-   //     completeUnstake(event.params.account,event.params.lockId)
+    //    completeUnstake(event.params.account,event.params.lockId)
     }
     
 }
@@ -130,23 +130,24 @@ export function unstakeHandler(event: Unstaked): void {
 export function partialUnstakeHandler(event: PartialUnstaked): void {
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
-    let stakingGetter = StakingGetter.bind(Address.fromString(Constants.STAKING_GETTER))
     let vfthmToken = ERC20.bind(Address.fromString(Constants.VFTHM))
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
     if (staker != null) {
-        // call contract to set TOTAL STAKED FOR USER
-        staker.totalStaked = stakingGetter.getUserTotalDeposit(event.params.account)
+        // subtract amount from staker's total staked
+        staker.totalStaked = staker.totalStaked.minus(event.params.amount)
+
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.save()
     }
 
     // update protocol stats
     let protocolStats = ProtocolStat.load(Constants.STAKING_CONTRACT)
     if (protocolStats != null) {
-        // call contract to set TOTAL STAKED FOR PROTOCOL 
-        protocolStats.totalStakeFTHM = stakingPackage.totalAmountOfStakedToken();
+        // subtract amount from overall total staked
+        protocolStats.totalStakeFTHM = protocolStats.totalStakeFTHM.minus(event.params.amount);
         protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
         protocolStats.save()

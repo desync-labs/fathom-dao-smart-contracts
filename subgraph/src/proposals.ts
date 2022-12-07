@@ -1,7 +1,7 @@
 import { BigInt, Address } from "@graphprotocol/graph-ts";
 import {ProposalCreated, VoteCast, VoteCastWithParams} from "../generated/Governor/Governor"
 import { Proposal } from "../generated/schema";
-import { Constants } from "./Utils/Constants"
+import { Constants } from "./utils/constants"
 import { Governor } from "../generated/Governor/Governor"
 
 

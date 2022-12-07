@@ -4,13 +4,15 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ fathomapp-subgraph",
+    
     "create-local": "graph create --node http://localhost:8020/ dao-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ dao-subgraph",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 dao-subgraph",
+
     "create-cloud": "graph create --node http://167.71.216.61:8020/ dao-subgraph",
     "remove-cloud": "graph remove --node http://167.71.216.61:8020/ dao-subgraph",
     "deploy-cloud": "graph deploy --node http://167.71.216.61:8020/ --ipfs http://167.71.216.61:5001 dao-subgraph",
+
     "test": "graph test"
   },
   "dependencies": {

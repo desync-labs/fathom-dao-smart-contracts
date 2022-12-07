@@ -44,6 +44,7 @@ type Staker @entity {
 type StakedEvent @entity {
   id: ID!
   account: Bytes! 
+  amount: BigInt!
   streamShares: BigInt!
   nVoteToken: BigInt!
   lockId: BigInt!
