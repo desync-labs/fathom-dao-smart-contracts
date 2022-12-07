@@ -36,7 +36,6 @@ export function stakeHandler(event: Staked): void {
     lockPosition.amount = event.params.amount
     lockPosition.lockId = event.params.lockId
     lockPosition.end = event.params.end
-    lockPosition.remainingTime = event.params.end.minus(event.block.timestamp)
     lockPosition.blockNumber = event.block.number
     lockPosition.blockTimestamp = event.block.timestamp
     lockPosition.transaction = event.transaction.hash
@@ -119,8 +118,7 @@ export function unstakeHandler(event: Unstaked): void {
         unstakedEvent.blockTimestamp = event.block.timestamp
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
-        //TODO: Ask Zach
-       completeUnstake(event.params.account,event.params.lockId)
+        completeUnstake(event.params.account,event.params.lockId)
     }
     
 }
@@ -266,8 +264,8 @@ function getAPR(streamId: BigInt, now: BigInt): BigInt{
     
     const oneYearStreamRewardValue = oneDayReward.times(Constants.WAD).times(oneYearValue)
     const streamAPR = oneYearStreamRewardValue.div(totalStakedValue).times(HundredPercent)
-    //TODO: Remove .div (as it is Int and decimals are not getting shown)
-    return streamAPR.div(Constants.WAD)
+    //TODO: ADD .div by Constants.WAD (but its not float so all the decimals are not shown)
+    return streamAPR
 }
 
 

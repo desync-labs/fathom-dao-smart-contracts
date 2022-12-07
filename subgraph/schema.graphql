@@ -74,7 +74,6 @@ type LockPosition @entity {
   lockId: BigInt!
   staker: Staker
   end: BigInt!
-  remainingTime: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt! 
   transaction: Bytes!
