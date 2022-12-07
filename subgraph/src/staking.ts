@@ -49,6 +49,7 @@ export function stakeHandler(event: Staked): void {
         staker.accruedRewards = BigInt.fromString('0')
         staker.accruedVotes = BigInt.fromString('0')
         staker.claimedAmount = BigInt.fromString('0')
+        staker.lockPositionCount = BigInt.fromString('0')
         staker.lockPositionIds = []
     }
     let lockPositionIds = staker.lockPositionIds
@@ -61,6 +62,7 @@ export function stakeHandler(event: Staked): void {
 
     // add amount to user's total staked
     staker.totalStaked = staker.totalStaked.plus(event.params.amount)
+    staker.lockPositionCount = staker.lockPositionCount.plus(BigInt.fromString('1'));
 
     // call VFTHM contract to get balance for user
     staker.accruedVotes = vfthmToken.balanceOf(Address.fromBytes(staker.address))
@@ -207,6 +209,7 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
                 lockPosition.save()
                 
             }
+            staker.lockPositionCount = staker.lockPositionCount.minus(BigInt.fromString('1'))
             staker.save()
         }
     }
