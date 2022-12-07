@@ -39,6 +39,7 @@ type Staker @entity {
   claimedAmount: BigInt!
   stakes: [StakedEvent!]! @derivedFrom(field: "staker")
   lockPositions: [LockPosition!]! @derivedFrom(field: "staker")
+  lockPositionIds: [String!]!
 }
 
 type StakedEvent @entity {

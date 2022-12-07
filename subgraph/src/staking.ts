@@ -1,7 +1,6 @@
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, log} from "@graphprotocol/graph-ts";
 import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstaked } from "../generated/StakingPackage/StakingPackage"
 import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
-import { StakingGetters } from "../generated/StakingPackage/StakingGetters"
 import { ERC20 } from "../generated/StakingPackage/ERC20"
 import { Constants } from "./utils/constants"
 //TODO Still:
@@ -55,7 +54,11 @@ export function stakeHandler(event: Staked): void {
         staker.accruedRewards = BigInt.fromString('0')
         staker.accruedVotes = BigInt.fromString('0')
         staker.claimedAmount = BigInt.fromString('0')
+        staker.lockPositionIds = []
     }
+    let lockPositionIds = staker.lockPositionIds
+    lockPositionIds.push(protocolStats.totalStakeEvents.toString())
+    staker.lockPositionIds = lockPositionIds
 
     // define contracts
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
@@ -121,7 +124,7 @@ export function unstakeHandler(event: Unstaked): void {
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
         //TODO: Ask Zach
-    //    completeUnstake(event.params.account,event.params.lockId)
+       completeUnstake(event.params.account,event.params.lockId)
     }
     
 }
@@ -188,14 +191,19 @@ export function streamCreatedHandler(event: StreamCreated): void {
 
 function completeUnstake(account: Bytes, lockId: BigInt): void{
     let staker = Staker.load(account.toHexString())
+    log.info('completeUnstake',[])
     if (staker != null) {
-        let lengthOfLockPositions = staker.lockPositions.length
+        log.info('User with id {} Found',[account.toHexString()])
+        let lengthOfLockPositions = staker.lockPositionIds.length
+        log.info('lengthOfLockPositions is {}',[lengthOfLockPositions.toString()])
         if(lengthOfLockPositions>0){
-            let lastLockPosition = staker.lockPositions[lengthOfLockPositions - 1]
+            let lastLockPosition = staker.lockPositionIds[lengthOfLockPositions - 1]
             //TODO: Check this again
             let lockIdInt = lockId.toI32();
-            staker.lockPositions[lockIdInt - 1] = lastLockPosition
-            staker.lockPositions.pop()
+            let lockPositionIds = staker.lockPositionIds 
+            lockPositionIds[lockIdInt - 1] = lastLockPosition
+            lockPositionIds.pop()
+            staker.lockPositionIds = lockPositionIds
             staker.save()
         }
     }
