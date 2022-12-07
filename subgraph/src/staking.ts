@@ -3,12 +3,8 @@ import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstak
 import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
 import { ERC20 } from "../generated/StakingPackage/ERC20"
 import { Constants } from "./utils/constants"
-//TODO Still:
-//APR -Subik -Easy -> Done
-//Daily Rewards - Subik - Easy -> Done
-//Get Fees - Subik // Can we call? - Tricky. Ask Zach -> Not Done
-//Get Lock Period - Subik// Need to add to event lock period -> Easy -> Add event -> Done
-//Use new contracts so that events can be handled in a way that aggregates the values -> Not Done
+
+
 export function stakeHandler(event: Staked): void {
     // load ProtocolStat (create if first stake event)
     let protocolStats = ProtocolStat.load(Constants.STAKING_CONTRACT)
@@ -74,8 +70,8 @@ export function stakeHandler(event: Staked): void {
     protocolStats.totalStakeFTHM = protocolStats.totalStakeFTHM.plus(event.params.amount)
     protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
     const streamId = BigInt.fromString('0') //fthm Stream
-    protocolStats.stakingAPR = BigInt.fromString('0')
-    protocolStats.oneDayRewards = BigInt.fromString('0')
+    protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
+    protocolStats.oneDayRewards = getOneDayReward(streamId,event.block.timestamp)
     protocolStats.save()
 
     // set staker
@@ -109,9 +105,9 @@ export function unstakeHandler(event: Unstaked): void {
         protocolStats.totalVotes = stakingPackage.totalAmountOfVoteToken();
         protocolStats.totalUnstakeEvents = protocolStats.totalUnstakeEvents.plus(BigInt.fromString('1'))
         const streamId = BigInt.fromString('0')//fthm Stream
-      //  protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
-        protocolStats.stakingAPR = BigInt.fromString('0')
-        protocolStats.oneDayRewards = BigInt.fromString('0')
+       
+        protocolStats.stakingAPR = getAPR(streamId,event.block.timestamp)
+        protocolStats.oneDayRewards = getOneDayReward(streamId,event.block.timestamp)
         protocolStats.save()
 
         // store UnstakedEvent data
@@ -164,8 +160,8 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
         unstakedEvent.blockTimestamp = event.block.timestamp
         unstakedEvent.transaction = event.transaction.hash
         unstakedEvent.save()
-        //TODO: Ask Zach
-      //  partialUnstakeLockPosition(event.params.account,event.params.lockId, event.params.amount)
+        
+        partialUnstakeLockPosition(event.params.account,event.params.lockId, event.params.amount)
     }
     
 }
@@ -180,9 +176,12 @@ export function pendingHandler(event: Pending): void {
 
 
 export function streamCreatedHandler(event: StreamCreated): void {
+    log.info('streamCreatedHandler getting called?',[])
     let stream  = new Stream(event.params.streamId.toHexString())
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
+    log.info('stream id {}',[event.params.streamId.toString()])
     let schedule = stakingPackage.getStreamSchedule(event.params.streamId)
+    log.info('schedule times {}',[schedule.getScheduleTimes().toString()])
     stream.time = schedule.getScheduleTimes()
     stream.reward = schedule.getScheduleRewards()
     stream.save()
@@ -198,39 +197,51 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
         log.info('lengthOfLockPositions is {}',[lengthOfLockPositions.toString()])
         if(lengthOfLockPositions>0){
             let lastLockPosition = staker.lockPositionIds[lengthOfLockPositions - 1]
-            //TODO: Check this again
+            let lockPosition = LockPosition.load(lastLockPosition)
             let lockIdInt = lockId.toI32();
             let lockPositionIds = staker.lockPositionIds 
             lockPositionIds[lockIdInt - 1] = lastLockPosition
             lockPositionIds.pop()
             staker.lockPositionIds = lockPositionIds
+            if (lockPosition != null){
+                lockPosition.staker = null;
+                lockPosition.account = null;
+                lockPosition.save()
+                
+            }
             staker.save()
         }
     }
 }
 
 function partialUnstakeLockPosition(account: Bytes, lockId: BigInt, amount: BigInt):void{
+    log.info('Partial Unstake for {} account',[account.toHexString()])
     let staker = Staker.load(account.toHexString())
     if (staker != null) {
         let lockIdInt = lockId.toI32();
-        let unstakedLockPosition = staker.lockPositions[lockIdInt - 1]
-       // unstakedLockPosition.amount = unstakedLockPosition.amount.minus(amount)
+        let unstakedLockPositionId = staker.lockPositionIds[lockIdInt -1]
+        let unstakedLockPosition = LockPosition.load(unstakedLockPositionId)
+        if(unstakedLockPosition != null){
+            unstakedLockPosition.amount = unstakedLockPosition.amount.minus(amount)
+            unstakedLockPosition.save()
+        }
+        
         staker.save()
     }
 }
 
 function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
     let stream  = Stream.load(streamId.toHexString())
-    const oneDay = new BigInt(86400)
+    const oneDay = BigInt.fromString('86400')
     if (stream != null){
         const streamStart = stream.time[0]
         const streamEnd = stream.time[stream.time.length -1]
         if (now.le(streamStart)){
-            return new BigInt(0)
+            return BigInt.fromString('0')
         }
     
         if (now.ge(streamEnd.minus(oneDay))){
-            return new BigInt(0)
+            return BigInt.fromString('0')
         }
         const streamTime = stream.time
         let currentIndex = 0
@@ -242,20 +253,21 @@ function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
         const oneDayReward = indexRewards.times(oneDay).div(indexDuration)
         return oneDayReward
     }
-    return new BigInt(0)  
+    return BigInt.fromString('0')
 }
 
 function getAPR(streamId: BigInt, now: BigInt): BigInt{
     const oneDayReward = getOneDayReward(streamId,now)
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
+    //TODO: Fetch from the Graph Itself?
     const totalStakedValue = stakingPackage.totalAmountOfStakedToken()
-    const oneYearValue = new BigInt(365)
-    const HundredPercent = new BigInt(100)
-    //const oneYearStreamRewardValue = Number(ethers.utils.formatUnits(oneDayReward, 18)) * 365 * streamTokenPrice
+    const oneYearValue = BigInt.fromString('365')
+    const HundredPercent = BigInt.fromString('100')
     
     const oneYearStreamRewardValue = oneDayReward.times(Constants.WAD).times(oneYearValue)
     const streamAPR = oneYearStreamRewardValue.div(totalStakedValue).times(HundredPercent)
-    return streamAPR
+    //TODO: Remove .div (as it is Int and decimals are not getting shown)
+    return streamAPR.div(Constants.WAD)
 }
 
 

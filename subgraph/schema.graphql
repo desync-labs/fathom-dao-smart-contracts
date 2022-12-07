@@ -67,12 +67,12 @@ type UnstakedEvent @entity {
 
 type LockPosition @entity {
   id: ID!
-  account: Bytes! 
+  account: Bytes
   streamShares: BigInt!
   nVoteToken: BigInt!
   amount: BigInt!
   lockId: BigInt!
-  staker: Staker!
+  staker: Staker
   end: BigInt!
   remainingTime: BigInt!
   blockNumber: BigInt!
