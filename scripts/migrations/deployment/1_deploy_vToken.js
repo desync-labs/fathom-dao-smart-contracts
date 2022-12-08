@@ -1,8 +1,8 @@
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
 const vMainToken = {
-    name: "Vote Fathom",
-    symbol: "vFTHM"
+    name: "Fathom Protocol Vote Token",
+    symbol: "VFTHM"
 };
 
 module.exports =  async function(deployer) {
