@@ -43,7 +43,7 @@ const _getTimeStamp = async () => {
     return timestamp;
 }
 
-    const vMainTokenCoefficient = 500;
+const vMainTokenCoefficient = 500;
 
 const oneYear = 31556926;
 const oneDay = 24 * 60 * 60;
@@ -71,8 +71,9 @@ module.exports = async function(deployer) {
             weightMultiplier
         );
         
+        const thirteenDecemberTimestampMidNight = 1670889600
         
-        const startTime =  await _getTimeStamp() + 60 * 60;
+        const startTime =  thirteenDecemberTimestampMidNight;
 
         const scheduleTimes = [
             startTime,
