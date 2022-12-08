@@ -46,6 +46,7 @@ const _getTimeStamp = async () => {
     const vMainTokenCoefficient = 500;
 
 const oneYear = 31556926;
+const oneDay = 24 * 60 * 60;
 
 const maxWeightShares = 1024;
 const minWeightShares = 768;
@@ -71,21 +72,19 @@ module.exports = async function(deployer) {
         );
         
         
-        const startTime =  await _getTimeStamp() + 3 * 24 * 60 * 60;
+        const startTime =  await _getTimeStamp() + 60 * 60;
 
         const scheduleTimes = [
             startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
+            startTime + oneDay,
+            startTime + 2 * oneDay,
+            startTime + 3 * oneDay
         ];
 
         const scheduleRewards = [
-            web3.utils.toWei('20000', 'ether'),
-            web3.utils.toWei('10000', 'ether'),
-            web3.utils.toWei('5000', 'ether'),
-            web3.utils.toWei('2500', 'ether'),
+            web3.utils.toWei('150000000', 'ether'),
+            web3.utils.toWei('100000000', 'ether'),
+            web3.utils.toWei('50000000', 'ether'),
             web3.utils.toWei("0", 'ether')
         ];
 

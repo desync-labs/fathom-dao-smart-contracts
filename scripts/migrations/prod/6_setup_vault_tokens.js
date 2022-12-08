@@ -9,7 +9,7 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-const T_TO_TRANSFER = web3.utils.toWei('20000', 'ether');
+const T_TO_TRANSFER = web3.utils.toWei('150000000', 'ether');
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 
 
