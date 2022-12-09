@@ -181,9 +181,11 @@ export function streamCreatedHandler(event: StreamCreated): void {
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
     log.info('stream id {}',[event.params.streamId.toString()])
     let schedule = stakingPackage.getStreamSchedule(event.params.streamId)
+    let streamData = stakingPackage.getStream(event.params.streamId)
     log.info('schedule times {}',[schedule.getScheduleTimes().toString()])
     stream.time = schedule.getScheduleTimes()
     stream.reward = schedule.getScheduleRewards()
+    stream.cooldownPeriod = streamData.getTau()
     stream.save()
 }
 

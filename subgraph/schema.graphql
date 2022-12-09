@@ -90,5 +90,7 @@ type Stream @entity {
   id: ID!
   time: [BigInt!]!
   reward: [BigInt!]!
+  cooldownPeriod: BigInt!
 }
+
 
