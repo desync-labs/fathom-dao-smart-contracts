@@ -168,8 +168,10 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
 export function pendingHandler(event: Pending): void {
    // Pending(uint256 indexed streamId, address indexed account, uint256 indexed pendings);
    let staker = Staker.load(event.params.account.toHexString())
+   let streamData = Stream.load(event.params.streamId.toHexString())
    if (staker != null){
         staker.claimedAmount = event.params.pendings
+        staker.cooldown = event.block.timestamp(streamData.cooldownPeriod)
         staker.save()
    }
 }

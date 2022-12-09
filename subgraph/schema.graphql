@@ -47,6 +47,7 @@ type Staker @entity {
   lockPositions: [LockPosition!]! @derivedFrom(field: "staker")
   lockPositionIds: [String!]!
   lockPositionCount: BigInt!
+  cooldown: BigInt!
 }
 
 type StakedEvent @entity {
