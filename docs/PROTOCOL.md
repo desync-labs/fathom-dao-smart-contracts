@@ -19,7 +19,7 @@ ___
       - [Deployment and initialisation parameters:](#deployment-and-initialisation-parameters)
   - [Accesibility Permissions and Roles](#accesibility-permissions-and-roles)
   - [4. Staking](#4-staking)
-    - [4.1. Staking: Main Terms and Definitions, Q&A](#41-staking-main-terms-and-definitions-qa)
+    - [4.1. Staking: Main Terms and Definitions, Q\&A](#41-staking-main-terms-and-definitions-qa)
     - [4.2. Lock To Stake](#42-lock-to-stake)
     - [4.3. How Locks Work?](#43-how-locks-work)
     - [4.4. How staking works?](#44-how-staking-works)
@@ -932,7 +932,8 @@ A succesful submitTransaction call emits SubmitTransaction event.
     function submitTransaction(
         address _to,
         uint _value,
-        bytes memory _data
+        bytes memory _data,
+        uint _expireTimestamp
     )
 ```
 The following function allows multiSig owners to confirm a transaction.  Parameter _txIndex is the transaction Index.  It emits the event ExecuteTransaction.

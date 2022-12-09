@@ -151,8 +151,11 @@ describe('Proposal flow', () => {
             },{
                 type: 'bytes',
                 name: '_data'
+            },{
+                type: 'uint256',
+                name: '_expireTimestamp'
             }]
-        }, [FTHMToken.address, EMPTY_BYTES, encoded_transfer_function]);
+        }, [FTHMToken.address, EMPTY_BYTES, encoded_transfer_function, 0]);
 
         description_hash = web3.utils.keccak256(PROPOSAL_DESCRIPTION);
         description_hash_2 = web3.utils.keccak256(PROPOSAL_DESCRIPTION_2);
@@ -183,7 +186,8 @@ describe('Proposal flow', () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account), 
+                _encodeTransferFunction(_account),
+                0,
                 {"from": accounts[0]}
             );
             let txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -351,7 +355,8 @@ describe('Proposal flow', () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation1, 
+                encodedConfirmation1,
+                0,
                 {"from": accounts[0]}
             );
             txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -407,7 +412,8 @@ describe('Proposal flow', () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account), 
+                _encodeTransferFunction(_account),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -542,7 +548,8 @@ describe('Proposal flow', () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation1, 
+                encodedConfirmation1,
+                0,
                 {"from": accounts[0]}
             );
             txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
