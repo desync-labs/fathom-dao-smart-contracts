@@ -46,7 +46,7 @@ const _getTimeStamp = async () => {
 const vMainTokenCoefficient = 500;
 
 const oneYear = 31556926;
-const oneDay = 24 * 60 * 60;
+const oneDay = 86400;
 
 const maxWeightShares = 1024;
 const minWeightShares = 768;
@@ -57,7 +57,7 @@ const maxNumberOfLocks = 10;
 
 const tau = 2;
 
-const lockingVoteWeight = 365 * 24 * 60 * 60;
+const lockingVoteWeight = 31556926;
 
 module.exports = async function(deployer) {
     try{
