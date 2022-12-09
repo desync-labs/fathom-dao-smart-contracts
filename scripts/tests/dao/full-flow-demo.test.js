@@ -335,7 +335,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value), 
+                _encodeTransferFunction(_account, _value),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -354,7 +355,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token), 
+                _encodeAddSupportedTokenFunction(_token),
+                0,
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -471,7 +473,8 @@ describe("DAO Demo", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -643,7 +646,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation1, 
+                encodedConfirmation1,
+                0,
                 {"from": accounts[0]}
             );
             txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -723,7 +727,9 @@ describe("DAO Demo", () => {
                     EMPTY_BYTES,
                     _encodeWithdrawPenaltyFunction(
                         _penaltyReceiver
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -777,8 +783,11 @@ describe("DAO Demo", () => {
                 },{
                     type: 'bytes',
                     name: '_data'
+                },{
+                    type: 'uint256',
+                    name: '_expireTimestamp'
                 }]
-            }, [FTHMTokenAddress, EMPTY_BYTES, encoded_transfer_function]);
+            }, [FTHMTokenAddress, EMPTY_BYTES, encoded_transfer_function, 0]);
         });
 
         
@@ -852,7 +861,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation2, 
+                encodedConfirmation2,
+                0,
                 {"from": accounts[0]}
             );
             txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -923,6 +933,7 @@ describe("DAO Demo", () => {
                 FTHMToken.address,
                 EMPTY_BYTES, 
                 _encodeStakeApproveFunction(approveAmount, stakingService.address),
+                0,
                 {"from": accounts[0]}
             );
             txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -931,6 +942,7 @@ describe("DAO Demo", () => {
                 stakingService.address,
                 EMPTY_BYTES, 
                 _encodeStakeFunction(amount, oneYr, comity_1, true),
+                0,
                 {"from": accounts[0]}
             );
             txIndex5 = eventsHelper.getIndexedEventArgs(result2, SUBMIT_TRANSACTION_EVENT)[0];
@@ -939,6 +951,7 @@ describe("DAO Demo", () => {
                 stakingService.address,
                 EMPTY_BYTES, 
                 _encodeStakeFunction(amount, oneYr, comity_2, true),
+                0,
                 {"from": accounts[0]}
             );
             txIndex6 = eventsHelper.getIndexedEventArgs(result_temp, SUBMIT_TRANSACTION_EVENT)[0];
