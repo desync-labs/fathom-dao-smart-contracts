@@ -50,6 +50,7 @@ export function stakeHandler(event: Staked): void {
         staker.accruedVotes = BigInt.fromString('0')
         staker.claimedAmount = BigInt.fromString('0')
         staker.lockPositionCount = BigInt.fromString('0')
+        staker.cooldown = BigInt.fromString('0')
         staker.lockPositionIds = []
     }
     let lockPositionIds = staker.lockPositionIds
