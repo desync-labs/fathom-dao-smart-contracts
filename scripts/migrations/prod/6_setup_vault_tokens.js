@@ -36,7 +36,6 @@ module.exports = async function(deployer) {
         MainToken.address, 
         EMPTY_BYTES, 
         _encodeTransferFunction(vaultService.address, T_TO_TRANSFER),
-        0,
         {gas: 8000000}
     );
 
