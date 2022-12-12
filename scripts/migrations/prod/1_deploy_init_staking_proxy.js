@@ -71,9 +71,10 @@ module.exports = async function(deployer) {
             weightMultiplier
         );
         
-        const thirteenDecemberTimestampMidNight = 1670889600
-        
-        const startTime =  thirteenDecemberTimestampMidNight;
+       // const thirteenDecemberTimestampMidNight = 1670889600
+        const EightThirtyPMUAETimestampTwelveDec = 1670862600;
+
+        const startTime =  EightThirtyPMUAETimestampTwelveDec;
 
         const scheduleTimes = [
             startTime,
