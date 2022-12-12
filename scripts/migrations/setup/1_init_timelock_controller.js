@@ -6,7 +6,7 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 // interfaces
 const ITimelockController = artifacts.require('./dao/governance/interfaces/ITimelockController.sol');
 
-const minDelay = 1;
+const minDelay = 30;
 const proposers = [MainTokenGovernor.address];
 const executors = [MainTokenGovernor.address];
 

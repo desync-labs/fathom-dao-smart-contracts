@@ -11,7 +11,7 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-const LOCK_PERIOD = 345600
+const LOCK_PERIOD = 259200 //3 days
 
 const T_TO_TRANSFER = web3.utils.toWei('150000000', 'ether');
 const T_TO_STAKE = web3.utils.toWei('50000000', 'ether');
