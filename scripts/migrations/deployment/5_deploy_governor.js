@@ -6,8 +6,8 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const VMainToken_address = VMainToken.address;
 const TimelockController_address = TimelockController.address;
 const MultiSigWallet_address = MultiSigWallet.address;
-const initialVotingDelay = 43200; 
-const votingPeriod = 43200 * 5; 
+const initialVotingDelay = 1 * 60 / 2; 
+const votingPeriod = 60 * 15 / 2; 
 const initialProposalThreshold = 1000;
 
 

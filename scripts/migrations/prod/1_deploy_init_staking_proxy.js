@@ -78,14 +78,12 @@ module.exports = async function(deployer) {
         const scheduleTimes = [
             startTime,
             startTime + oneDay,
-            startTime + 2 * oneDay,
-            startTime + 3 * oneDay
+            startTime + 36 * oneDay,
         ];
 
         const scheduleRewards = [
             web3.utils.toWei('150000000', 'ether'),
-            web3.utils.toWei('100000000', 'ether'),
-            web3.utils.toWei('50000000', 'ether'),
+            web3.utils.toWei('140000000', 'ether'),
             web3.utils.toWei("0", 'ether')
         ];
 
