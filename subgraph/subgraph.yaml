@@ -58,4 +58,6 @@ dataSources:
           handler: streamCreatedHandler
         - event : PartialUnstaked(indexed address,uint256,indexed uint256)
           handler: partialUnstakeHandler
+        - event: Released(indexed uint256,indexed address,uint256)
+          handler: withdrawHandler
       file: ./src/staking.ts

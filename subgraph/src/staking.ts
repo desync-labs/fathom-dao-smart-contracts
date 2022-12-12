@@ -1,6 +1,6 @@
 import { Address, BigInt, Bytes, log} from "@graphprotocol/graph-ts";
-import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstaked } from "../generated/StakingPackage/StakingPackage"
-import { StakedEvent, UnstakedEvent, Staker, ProtocolStat, LockPosition, Stream} from "../generated/schema";
+import { Staked, Unstaked, StakingPackage, Pending, StreamCreated, PartialUnstaked, Released } from "../generated/StakingPackage/StakingPackage"
+import { StakedEvent, UnstakedEvent, Staker,ProtocolStat, LockPosition, Stream} from "../generated/schema";
 import { ERC20 } from "../generated/StakingPackage/ERC20"
 import { Constants } from "./utils/constants"
 
@@ -126,6 +126,16 @@ export function unstakeHandler(event: Unstaked): void {
     
 }
 
+export function withdrawHandler(event: Released): void {
+    // update staker data
+    let staker = Staker.load(event.params.user.toHexString())
+
+    if (staker != null) {
+        staker.claimedAmount = BigInt.fromString('0')
+        staker.save()
+    }
+}
+
 
 export function partialUnstakeHandler(event: PartialUnstaked): void {
     // define contracts
@@ -179,7 +189,6 @@ export function pendingHandler(event: Pending): void {
 
 
 export function streamCreatedHandler(event: StreamCreated): void {
-    log.info('streamCreatedHandler getting called?',[])
     let stream  = new Stream(event.params.streamId.toHexString())
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
     log.info('stream id {}',[event.params.streamId.toString()])
@@ -279,6 +288,8 @@ function getAPR(streamId: BigInt, now: BigInt): BigInt{
     //TODO: ADD .div by Constants.WAD (but its not float so all the decimals are not shown)
     return streamAPR
 }
+
+
 
 
 
