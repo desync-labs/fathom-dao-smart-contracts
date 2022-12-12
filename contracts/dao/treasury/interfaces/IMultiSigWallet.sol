@@ -17,11 +17,11 @@ interface IMultiSigWallet {
 
     function removeOwner(address owner) external;
 
-    function addOwners(address[] calldata _owners) external;
+    function addOwner(address owner) external;
 
     function changeRequirement(uint _required) external;
 
-    function submitTransaction(address _to, uint _value, bytes memory _data, uint _expireTimestamp) external;
+    function submitTransaction(address _to, uint _value, bytes memory _data) external;
 
     function confirmTransaction(uint _txIndex) external;
 
@@ -33,7 +33,5 @@ interface IMultiSigWallet {
 
     function getTransactionCount() external returns (uint);
 
-    function getTransaction(
-        uint _txIndex
-    ) external returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations, uint expireTimestamp);
+    function getTransaction(uint _txIndex) external returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations);
 }

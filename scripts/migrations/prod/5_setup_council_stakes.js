@@ -46,7 +46,6 @@ module.exports = async function(deployer) {
         MainToken.address, 
         EMPTY_BYTES, 
         _encodeTransferFunction(accounts[0], T_TO_TRANSFER),
-        0,
         {gas: 8000000}
     );
     let txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];

@@ -80,7 +80,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes32 descriptionHash
     ) public payable virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-        requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
@@ -178,7 +177,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function revokeConfirmation(uint _proposalId) public onlyMultiSig notExecuted(_proposalId) {
-        requireConfirmed(_proposalId);
+        require(isConfirmed[_proposalId], "proposal not confirmed");
 
         isConfirmed[_proposalId] = false;
 
@@ -457,10 +456,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         }
 
         return (_proposalIds, _descriptionsArray, _statusses);
-    }
-
-    function requireConfirmed(uint _proposalId) internal view {
-        require(isConfirmed[_proposalId], "proposal not confirmed");
     }
 
     function _executor() internal view virtual returns (address) {

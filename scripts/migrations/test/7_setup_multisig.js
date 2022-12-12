@@ -10,15 +10,28 @@ const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 
 const NEW_MULTISIG_REQUIREMENT = 2;
 
-const _encodeAddOwnersFunction = (_accounts) => {
+const _encodeAddOwnerFunction = (_account) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'addOwners',
+        name: 'addOwner',
         type: 'function',
         inputs: [{
-            type: 'address[]',
-            name: '_owners'
+            type: 'address',
+            name: 'owner'
         }]
-    }, [_accounts]);
+    }, [_account]);
+
+    return toRet;
+}
+
+const _encodeChangeRequirementFunction = (number) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'changeRequirement',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: '_required'
+        }]
+    }, [number]);
 
     return toRet;
 }
@@ -29,8 +42,19 @@ module.exports = async function(deployer) {
     let result = await multiSigWallet.submitTransaction(
         multiSigWallet.address, 
         EMPTY_BYTES,
-        _encodeAddOwnersFunction([COUNCIL_1]),
-        0,
+        _encodeAddOwnerFunction(COUNCIL_1),
+        {gas: 8000000}
+    );
+
+    txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+    await multiSigWallet.confirmTransaction(txIndex, {gas: 8000000});
+    await multiSigWallet.executeTransaction(txIndex, {gas: 8000000});
+
+    result = await multiSigWallet.submitTransaction(
+        multiSigWallet.address, 
+        EMPTY_BYTES,
+        _encodeChangeRequirementFunction(NEW_MULTISIG_REQUIREMENT),
         {gas: 8000000}
     );
 

@@ -152,8 +152,7 @@ describe('Token Creation Through Governance', () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account),
-                0,
+                _encodeTransferFunction(_account), 
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -320,8 +319,7 @@ describe('Token Creation Through Governance', () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation1,
-                0,
+                encodedConfirmation1, 
                 {"from": accounts[0]}
             );
             txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];

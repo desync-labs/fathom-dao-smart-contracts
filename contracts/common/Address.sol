@@ -175,14 +175,6 @@ library Address {
         return verifyCallResult(success, returndata, errorMessage);
     }
 
-    function getExtCodeHash(address target) internal view returns (bytes32) {
-        bytes32 codeHash;
-        assembly {
-            codeHash := extcodehash(target)
-        }
-        return codeHash;
-    }
-
     /**
      * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the
      * revert reason using the provided one.

@@ -297,8 +297,7 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value),
-                0,
+                _encodeTransferFunction(_account, _value), 
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -327,8 +326,7 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token),
-                0,
+                _encodeAddSupportedTokenFunction(_token), 
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -610,8 +608,7 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ),
-                    0,
+                    ), 
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -679,8 +676,7 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ),
-                    0,
+                    ), 
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1131,9 +1127,7 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeWithdrawPenaltyFunction(
                         _penaltyReceiver
-                    ),
-                    0,
-                    {"from": accounts[0]}
+                    ), {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1167,9 +1161,7 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ),
-                    0,
-                    {"from": accounts[0]}
+                    ), {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1201,9 +1193,7 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ),
-                    0,
-                    {"from": accounts[0]}
+                    ), {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];

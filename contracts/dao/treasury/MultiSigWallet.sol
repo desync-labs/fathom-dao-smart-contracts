@@ -4,21 +4,15 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/IMultiSigWallet.sol";
-import "../../common/Address.sol";
 
 contract MultiSigWallet is IMultiSigWallet {
-    using Address for address;
-
     struct Transaction {
         address to;
-        bool executed;
-        bytes data;
         uint value;
+        bytes data;
+        bool executed;
         uint numConfirmations;
-        uint expireTimestamp;
     }
-
-    error TransactionRevered(bytes data);
 
     uint public constant MAX_OWNER_COUNT = 50;
 
@@ -26,12 +20,9 @@ contract MultiSigWallet is IMultiSigWallet {
     address public governor;
 
     uint public numConfirmationsRequired;
-    uint public lastDisabledTransactionIndex;
 
     mapping(address => bool) public isOwner;
     mapping(uint => mapping(address => bool)) public isConfirmed;
-
-    mapping(address => bytes32) internal whitelistedBytesCode;
 
     Transaction[] public transactions;
 
@@ -55,13 +46,8 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
-    modifier notDisabled(uint _txIndex) {
-        require(_txIndex >= lastDisabledTransactionIndex, "MultiSig: old txs has been disabled");
-        _;
-    }
-
-    modifier notExpired(uint _txIndex) {
-        require(transactions[_txIndex].expireTimestamp >= block.timestamp || transactions[_txIndex].expireTimestamp == 0, "MultiSig: tx expired");
+    modifier ownerDoesNotExist(address owner) {
+        require(!isOwner[owner], "MultiSig: Owner already exists");
         _;
     }
 
@@ -70,11 +56,13 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
+    modifier notNull(address _address) {
+        require(_address != address(0), "MultiSig: _address == 0");
+        _;
+    }
+
     modifier validRequirement(uint ownerCount, uint _required) {
-        require(
-            ownerCount > 0 && ownerCount <= MAX_OWNER_COUNT && _required <= ownerCount && ownerCount > 1 ? _required > 1 : _required > 0,
-            "MultiSig: Invalid requirement"
-        );
+        require(ownerCount <= MAX_OWNER_COUNT && _required <= ownerCount && _required != 0 && ownerCount != 0, "MultiSig: Invalid requirement");
         _;
     }
 
@@ -83,28 +71,8 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
-    modifier validateSubmitTxInputs(
-        address _to,
-        uint _value,
-        bytes memory _data,
-        uint _expireTimestamp
-    ) {
-        require(_expireTimestamp >= block.timestamp || _expireTimestamp == 0, "already expired");
-
-        if (_to.isContract()) {
-            require(_data.length > 0, "no calldata for contract call");
-        } else {
-            require(_data.length == 0 && _value > 0, "calldata for EOA call or 0 value");
-        }
-
-        require(address(this).balance >= _value, "not enough balance");
-
-        _;
-    }
-
     constructor(address[] memory _owners, uint _numConfirmationsRequired, address _governor) {
         governor = _governor;
-        require(_owners.length <= MAX_OWNER_COUNT, "owners limit reached");
         require(_owners.length > 0, "owners required");
         require(_numConfirmationsRequired > 0 && _numConfirmationsRequired <= _owners.length, "invalid number of required confirmations");
 
@@ -133,28 +101,16 @@ contract MultiSigWallet is IMultiSigWallet {
                 break;
             }
         owners.pop();
-
         if (numConfirmationsRequired > owners.length) changeRequirement(owners.length);
-
-        lastDisabledTransactionIndex = getTransactionCount();
-
         emit OwnerRemoval(owner);
     }
 
-    function addOwners(
-        address[] memory _owners
-    ) public override onlyWallet validRequirement(owners.length + _owners.length, numConfirmationsRequired + _owners.length) {
-        for (uint i = 0; i < _owners.length; i++) {
-            address owner = _owners[i];
-            require(owner != address(0), "MultiSig: owner address == 0");
-            _requireNewOwner(owner);
-
-            isOwner[owner] = true;
-            owners.push(owner);
-            emit OwnerAddition(owner);
-        }
-
-        changeRequirement(numConfirmationsRequired + _owners.length);
+    function addOwner(
+        address owner
+    ) public override onlyWallet ownerDoesNotExist(owner) notNull(owner) validRequirement(owners.length + 1, numConfirmationsRequired) {
+        isOwner[owner] = true;
+        owners.push(owner);
+        emit OwnerAddition(owner);
     }
 
     function changeRequirement(uint _required) public override onlyWallet validRequirement(owners.length, _required) {
@@ -162,60 +118,36 @@ contract MultiSigWallet is IMultiSigWallet {
         emit RequirementChange(_required);
     }
 
-    function submitTransaction(
-        address _to,
-        uint _value,
-        bytes memory _data,
-        uint _expireTimestamp
-    ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _expireTimestamp) {
+    function submitTransaction(address _to, uint _value, bytes memory _data) public override onlyOwnerOrGov {
         uint txIndex = transactions.length;
 
-        transactions.push(
-            Transaction({ to: _to, value: _value, data: _data, executed: false, numConfirmations: 0, expireTimestamp: _expireTimestamp })
-        );
-
-        whitelistedBytesCode[_to] = _to.getExtCodeHash();
+        transactions.push(Transaction({ to: _to, value: _value, data: _data, executed: false, numConfirmations: 0 }));
 
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
     }
 
-    function confirmTransaction(
-        uint _txIndex
-    ) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) notDisabled(_txIndex) notExpired(_txIndex) {
+    function confirmTransaction(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
-
-        _requireTargetCodeNotChanged(transaction.to);
-
         transaction.numConfirmations += 1;
         isConfirmed[_txIndex][msg.sender] = true;
 
         emit ConfirmTransaction(msg.sender, _txIndex);
     }
 
-    function executeTransaction(
-        uint _txIndex
-    ) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notDisabled(_txIndex) notExpired(_txIndex) {
+    function executeTransaction(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
-
-        _requireTargetCodeNotChanged(transaction.to);
 
         require(transaction.numConfirmations >= numConfirmationsRequired, "cannot execute tx");
 
         transaction.executed = true;
 
-        (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
-        if (success) {
-            emit ExecuteTransaction(msg.sender, _txIndex);
-        } else {
-            revert TransactionRevered(data);
-        }
+        (bool success, ) = transaction.to.call{ value: transaction.value }(transaction.data);
+        require(success, "tx failed");
 
         emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
-    function revokeConfirmation(
-        uint _txIndex
-    ) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notDisabled(_txIndex) notExpired(_txIndex) {
+    function revokeConfirmation(uint _txIndex) public override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
         require(isConfirmed[_txIndex][msg.sender], "tx not confirmed");
@@ -236,17 +168,9 @@ contract MultiSigWallet is IMultiSigWallet {
 
     function getTransaction(
         uint _txIndex
-    ) public view override returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations, uint expireTimestamp) {
-        Transaction memory transaction = transactions[_txIndex];
+    ) public view override returns (address to, uint value, bytes memory data, bool executed, uint numConfirmations) {
+        Transaction storage transaction = transactions[_txIndex];
 
-        return (transaction.to, transaction.value, transaction.data, transaction.executed, transaction.numConfirmations, transaction.expireTimestamp);
-    }
-
-    function _requireNewOwner(address owner) internal view {
-        require(!isOwner[owner], "MultiSig: Owner already exists");
-    }
-
-    function _requireTargetCodeNotChanged(address target) internal view {
-        require(whitelistedBytesCode[target] == target.getExtCodeHash(), "target code changed");
+        return (transaction.to, transaction.value, transaction.data, transaction.executed, transaction.numConfirmations);
     }
 }
