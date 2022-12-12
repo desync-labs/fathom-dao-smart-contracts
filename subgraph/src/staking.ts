@@ -169,9 +169,9 @@ export function pendingHandler(event: Pending): void {
    // Pending(uint256 indexed streamId, address indexed account, uint256 indexed pendings);
    let staker = Staker.load(event.params.account.toHexString())
    let streamData = Stream.load(event.params.streamId.toHexString())
-   if (staker != null){
+   if (staker != null && streamData!=null){
         staker.claimedAmount = event.params.pendings
-        staker.cooldown = event.block.timestamp(streamData.cooldownPeriod)
+        staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
         staker.save()
    }
 }
@@ -249,7 +249,7 @@ function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
             return BigInt.fromString('0')
         }
     
-        if (now.ge(streamEnd.minus(oneDay))){
+        if (now.ge(streamEnd)){
             return BigInt.fromString('0')
         }
         const streamTime = stream.time
