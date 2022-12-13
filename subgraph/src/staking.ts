@@ -91,11 +91,14 @@ export function unstakeHandler(event: Unstaked): void {
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
-    if (staker != null) {
+    const streamId = BigInt.fromString('0')
+    let streamData = Stream.load(streamId.toHexString())
+    if (staker != null && streamData!=null) {
         // subtract amount from user's total staked
         staker.totalStaked = staker.totalStaked.minus(event.params.amount)
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
         staker.save()
     }
 
@@ -144,12 +147,15 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
-    if (staker != null) {
+    const streamId = BigInt.fromString('0')
+    let streamData = Stream.load(streamId.toHexString())
+    if (staker != null && streamData!=null) {
         // subtract amount from staker's total staked
         staker.totalStaked = staker.totalStaked.minus(event.params.amount)
 
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
         staker.save()
     }
 
@@ -227,6 +233,7 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
                 lockPosition.save()            
             }
             staker.lockPositionCount = staker.lockPositionCount.minus(BigInt.fromString('1'))
+            
             staker.save()
         }
         
@@ -278,13 +285,11 @@ function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
 function getAPR(streamId: BigInt, now: BigInt): BigInt{
     const oneDayReward = getOneDayReward(streamId,now)
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
-    //TODO: Fetch from the Graph Itself?
     const totalStakedValue = stakingPackage.totalAmountOfStakedToken()
     const oneYearValue = BigInt.fromString('365')
     const HundredPercent = BigInt.fromString('100')
     
     const oneYearStreamRewardValue = oneDayReward.times(Constants.WAD).times(oneYearValue)
     const streamAPR = oneYearStreamRewardValue.div(totalStakedValue).times(HundredPercent)
-    //TODO: ADD .div by Constants.WAD (but its not float so all the decimals are not shown)
     return streamAPR
 }
