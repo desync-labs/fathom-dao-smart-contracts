@@ -99,6 +99,7 @@ export function unstakeHandler(event: Unstaked): void {
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
         staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
+        staker.claimedAmount = stakingPackage.getUsersPendingRewards(event.params.account,streamId)
         staker.save()
     }
 
@@ -156,6 +157,7 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
         staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
+        staker.claimedAmount = stakingPackage.getUsersPendingRewards(event.params.account,streamId)
         staker.save()
     }
 
