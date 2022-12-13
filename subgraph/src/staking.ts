@@ -285,14 +285,12 @@ function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
 function getAPR(streamId: BigInt, now: BigInt): BigInt{
     const oneDayReward = getOneDayReward(streamId,now)
     let stakingPackage = StakingPackage.bind(Address.fromString(Constants.STAKING_CONTRACT))
-    //TODO: Fetch from the Graph Itself?
     const totalStakedValue = stakingPackage.totalAmountOfStakedToken()
     const oneYearValue = BigInt.fromString('365')
     const HundredPercent = BigInt.fromString('100')
     
     const oneYearStreamRewardValue = oneDayReward.times(Constants.WAD).times(oneYearValue)
     const streamAPR = oneYearStreamRewardValue.div(totalStakedValue).times(HundredPercent)
-    //TODO: ADD .div by Constants.WAD (but its not float so all the decimals are not shown)
     return streamAPR
 }
 
