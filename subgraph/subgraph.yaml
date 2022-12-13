@@ -6,7 +6,7 @@ dataSources:
     name: Governor
     network: mainnet
     source:
-      address: "0x74b612a348a6337B050336152dfEEe42c496Dd94"
+      address: "0xDcDa226fa9c23E7F6c88DB8a607Cc0E2DD3E17C7"
       abi: Governor
       startBlock: 42201579
     mapping:
@@ -17,7 +17,7 @@ dataSources:
         - Proposal
       abis:
         - name: Governor
-          file: ./abis/Governor.json
+          file: ./abis/MainTokenGovernor.json
       eventHandlers:
         - event: ProposalCreated(indexed uint256,indexed address,address[],uint256[],string[],bytes[],uint256,indexed uint256,string)
           handler: proposalCreatedHandler
@@ -31,7 +31,7 @@ dataSources:
     name: StakingPackage
     network: mainnet
     source:
-      address: "0xA6BD31aa96f6905caFF0096A2A44390632a04672"
+      address: "0xa8402AFd8ed9F4cfC9B149dcC13973777dCa143c"
       abi: StakingPackage
       startBlock: 42201579
     mapping:
@@ -43,8 +43,8 @@ dataSources:
       abis:
         - name: StakingPackage
           file: ./abis/StakingPackage.json
-        - name: StakingGetters
-          file: ./abis/StakingGetters.json
+        - name: StakingGettersHelper
+          file: ./abis/StakingGettersHelper.json
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
