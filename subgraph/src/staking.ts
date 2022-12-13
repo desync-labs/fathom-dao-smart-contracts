@@ -91,11 +91,14 @@ export function unstakeHandler(event: Unstaked): void {
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
-    if (staker != null) {
+    const streamId = BigInt.fromString('0')
+    let streamData = Stream.load(streamId.toHexString())
+    if (staker != null && streamData!=null) {
         // subtract amount from user's total staked
         staker.totalStaked = staker.totalStaked.minus(event.params.amount)
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
         staker.save()
     }
 
@@ -144,12 +147,15 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
 
     // update staker data
     let staker = Staker.load(event.params.account.toHexString())
-    if (staker != null) {
+    const streamId = BigInt.fromString('0')
+    let streamData = Stream.load(streamId.toHexString())
+    if (staker != null && streamData!=null) {
         // subtract amount from staker's total staked
         staker.totalStaked = staker.totalStaked.minus(event.params.amount)
 
         // call VFTHM contract to get balance for user
         staker.accruedVotes = vfthmToken.balanceOf(event.params.account)
+        staker.cooldown = event.block.timestamp.plus(streamData.cooldownPeriod)
         staker.save()
     }
 
@@ -227,6 +233,7 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
                 lockPosition.save()            
             }
             staker.lockPositionCount = staker.lockPositionCount.minus(BigInt.fromString('1'))
+            
             staker.save()
         }
         
