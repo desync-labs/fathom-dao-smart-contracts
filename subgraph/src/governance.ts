@@ -48,27 +48,27 @@ export function proposalCreatedHandler(event: ProposalCreated): void {
 }
 
 export function voteCastHandler(event: VoteCast): void {
-    voteCast(event.params.proposalId.toHexString(), event.params.support);
+    voteCast(event.params.proposalId.toHexString(), event.params.support, event.params.weight);
 }
 
 export function voteCastWithParamsHandler(event: VoteCastWithParams): void {
-    voteCast(event.params.proposalId.toHexString(), event.params.support);
+    voteCast(event.params.proposalId.toHexString(), event.params.support, event.params.weight);
 }
 
-function voteCast(proposalId: string, support: number): void {
+function voteCast(proposalId: string, support: number, weight: BigInt): void {
     let proposal = Proposal.load(proposalId)
     
-    // increment vote type count
+    // increment vote type by weight
     if (proposal != null) {
         switch(u32(support)) {
             case VoteType.Against:
-                proposal.againstVotes = proposal.againstVotes.plus(BigInt.fromString('1'))
+                proposal.againstVotes = proposal.againstVotes.plus(weight)
                 break;
             case VoteType.For:
-                proposal.forVotes = proposal.forVotes.plus(BigInt.fromString('1'))
+                proposal.forVotes = proposal.forVotes.plus(weight)
                 break;
             case VoteType.Abstain:
-                proposal.abstainVotes = proposal.abstainVotes.plus(BigInt.fromString('1'))
+                proposal.abstainVotes = proposal.abstainVotes.plus(weight)
                 break;                
           }
         proposal.save()
