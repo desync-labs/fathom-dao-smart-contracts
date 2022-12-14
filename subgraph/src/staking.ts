@@ -273,11 +273,11 @@ function getOneDayReward(streamId: BigInt, now: BigInt):BigInt{
         }
         const streamTime = stream.time
         let currentIndex = 0
-        while(now.le(streamTime[currentIndex])){
+        while(now.gt(streamTime[currentIndex])){
             currentIndex++
         }
-        const indexDuration = stream.time[currentIndex + 1].minus(stream.time[currentIndex])
-        const indexRewards = stream.reward[currentIndex].minus(stream.reward[currentIndex + 1])
+        const indexDuration = stream.time[currentIndex].minus(stream.time[currentIndex-1])
+        const indexRewards = stream.reward[currentIndex-1].minus(stream.reward[currentIndex])
         const oneDayReward = indexRewards.times(oneDay).div(indexDuration)
         return oneDayReward
     }
