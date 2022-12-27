@@ -185,7 +185,6 @@ export function partialUnstakeHandler(event: PartialUnstaked): void {
     
 }
 export function pendingHandler(event: Pending): void {
-   // Pending(uint256 indexed streamId, address indexed account, uint256 indexed pendings);
    let staker = Staker.load(event.params.account.toHexString())
    let streamData = Stream.load(event.params.streamId.toHexString())
    if (staker != null && streamData!=null){
@@ -217,7 +216,6 @@ function completeUnstake(account: Bytes, lockId: BigInt): void{
         log.info('User with id {} Found',[account.toHexString()])
         let lengthOfLockPositions = staker.lockPositionIds.length
         if (lengthOfLockPositions > 0){
-            log.info('lengthOfLockPositions is {}',[lengthOfLockPositions.toString()])
             let lastLockPositionIndex = staker.lockPositionIds[lengthOfLockPositions - 1]
             let lastLockPosition = LockPosition.load(lastLockPositionIndex)
             let lockIdInt = lockId.toI32();
