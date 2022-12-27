@@ -16,6 +16,7 @@ contract StakingStorage {
     uint64 internal constant ONE_MONTH = 2629746;
     uint64 internal constant ONE_YEAR = 31536000;
     //MAX_LOCK: It is a constant. One WEEK Added as a tolerance.
+
     uint256 public maxLockPeriod;
     ///@notice Checks if the staking is initialized
 
@@ -51,4 +52,5 @@ contract StakingStorage {
 
     ///Mapping (user => LockedBalance) to keep locking information for each user
     mapping(address => LockedBalance[]) internal locks;
+    mapping(uint256 => uint256) public streamTotalUserPendings; 
 }

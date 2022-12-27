@@ -258,7 +258,8 @@ describe("Staking Test and Upgrade Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value), 
+                _encodeTransferFunction(_account, _value),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -284,7 +285,8 @@ describe("Staking Test and Upgrade Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token), 
+                _encodeAddSupportedTokenFunction(_token),
+                0,
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -435,7 +437,8 @@ describe("Staking Test and Upgrade Test", () => {
                     _encodeUpgradeFunction(
                         _proxy,
                         _impl
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -469,7 +472,8 @@ describe("Staking Test and Upgrade Test", () => {
                     _encodeUpgradeFunction(
                         _proxy,
                         _impl
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -568,7 +572,8 @@ describe("Staking Test and Upgrade Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -597,7 +602,7 @@ describe("Staking Test and Upgrade Test", () => {
             console.log(".........Creating the stream proposed.........")
             console.log("Once create stream is called, the proposal will become live once start time is reached")
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
+            await streamReward2.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
 

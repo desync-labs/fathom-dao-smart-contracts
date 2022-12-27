@@ -234,6 +234,28 @@ const _encodeProposeStreamFunction = (
     return toRet;
 }
 
+const _encodeRevokeFunction = (
+    _role,
+    _account
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'revokeRole',
+        type: 'function',
+        inputs: [{
+            type: 'bytes32',
+            name: 'role'
+        },{
+            type: 'address',
+            name: 'account'
+        }]
+    }, [
+        _role,
+        _account
+    ]);
+
+    return toRet;
+}
+
 describe("DAO Demo", () => {
     const oneYear = 31556926;
     let stakingService;
@@ -335,7 +357,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value), 
+                _encodeTransferFunction(_account, _value),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -354,7 +377,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token), 
+                _encodeAddSupportedTokenFunction(_token),
+                0,
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -471,7 +495,8 @@ describe("DAO Demo", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -497,7 +522,7 @@ describe("DAO Demo", () => {
         it("Should Create a stream, stream - 1", async() => {
             const streamId = 1
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1});
+            await streamReward1.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1});
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_1});
         });
 
@@ -643,7 +668,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation1, 
+                encodedConfirmation1,
+                0,
                 {"from": accounts[0]}
             );
             txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -723,7 +749,9 @@ describe("DAO Demo", () => {
                     EMPTY_BYTES,
                     _encodeWithdrawPenaltyFunction(
                         _penaltyReceiver
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -777,8 +805,11 @@ describe("DAO Demo", () => {
                 },{
                     type: 'bytes',
                     name: '_data'
+                },{
+                    type: 'uint256',
+                    name: '_expireTimestamp'
                 }]
-            }, [FTHMTokenAddress, EMPTY_BYTES, encoded_transfer_function]);
+            }, [FTHMTokenAddress, EMPTY_BYTES, encoded_transfer_function, 0]);
         });
 
         
@@ -852,7 +883,8 @@ describe("DAO Demo", () => {
             const result = await multiSigWallet.submitTransaction(
                 mainTokenGovernor.address, 
                 EMPTY_BYTES, 
-                encodedConfirmation2, 
+                encodedConfirmation2,
+                0,
                 {"from": accounts[0]}
             );
             txIndex2 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -923,6 +955,7 @@ describe("DAO Demo", () => {
                 FTHMToken.address,
                 EMPTY_BYTES, 
                 _encodeStakeApproveFunction(approveAmount, stakingService.address),
+                0,
                 {"from": accounts[0]}
             );
             txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -931,6 +964,7 @@ describe("DAO Demo", () => {
                 stakingService.address,
                 EMPTY_BYTES, 
                 _encodeStakeFunction(amount, oneYr, comity_1, true),
+                0,
                 {"from": accounts[0]}
             );
             txIndex5 = eventsHelper.getIndexedEventArgs(result2, SUBMIT_TRANSACTION_EVENT)[0];
@@ -939,6 +973,7 @@ describe("DAO Demo", () => {
                 stakingService.address,
                 EMPTY_BYTES, 
                 _encodeStakeFunction(amount, oneYr, comity_2, true),
+                0,
                 {"from": accounts[0]}
             );
             txIndex6 = eventsHelper.getIndexedEventArgs(result_temp, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1014,6 +1049,35 @@ describe("DAO Demo", () => {
             await stakingService.withdrawStream(0, {from: comity_2});
             expect(parseInt(await FTHMToken.balanceOf(comity_2))).to.be.above(amount2);
 
+        })
+        it('Should revoke Proposer Role - check', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const _revoke = async (
+                _role,
+                _account
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    timelockController.address, 
+                    EMPTY_BYTES, 
+                    _encodeRevokeFunction(
+                        _role,
+                        _account
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _revoke(
+                proposer_role,
+                mainTokenGovernor.address
+            )
+            
         })
     })
 })

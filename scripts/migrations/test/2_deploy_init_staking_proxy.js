@@ -159,8 +159,6 @@ module.exports = async function(deployer) {
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});
         await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});
-        
-        await vaultService.initAdminAndOperator(MultiSigWallet.address,StakingProxy.address)
     } catch(error) {
         console.log(error)
     }

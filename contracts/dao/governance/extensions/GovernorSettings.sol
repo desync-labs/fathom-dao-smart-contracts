@@ -58,6 +58,7 @@ abstract contract GovernorSettings is Governor {
 
     function _setProposalThreshold(uint256 newProposalThreshold) internal virtual {
         emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
+        require(newProposalThreshold > 0,"_setProposalThreshold: Threshold for proposal cant be zero");
         _proposalThreshold = newProposalThreshold;
     }
 }

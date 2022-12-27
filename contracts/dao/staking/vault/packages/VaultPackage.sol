@@ -7,31 +7,39 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IVaultEvents.sol";
 import "../../../tokens/ERC20/IERC20.sol";
 import "../../../../common/security/AdminPausable.sol";
-
+import "../../../../common/SafeERC20.sol";
 // solhint-disable not-rely-on-time
 contract VaultPackage is IVault, IVaultEvents, AdminPausable {
+    using SafeERC20 for IERC20;
     bool private vaultInitialized;
     bytes32 public constant REWARDS_OPERATOR_ROLE = keccak256("REWARDS_OPERATOR_ROLE");
-
+    mapping(address => uint256) public deposited;
     mapping(address => bool) public override isSupportedToken;
 
-    function initVault(address[] calldata supportedTokens) external override {
+    
+    function initVault(address _admin,address[] calldata supportedTokens) external override {
         require(!vaultInitialized, "Vault: Already Initialized");
         vaultInitialized = true;
         for (uint i = 0; i < supportedTokens.length; i++) {
             _addSupportedToken(supportedTokens[i]);
         }
+        pausableInit(0, _admin);
     }
 
-    function initAdminAndOperator(address _admin, address _rewardsOperator) external override {
-        pausableInit(0, _admin);
+    function addRewardsOperator(address _rewardsOperator) external override onlyRole(DEFAULT_ADMIN_ROLE){
         _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
     }
 
-    function payRewards(address _user, address _token, uint256 _amount) external override {
+    function payRewards(address _user, address _token, uint256 _amount) external override pausable(1){
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "payRewards: No role");
         require(isSupportedToken[_token], "Unsupported token");
-        IERC20(_token).transfer(_user, _amount);
+        IERC20(_token).safeTransfer(_user,_amount);
+    }
+
+    function deposit(address _user, address _token, uint256 _amount) external override pausable(1) {
+        require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "payRewards: No role");
+        require(isSupportedToken[_token], "Unsupported token");
+        IERC20(_token).safeTransferFrom(_user, address(this),_amount);
     }
 
     /// @notice adds token as a supproted rewards token by Vault

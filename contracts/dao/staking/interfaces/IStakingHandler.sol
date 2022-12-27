@@ -60,13 +60,4 @@ interface IStakingHandler {
     function withdrawPenalty(address penaltyReceiver) external;
 
     function updateVault(address _vault) external;
-
-    function updateConfig(
-        Weight calldata _weight,
-        address _voteToken,
-        address _rewardsCalculator,
-        VoteCoefficient calldata _voteCoef,
-        uint256 _maxLockPeriod,
-        uint256 _maxLockPositions
-    ) external;
 }

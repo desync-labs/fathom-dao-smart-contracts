@@ -24,13 +24,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     event ConfirmProposal(address indexed signer, uint indexed proposalId);
     event RevokeConfirmation(address indexed signer, uint indexed proposalId);
     event ExecuteProposal(address indexed signer, uint indexed proposalId);
+    event MultiSigUpdated(address indexed newMultiSig, address oldMultiSig);
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
-
+    //AuditFix There is no validation for `maxTargets` when executing in `Governor` - ASK THIS, to make it constant or as argument
+    uint256 public constant MAX_TARGETS = uint256(10);
     string private _name;
     uint256[] private proposalIds;
-
+   
     address private multiSig;
 
     mapping(uint256 => ProposalCore) internal _proposals;
@@ -80,6 +82,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes32 descriptionHash
     ) public payable virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
+        requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
@@ -152,7 +155,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         require(targets.length == values.length, "Governor: invalid proposal length");
         require(targets.length == calldatas.length, "Governor: invalid proposal length");
         require(targets.length > 0, "Governor: empty proposal");
-
+        require(targets.length <= MAX_TARGETS,"Governor: invalid proposal length");
         ProposalCore storage proposal = _proposals[proposalId];
         require(proposal.voteStart.isUnset(), "Governor: proposal already exists");
 
@@ -177,13 +180,19 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function revokeConfirmation(uint _proposalId) public onlyMultiSig notExecuted(_proposalId) {
-        require(isConfirmed[_proposalId], "proposal not confirmed");
+        requireConfirmed(_proposalId);
 
         isConfirmed[_proposalId] = false;
 
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
+    //AuditFix There is no possibility to update `multisig` in `Governor
+    function updateMultiSig(address newMultiSig) public onlyMultiSig {
+        require(newMultiSig != address(0), "updateMultiSig: newMultiSig cant be set to zero address");
+        emit MultiSigUpdated(newMultiSig, multiSig);
+        multiSig = newMultiSig;
+    }
     function getProposals(uint _numIndexes) public view override returns (string[] memory, string[] memory, string[] memory) {
         uint len = proposalIds.length;
 
@@ -198,6 +207,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         return _getProposals1(_numIndexes);
     }
+
 
     function _getProposals1(uint _numIndexes) internal view returns (string[] memory, string[] memory, string[] memory) {
         string[] memory _statusses = new string[](_numIndexes);
@@ -456,6 +466,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         }
 
         return (_proposalIds, _descriptionsArray, _statusses);
+    }
+
+    function requireConfirmed(uint _proposalId) internal view {
+        require(isConfirmed[_proposalId], "proposal not confirmed");
     }
 
     function _executor() internal view virtual returns (address) {

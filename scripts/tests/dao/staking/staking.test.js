@@ -297,7 +297,8 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value), 
+                _encodeTransferFunction(_account, _value),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -326,7 +327,8 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token), 
+                _encodeAddSupportedTokenFunction(_token),
+                0,
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -552,12 +554,23 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
-
+            const MAIN_STREAM_ID = 0
+            
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
             console.log("----- After all the locks are completely unlocked ------")
             console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
             console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
+            
+
+            await stakingService.withdrawAllStreams({from: staker_1});
+            await stakingService.withdrawAllStreams({from: staker_2});
+            await stakingService.withdrawAllStreams({from: staker_3});
+            await stakingService.withdrawAllStreams({from: staker_4});
+
+            const totalAmountOfStreamTotalUserPendings = await stakingService.streamTotalUserPendings(MAIN_STREAM_ID)
+            assert.equal(totalAmountOfStreamTotalUserPendings.toString(),"0")
+            console.log("totalAmountOfStreamPending: ", totalAmountOfStreamTotalUserPendings.toString());
         });
     });
     
@@ -608,7 +621,8 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -634,7 +648,7 @@ describe("Staking Test", () => {
         it("Should Create a Stream", async() => {
             // Once createStream is called, the proposal will become live once start time is reached
             const RewardProposalAmountForAStream = web3.utils.toWei('800', 'ether');
-            await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
+            await streamReward1.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(1,RewardProposalAmountForAStream, {from: stream_rewarder_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
@@ -676,7 +690,8 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -701,7 +716,7 @@ describe("Staking Test", () => {
 
         it("Should Create a Stream - 2", async() => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
+            await streamReward2.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(2,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
 
@@ -1039,10 +1054,13 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStreamShares.toString(),"0")
         })
 
+        
+
         it('Should have balances of unlocked FTHM with rewards after all unlocks', async() => {
-            await stakingService.withdrawStream(0, {from: staker_2})
-            await stakingService.withdrawStream(0, {from: staker_3})
-            await stakingService.withdrawStream(0, {from: staker_4})
+            const MAIN_STREAM_ID = 0;
+            await stakingService.withdrawAllStreams({from: staker_2})
+            await stakingService.withdrawAllStreams({from: staker_3})
+            await stakingService.withdrawAllStreams({from: staker_4})
             let staker_2Balance = await FTHMToken.balanceOf(staker_2);
             let staker_3Balance = await FTHMToken.balanceOf(staker_3);
             let staker_4Balance = await FTHMToken.balanceOf(staker_4);
@@ -1058,6 +1076,19 @@ describe("Staking Test", () => {
             const toBeReleasedInFirstYearRewards = 10000;
             expect(totalRewardsDistributed).to.be.above(toBeReleasedInFirstYearRewards);
             console.log("total rewards released in FTHM Token - after 370 + ~20 days - early unstake penalty", totalRewardsDistributed)
+            
+        })
+
+        it('Should have zero stream pending', async() => {
+            const MAIN_STREAM_ID = 0;
+            const FIRST_STREAM_ID = 1
+            const SECOND_STREAM_ID = 2
+            const totalAmountOfMAINStreamTotalUserPendings = await stakingService.streamTotalUserPendings(MAIN_STREAM_ID)
+            const totalAmountOfFIRSTStreamTotalUserPendings = await stakingService.streamTotalUserPendings(FIRST_STREAM_ID)
+            const totalAmountOfSECONDStreamTotalUserPendings = await stakingService.streamTotalUserPendings(SECOND_STREAM_ID)
+            assert.equal(totalAmountOfMAINStreamTotalUserPendings.toString(),"0")
+            assert.equal(totalAmountOfFIRSTStreamTotalUserPendings.toString(),"0")
+            assert.equal(totalAmountOfSECONDStreamTotalUserPendings.toString(),"0")
         })
 
         // The following tests are just to check individual test cases
@@ -1127,7 +1158,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeWithdrawPenaltyFunction(
                         _penaltyReceiver
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1161,7 +1194,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1193,7 +1228,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1218,22 +1255,11 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
-        it('Should not be initalizable twice', async() => {
+        it('Should not be initalizable twice - Vault', async() => {
 
             const errorMessage = "Vault: Already Initialized";
             await shouldRevert(
-                vaultService.initVault([FTHMToken.address], {gas: 8000000}),
-                errTypes.revert,
-                errorMessage
-            ); 
-            
-        })
-
-        it('Should not be initalizable twice vault init owner', async() => {
-
-            const errorMessage = "Initializable: contract is already initialized";
-            await shouldRevert(
-                vaultService.initAdminAndOperator(multiSigWallet.address,stakingService.address, {gas: 8000000}),
+                vaultService.initVault(multiSigWallet.address,[FTHMToken.address], {gas: 8000000}),
                 errTypes.revert,
                 errorMessage
             ); 

@@ -26,6 +26,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
 
         if (reward == 0) return; // All rewards claimed or stream schedule didn't start
         userAccount.pendings[streamId] += reward;
+        streamTotalUserPendings[streamId] += reward;
         userAccount.rpsDuringLastClaimForLock[lockId][streamId] = streams[streamId].rps;
         userAccount.releaseTime[streamId] = block.timestamp + streams[streamId].tau;
         // If the stream is blacklisted, remaining unclaimed rewards will be transfered out.

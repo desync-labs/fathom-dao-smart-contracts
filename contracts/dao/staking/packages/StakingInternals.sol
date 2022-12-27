@@ -29,6 +29,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
+        require(weight.penaltyWeightMultiplier * weight.maxWeightPenalty <= 100000, "Wrong penalty weight");
         mainToken = _mainToken;
         voteToken = _voteToken;
         weight = _weight;
@@ -120,7 +121,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         uint256 streamsLength = streams.length;
         for (uint256 i = 0; i < streamsLength; i++) {
-            userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
+            if(streams[i].status == StreamStatus.ACTIVE){
+                userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
+            }
         }
         emit Staked(account, amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
     }
@@ -138,7 +141,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         userAccount.pendings[MAIN_STREAM] += amount;
         userAccount.releaseTime[MAIN_STREAM] = block.timestamp + streams[MAIN_STREAM].tau;
-
+        streamTotalUserPendings[MAIN_STREAM] += amount;
         ///@notice: Only update the lock if it has remaining stake
         if (amountToRestake > 0) {
             _restakeThePosition(amountToRestake, lockId, updateLock, userAccount);
@@ -161,7 +164,9 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 streamsLength = streams.length;
         for (uint256 i = 0; i < streamsLength; i++) {
             // The new shares should not claim old rewards
-            userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
+            if(streams[i].status == StreamStatus.ACTIVE){
+                userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
+            }
         }
     }
 
@@ -183,6 +188,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         uint256 penalty = (weighingCoef * amount) / 100000;
         User storage userAccount = users[account];
         userAccount.pendings[MAIN_STREAM] -= penalty;
+        streamTotalUserPendings[MAIN_STREAM] -= penalty;
         totalPenaltyBalance += penalty;
     }
 
@@ -206,6 +212,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         User storage userAccount = users[msg.sender];
         uint256 pendingAmount = userAccount.pendings[streamId];
         userAccount.pendings[streamId] = 0;
+        streamTotalUserPendings[streamId] -= pendingAmount;
         emit Released(streamId, msg.sender, pendingAmount);
         IVault(vault).payRewards(msg.sender, streams[streamId].rewardToken, pendingAmount);
     }
@@ -227,7 +234,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         if (timestamp >= slopeEnd) return shares * weight.minWeightShares;
         return
             shares *
-            weight.maxWeightShares +
+            weight.minWeightShares +
             (shares * (weight.maxWeightShares - weight.minWeightShares) * (slopeEnd - timestamp)) /
             (slopeEnd - slopeStart);
     }

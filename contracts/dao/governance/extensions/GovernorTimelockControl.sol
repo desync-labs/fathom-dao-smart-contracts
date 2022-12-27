@@ -109,6 +109,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     }
 
     function _updateTimelock(TimelockController newTimelock) private {
+        require(address(newTimelock) != address(0), "updateTimelock: newTimelock address cannot be zero address");
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }
