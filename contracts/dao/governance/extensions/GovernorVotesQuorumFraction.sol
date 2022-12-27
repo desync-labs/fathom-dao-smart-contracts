@@ -9,7 +9,7 @@ import "./GovernorVotes.sol";
 
 abstract contract GovernorVotesQuorumFraction is GovernorVotes {
     uint256 private _quorumNumerator;
-    uint256 public constant MINIMUM_QUORUM_NUMERATOR = uint256(4);
+    uint256 public constant MINIMUM_QUORUM_NUMERATOR = uint256(2);
     event QuorumNumeratorUpdated(uint256 oldQuorumNumerator, uint256 newQuorumNumerator);
 
     /**

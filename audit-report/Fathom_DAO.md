@@ -133,7 +133,7 @@ In the function [`removeOwner`](https://github.com/Into-the-Fathom/fathom-dao-sm
 ##### Recommendation
 We recommend adding signature revocation mechanisms for signatures of the removed owners to the function `removeOwner`.
 
-#### [NEW] There is no function that implements the `_cancel` proposal in `MainTokenGovernor`[NOTDONE, understand more]
+#### [NEW] There is no function that implements the `_cancel` proposal in `MainTokenGovernor`[DONE]
 ##### Description
 The contract [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) lacks a function that would implement the internal function [`_cancel`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/extensions/GovernorTimelockControl.sol#L91), that allows you to cancel the execution of `proposal` with `TimelockController`. This can make it impossible to cancel the execution of a potentially dangerous call.
 ##### Recommendation
@@ -242,7 +242,7 @@ This creates a risk that if `MINTER_ROLE` is compromised by an attacker, the adm
 We recommend adding separate functions to grant and revoke the `MINTER_ROLE`, which will also add and remove addresses from the `isWhitelisted` list.
 
 
-#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[NOTDONE]
+#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[ASK MAX about targets]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -281,7 +281,7 @@ In the [`StakingHandlers`](https://github.com/Into-the-Fathom/fathom-dao-smart-c
 ##### Recommendation
 We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/utils/SafeERC20.sol) extension from the OpenZepplin library and replace the `transfer` and `transferFrom` calls with `safeTransfer` and `safeTransferFrom`.
 
-#### [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`{DONE}
+#### [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`{NOTDONE}
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
 

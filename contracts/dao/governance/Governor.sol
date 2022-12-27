@@ -28,7 +28,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
-    //AuditFix There is no validation for `maxTargets` when executing in `Governor` - ASK THIS, to make it constant or as argument
+    //AuditFix There is no validation for `maxTargets` when executing in `Governor` - ASK THIS, to make it modifiable
     uint256 public constant MAX_TARGETS = uint256(10);
     string private _name;
     uint256[] private proposalIds;

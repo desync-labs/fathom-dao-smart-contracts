@@ -10,10 +10,8 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/ReentrancyGuard.sol";
 import "../../../common/security/AdminPausable.sol";
-import "../../../common/SafeERC20.sol";
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, ReentrancyGuard, AdminPausable {
-    using SafeERC20 for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
     /**
@@ -256,6 +254,24 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         }
     }
 
+    function updateConfig(
+         Weight memory _weight,
+         address _voteToken,
+         address _rewardsCalculator,
+         VoteCoefficient memory _voteCoef,
+         uint256 _maxLockPeriod,
+         uint256 _maxLockPositions
+     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+         weight = _weight;
+         voteToken = _voteToken;
+         rewardsCalculator = _rewardsCalculator;
+         voteShareCoef = _voteCoef.voteShareCoef;
+         voteLockCoef = _voteCoef.voteLockCoef;
+         maxLockPeriod = _maxLockPeriod;
+         maxLockPositions = _maxLockPositions;
+     }
+
+
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
@@ -276,7 +292,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         require(lockPeriod <= maxLockPeriod, "max lock period");
         _updateStreamRPS();
         _lock(account, amount, lockPeriod);
-        IERC20(mainToken).safeTransferFrom(msg.sender, address(vault), amount);
+        IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
     }
 
     function _verifyUnlock(uint256 lockId) internal view {
@@ -286,4 +302,5 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         require(lock.amountOfToken > 0, "no lock amount");
         require(lock.owner == msg.sender, "bad owner");
     }
+    
 }

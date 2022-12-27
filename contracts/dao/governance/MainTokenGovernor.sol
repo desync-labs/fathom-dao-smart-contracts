@@ -42,6 +42,15 @@ contract MainTokenGovernor is
         return super.propose(targets, values, calldatas, description);
     }
 
+    function cancelProposal(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public onlyMultiSig override returns (uint256) {
+        return _cancel(targets, values, calldatas, descriptionHash);
+    }
+
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
         return super.proposalThreshold();
     }

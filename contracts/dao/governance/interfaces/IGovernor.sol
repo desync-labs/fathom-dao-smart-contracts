@@ -45,6 +45,12 @@ abstract contract IGovernor is IERC165 {
         string memory description
     ) public virtual returns (uint256 proposalId);
 
+    function cancelProposal(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public virtual returns (uint256);
     function execute(
         address[] memory targets,
         uint256[] memory values,
