@@ -9,9 +9,9 @@
     "remove-local": "graph remove --node http://localhost:8020/ dao-subgraph",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 dao-subgraph",
 
-    "create-cloud": "graph create --node http://graph.composer.live:8020/ dao-subgraph",
-    "remove-cloud": "graph remove --node http://graph.composer.live:8020/ dao-subgraph",
-    "deploy-cloud": "graph deploy --node http://graph.composer.live:8020/ --ipfs http://graph.composer.live:5001 dao-subgraph",
+    "create-cloud": "graph create --node https://graph.composer.live dao-subgraph",
+    "remove-cloud": "graph remove --node https://graph.composer.live dao-subgraph",
+    "deploy-cloud": "graph deploy --node https://graph.composer.live --ipfs https://graph.composer.live dao-subgraph",
 
     "test": "graph test"
   },
