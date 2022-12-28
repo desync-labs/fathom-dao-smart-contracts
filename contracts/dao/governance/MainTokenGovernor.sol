@@ -9,6 +9,8 @@ import "./extensions/GovernorCountingSimple.sol";
 import "./extensions/GovernorVotes.sol";
 import "./extensions/GovernorVotesQuorumFraction.sol";
 import "./extensions/GovernorTimelockControl.sol";
+import "../tokens/ERC20/IERC20.sol";
+import "../../common/SafeERC20.sol";
 
 contract MainTokenGovernor is
     Governor,
@@ -17,7 +19,10 @@ contract MainTokenGovernor is
     GovernorVotes,
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
-{
+{   
+    using SafeERC20 for IERC20;
+    mapping(address => bool) public isSupportedToken;
+    
     constructor(
         IVotes _token,
         TimelockController _timelock,
@@ -26,7 +31,7 @@ contract MainTokenGovernor is
         uint256 _votingPeriod,
         uint256 _initialProposalThreshold
     )
-        Governor("MainTokenGovernor", _multiSig)
+        Governor("MainTokenGovernor", _multiSig,20)
         GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
@@ -75,6 +80,22 @@ contract MainTokenGovernor is
         return super.state(proposalId);
     }
 
+    function addSupportingToken(address _token) public onlyGovernance {
+        require(!isSupportedToken[_token], "Token already exists");
+        isSupportedToken[_token] = true;
+    }
+
+    function removeSupportingToken(address _token) public onlyGovernance {
+        require(isSupportedToken[_token], "Token does not exist");
+        isSupportedToken[_token] = false;
+    }
+
+    function withdrawToken(address _token, address _withdrawTo) public onlyMultiSig {
+        require(isSupportedToken[_token],"Token does not exist");
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_withdrawTo, balance);
+    } 
+
     function _execute(
         uint256 proposalId,
         address[] memory targets,
@@ -98,4 +119,6 @@ contract MainTokenGovernor is
     function _executor() internal view override(Governor, GovernorTimelockControl) returns (address) {
         return super._executor();
     }
+
+    
 }

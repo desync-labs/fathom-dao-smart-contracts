@@ -13,13 +13,16 @@ interface IStakingHandler {
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
-        uint256 tau,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address rewardsCalculator
+        address _rewardsContract
     ) external;
+
+    function initializeMainStream(
+        address _owner,
+        uint256[] memory scheduleTimes,
+        uint256[] memory scheduleRewards,
+        uint256 tau) external;
 
     function proposeStream(
         address streamOwner,

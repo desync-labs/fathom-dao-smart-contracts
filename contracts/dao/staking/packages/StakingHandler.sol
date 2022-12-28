@@ -8,13 +8,12 @@ import "./StakingInternals.sol";
 import "../StakingStorage.sol";
 import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
-import "../../../common/security/ReentrancyGuard.sol";
 import "../../../common/security/AdminPausable.sol";
 // solhint-disable not-rely-on-time
-contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, ReentrancyGuard, AdminPausable {
+contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-    /**
+ /**
      * @dev initialize the contract and deploys the first stream of rewards
      * @dev initializable only once due to stakingInitialised flag
      * @notice By calling this function, the deployer of this contract must
@@ -24,9 +23,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
      * @param _mainToken token contract address
      * @param _weight Weighting coefficient for shares and penalties
      * @param _admin the owner and manager of the main token stream
-     * @param scheduleTimes init schedules times
-     * @param scheduleRewards init schedule rewards
-     * @param tau release time constant per stream
      */
     function initializeStaking(
         address _admin,
@@ -34,37 +30,40 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
-        uint256 tau,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
         address _rewardsContract
     ) external override {
         rewardsCalculator = _rewardsContract;
+        _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
+        require(IVault(vault).isSupportedToken(_mainToken), "Unsupported token");
+        pausableInit(1, _admin);
+        _grantRole(STREAM_MANAGER_ROLE, _admin);
+        _grantRole(TREASURY_ROLE, _admin);
+        maxLockPeriod = ONE_YEAR;
+    }
+
+    function initializeMainStream(
+        address _owner,
+        uint256[] memory scheduleTimes,
+        uint256[] memory scheduleRewards,
+        uint256 tau
+    ) external override onlyRole(STREAM_MANAGER_ROLE){
         _validateStreamParameters(
-            _admin,
-            _mainToken,
+            _owner,
+            mainToken,
             scheduleRewards[MAIN_STREAM],
             scheduleRewards[MAIN_STREAM],
             scheduleTimes,
             scheduleRewards,
             tau
         );
-
-        _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
-        require(IVault(vault).isSupportedToken(_mainToken), "Unsupported token");
-        pausableInit(0, _admin);
-
-        _grantRole(STREAM_MANAGER_ROLE, _admin);
-        _grantRole(TREASURY_ROLE, _admin);
-
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         streams.push(
             Stream({
-                owner: _admin,
-                manager: _admin,
+                owner: _owner,
+                manager: _owner,
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
@@ -76,10 +75,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
                 rps: 0
             })
         );
-        maxLockPeriod = ONE_YEAR;
-        emit StreamProposed(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
-        emit StreamCreated(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
-    }
+        IVault(vault).deposit(msg.sender, mainToken, scheduleRewards[0]);
+        _adminPause(0);
+        emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
+        emit StreamCreated(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
+    }   
 
     /**
      * @dev An admin of the staking contract can whitelist (propose) a stream.
@@ -133,6 +133,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "not proposed");
         require(stream.schedule.time[0] >= block.timestamp, "prop expire");
+        require(stream.owner == msg.sender, "bad owner");
 
         require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
         require(rewardTokenAmount >= stream.minDepositAmount, "rwrds low");

@@ -15,6 +15,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     event TimelockChange(address oldTimelock, address newTimelock);
 
     constructor(TimelockController timelockAddress) {
+        require(address(timelockAddress) != address(0),"timelockAddress cant be zero address");
         _updateTimelock(timelockAddress);
     }
 

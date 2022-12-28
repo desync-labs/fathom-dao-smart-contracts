@@ -126,18 +126,6 @@ module.exports = async function(deployer) {
                 ]
             },
             {
-                type: 'uint256[]',
-                name: 'scheduleTimes'
-            },
-            {
-                type: 'uint256[]',
-                name: 'scheduleRewards'
-            },
-            {
-                type: 'uint256',
-                name: 'tau'
-            },
-            {
                 type: 'tuple',
                 name: 'VoteCoefficient',
                 components: [
@@ -154,11 +142,12 @@ module.exports = async function(deployer) {
                 name: '_rewardsContract'
             }]
             },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
-                weightObject, scheduleTimes, scheduleRewards, tau, 
-                voteObject, maxNumberOfLocks, RewardsCalculator.address]);
+                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address]);
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});
         await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});
+
+        
     } catch(error) {
         console.log(error)
     }

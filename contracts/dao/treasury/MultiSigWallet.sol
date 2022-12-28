@@ -168,8 +168,9 @@ contract MultiSigWallet is IMultiSigWallet {
         bytes memory _data,
         uint _expireTimestamp
     ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _expireTimestamp) {
+        require(address(this).balance >= _value,"submitTransaction: not enough balance");
         uint txIndex = transactions.length;
-
+        
         transactions.push(
             Transaction({ to: _to, value: _value, data: _data, executed: false, numConfirmations: 0, expireTimestamp: _expireTimestamp })
         );
