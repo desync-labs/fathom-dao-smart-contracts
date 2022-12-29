@@ -17,7 +17,10 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     mapping(address => bool) public override isSupportedToken;
     address[] public listOfSupportedTokens;
     
-    function initVault(address _admin,address[] calldata supportedTokens) external override {
+    constructor() {
+        _disableInitializers();
+    }
+    function initVault(address _admin,address[] calldata supportedTokens) initializer external override {
         require(!vaultInitialized, "Vault: Already Initialized");
         vaultInitialized = true;
         for (uint i = 0; i < supportedTokens.length; i++) {
@@ -67,6 +70,8 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     }
 
     function emergencyWithdraw(address withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE){
+        require(paused != 0, "required pause");
+        require(withdrawTo != address(0),"withdrawTo: Zero addr");
         for(uint i = 0; i < listOfSupportedTokens.length;i++)
         {
             uint256 balance = IERC20(listOfSupportedTokens[i]).balanceOf(address(this));

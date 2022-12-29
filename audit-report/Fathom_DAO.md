@@ -176,7 +176,7 @@ We recommend discarding the `updateConfig` function and consider mechanisms for 
 
 ### MAJOR
 
-#### [NEW] In `MultiSigWallet` there's no parameter defining minimum amount of signatures[NOTDONE but would have bad impact on test, MAX]
+#### [NEW] In `MultiSigWallet` there's no parameter defining minimum amount of signatures[NOTDONE but would have bad impact on test, MAXJI] -> Minimum = 1 set
 ##### Description
 The parameter [`_numConfirmationsRequired`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L77) is checked in the constructor and in the function [`changeRequirement`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L116), that is not equal to `0`, however, when multi-signature is set, it allows the value `1`, and the contract may be used by one of the `owners`.
 
@@ -210,7 +210,7 @@ In the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contract
 We recommend adding the `updateMultisig` function, but so that only the old `multisig` could call it.
 
 
-#### [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE, how to do? ask more feedback, MAX]
+#### [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE, how to do? ask more feedback, MAXJI]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation
@@ -242,7 +242,7 @@ This creates a risk that if `MINTER_ROLE` is compromised by an attacker, the adm
 We recommend adding separate functions to grant and revoke the `MINTER_ROLE`, which will also add and remove addresses from the `isWhitelisted` list.
 
 
-#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[ASK MAX about targets]
+#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[ASK MAX JI about targets]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -258,7 +258,7 @@ The [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contrac
 ##### Recommendation
 We recommend adding the `emergencyExit` function in the contract which permanently blocks contract function calls for `REWARD_OPERATOR_ROLE`, and adding the `migrate` function, which allows to move tokens and token balances to a new version of `VaultPackage`.
 
-#### [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[DONE, please explain more]
+#### [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE, please explain more]
 ##### Description
 In the `StakingHandlers` contract, calling the function [`updateVault`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L269) can cause all contract functions that work with balances and `VaultPackage` functions to be blocked.
 ##### Recommendation
@@ -572,7 +572,7 @@ ProposalState status = state(proposalId);
 require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
 ```
 
-#### [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[NOTDONE]
+#### [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[Ask ANton,MAXJI]
 ##### Description
 In the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol#L76) and [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol#L111) contracts the `execute` functions do not check the `msg.value` balance value needed to execute `_targets`, which would result in gas consumption even if the amount of `ETH` is not enough.
 ##### Recommendation
@@ -613,7 +613,7 @@ In the `VaultPackage` contract when calling the function [`payRewards`](https://
 We recommend adding a check that tokens are on the balance and that `amount != 0`, and return error using `custom errors` (`revert CustomError`) or with `require`.
 
 
-#### [NEW] There is no limit on the maximum number of active `streams` in the `StakingHandlers` contract[NOTDONE]
+#### [NEW] There is no limit on the maximum number of active `streams` in the `StakingHandlers` contract[NOTNEEDED]
 ##### Description
 In the [`StakingHandlers`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol) contract there is no limit on the maximum number of active `streams`. This creates a situation of an uncontrolled gas consumption when dealing with contract functions and can lead to DoS.
 ##### Recommendation
@@ -658,7 +658,7 @@ We recommend to use [`muldiv`](https://xn--2-umb.com/21/muldiv/index.html) to mu
 We also recommend to update `voteLockCoef` [initialization](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L42) and add checks that it is not zero (to prevent division by zero) and that it is not too big in order to avoid overflow in `BoringMath`.
 
 
-#### [NEW] Multiple `streams` can be active at the same time with the same parameters in `StakingHandler.sol `[]
+#### [NEW] Multiple `streams` can be active at the same time with the same parameters in `StakingHandler.sol `[NOTDONE]
 
 ##### Description
 In the contract [StakingHandler](

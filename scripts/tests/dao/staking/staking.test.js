@@ -1257,7 +1257,7 @@ describe("Staking Test", () => {
 
         it('Should not be initalizable twice - Vault', async() => {
 
-            const errorMessage = "Vault: Already Initialized";
+            const errorMessage = "Initializable: contract is already initialized";
             await shouldRevert(
                 vaultService.initVault(multiSigWallet.address,[FTHMToken.address], {gas: 8000000}),
                 errTypes.revert,

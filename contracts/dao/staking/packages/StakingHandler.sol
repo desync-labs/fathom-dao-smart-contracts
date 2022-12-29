@@ -13,7 +13,10 @@ import "../../../common/security/AdminPausable.sol";
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
- /**
+    constructor(){
+        _disableInitializers();
+    }
+    /**
      * @dev initialize the contract and deploys the first stream of rewards
      * @dev initializable only once due to stakingInitialised flag
      * @notice By calling this function, the deployer of this contract must
@@ -33,7 +36,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
         address _rewardsContract
-    ) external override {
+    ) external override initializer{
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
         require(IVault(vault).isSupportedToken(_mainToken), "Unsupported token");
@@ -185,7 +188,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _createLock(amount, lockPeriod, account);
     }
 
-    function unlock(uint256 lockId) public override pausable(1) {
+    function unlock(uint256 lockId) public override  {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
@@ -255,24 +258,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
     }
 
-    function updateConfig(
-         Weight memory _weight,
-         address _voteToken,
-         address _rewardsCalculator,
-         VoteCoefficient memory _voteCoef,
-         uint256 _maxLockPeriod,
-         uint256 _maxLockPositions
-     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-         weight = _weight;
-         voteToken = _voteToken;
-         rewardsCalculator = _rewardsCalculator;
-         voteShareCoef = _voteCoef.voteShareCoef;
-         voteLockCoef = _voteCoef.voteLockCoef;
-         maxLockPeriod = _maxLockPeriod;
-         maxLockPositions = _maxLockPositions;
-     }
-
-
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
@@ -296,12 +281,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
     }
 
-    function _verifyUnlock(uint256 lockId) internal view {
+    function _verifyUnlock(uint256 lockId) internal  {
         require(lockId > 0, "zero lockid");
         require(lockId <= locks[msg.sender].length, "bad lockid");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfToken > 0, "no lock amount");
         require(lock.owner == msg.sender, "bad owner");
+        if(lock.onBehalf == true && nOnBehalfLocks[msg.sender] >0){
+            nOnBehalfLocks[msg.sender] -= 1;
+        }
     }
-    
 }

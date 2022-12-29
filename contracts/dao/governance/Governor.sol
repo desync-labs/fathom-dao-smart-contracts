@@ -90,15 +90,24 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
-
+        //ASK MAX JI:
+        uint256 totalValue = 0;
+        for (uint256 i = 0;i < values.length; i++){
+            totalValue += values[i];
+        }
+        require(msg.value >= totalValue, "execute: msg.value not sufficient");
         _proposals[proposalId].executed = true;
+        
 
         emit ProposalExecuted(proposalId);
 
         _beforeExecute(proposalId, targets, values, calldatas, descriptionHash);
         _execute(proposalId, targets, values, calldatas, descriptionHash);
         _afterExecute(proposalId, targets, values, calldatas, descriptionHash);
-
+        if(msg.value > totalValue){
+            (bool sent, ) = msg.sender.call{value: (msg.value - totalValue)}("");
+            require(sent, "Failed to send ether");
+        }
         return proposalId;
     }
 

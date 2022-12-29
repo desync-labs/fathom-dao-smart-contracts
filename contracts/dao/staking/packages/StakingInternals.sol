@@ -48,8 +48,13 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             userAccount.voteTokenBalance += BoringMath.to128(nVoteToken);
             totalAmountOfVoteToken += nVoteToken;
         }
+        if(account != msg.sender){
+            require(nOnBehalfLocks[account] <= maxOnBehalfLockPositions,"max lock on behalf");
+            nOnBehalfLocks[account]+=1;
+        }
         LockedBalance memory _newLock = LockedBalance({
             amountOfToken: BoringMath.to128(amount),
+            onBehalf: true ? msg.sender != account : false,
             amountOfVoteToken: BoringMath.to128(nVoteToken),
             positionStreamShares: 0,
             end: BoringMath.to64(lockPeriod + block.timestamp),

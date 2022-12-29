@@ -29,7 +29,7 @@ contract AdminPausable is IAdminPausable, AccessControlUpgradeable {
         paused = flags;
     }
 
-    function pausableInit(uint256 _flags, address _admin) internal initializer {
+    function pausableInit(uint256 _flags, address _admin) internal onlyInitializing {
         __AccessControl_init_unchained();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSE_ROLE, _admin);
