@@ -29,7 +29,8 @@ contract StakingInternals is StakingStorage, RewardsInternals {
 
         require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
-        require(weight.penaltyWeightMultiplier * weight.maxWeightPenalty <= 100000, "Wrong penalty weight");
+        require(weight.penaltyWeightMultiplier * weight.maxWeightPenalty <= 100000, "wrong weight");
+        
         mainToken = _mainToken;
         voteToken = _voteToken;
         weight = _weight;
@@ -44,7 +45,6 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         User storage userAccount = users[account];
         if (lockPeriod > 0) {
             nVoteToken = (amount * lockPeriod * POINT_MULTIPLIER) / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
-
             userAccount.voteTokenBalance += BoringMath.to128(nVoteToken);
             totalAmountOfVoteToken += nVoteToken;
         }

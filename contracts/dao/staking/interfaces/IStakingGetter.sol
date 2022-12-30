@@ -30,9 +30,9 @@ interface IStakingGetter {
 
     function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
 
-    function getStreamsCount() external view returns (uint256);
+  //  function getStreamsCount() external view returns (uint256);
 
-    function getLatestRewardsPerShare(uint256 streamId) external view returns (uint256);
+  //  function getLatestRewardsPerShare(uint256 streamId) external view returns (uint256);
 
     function getWeight() external view returns (Weight memory);
 }

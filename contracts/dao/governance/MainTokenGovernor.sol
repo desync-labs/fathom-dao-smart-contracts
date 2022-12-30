@@ -81,17 +81,17 @@ contract MainTokenGovernor is
     }
 
     function addSupportingToken(address _token) public onlyGovernance {
-        require(!isSupportedToken[_token], "Token already exists");
+        require(!isSupportedToken[_token], "Token already supported");
         isSupportedToken[_token] = true;
     }
 
     function removeSupportingToken(address _token) public onlyGovernance {
-        require(isSupportedToken[_token], "Token does not exist");
+        require(isSupportedToken[_token], "Token is not supported");
         isSupportedToken[_token] = false;
     }
 
     function withdrawToken(address _token, address _withdrawTo) public onlyMultiSig {
-        require(isSupportedToken[_token],"Token does not exist");
+        require(isSupportedToken[_token],"Token is not supported");
         uint256 balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_withdrawTo, balance);
     } 

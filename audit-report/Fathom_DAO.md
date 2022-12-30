@@ -163,7 +163,7 @@ In the `StakingHandler` contract the [`withdrawAllStreams`](https://github.com/I
 We recommend adding to the `withdrawAllStreams` and `withdrawStream` functions a check that the output from `stream` has the status `ACTIVE`.
 
 
-#### [NEW] Calling the `updateConfig` function may block the work of the `StakingHandlers` contract[NOTDONE,Ask Anton, just remove updateConfig?]
+#### [NEW] Calling the `updateConfig` function may block the work of the `StakingHandlers` contract[Could you clarify this more? What does migration actually mean, upgrade or moving to completely new contract address?,Ask Anton, just remove updateConfig?]
 ##### Description
 Calling the function [`updateConfig`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L252) in the `StakingHandler` contract can disrupt its work. This is possible for the following reasons:
 
@@ -176,7 +176,7 @@ We recommend discarding the `updateConfig` function and consider mechanisms for 
 
 ### MAJOR
 
-#### [NEW] In `MultiSigWallet` there's no parameter defining minimum amount of signatures[NOTDONE but would have bad impact on test, MAXJI] -> Minimum = 1 set
+#### [NEW] In `MultiSigWallet` there's no parameter defining minimum amount of signatures[NOTDONE but would have bad impact on test, MAXJI] -> DONE
 ##### Description
 The parameter [`_numConfirmationsRequired`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L77) is checked in the constructor and in the function [`changeRequirement`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L116), that is not equal to `0`, however, when multi-signature is set, it allows the value `1`, and the contract may be used by one of the `owners`.
 
@@ -242,7 +242,7 @@ This creates a risk that if `MINTER_ROLE` is compromised by an attacker, the adm
 We recommend adding separate functions to grant and revoke the `MINTER_ROLE`, which will also add and remove addresses from the `isWhitelisted` list.
 
 
-#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[ASK MAX JI about targets]
+#### [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[ASK MAXJI about targets]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -596,7 +596,7 @@ In the [`_setProposalThreshold`](https://github.com/Into-the-Fathom/fathom-dao-s
 ##### Recommendation
 We recommend adding a check that `newProposalThreshold` is not zero.
 
-#### [NEW] There is no limit on the number of proposals for one proposer in `Governor`[Ask MAX]
+#### [NEW] There is no limit on the number of proposals for one proposer in `Governor`[Ask MAXJI]
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation

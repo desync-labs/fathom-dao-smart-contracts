@@ -16,6 +16,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     mapping(address => uint256) public deposited;
     mapping(address => bool) public override isSupportedToken;
     address[] public listOfSupportedTokens;
+    bool public override migrated;
     
     constructor() {
         _disableInitializers();
@@ -36,6 +37,8 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     function payRewards(address _user, address _token, uint256 _amount) external override pausable(1){
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "payRewards: No role");
         require(isSupportedToken[_token], "Unsupported token");
+        require(_amount!=0,"amount zero");
+        require(IERC20(_token).balanceOf(address(this))>=_amount,"not enough balance");
         //require(deposited[_token] >= _amount,"payRewards: not enough deposit");
        // deposited[_token] -= _amount;
         IERC20(_token).safeTransfer(_user,_amount);
@@ -65,18 +68,22 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
-    function emergencyStop() external override onlyRole(DEFAULT_ADMIN_ROLE){
+    function emergencyStop() external override {
         _adminPause(1);
     }
 
-    function emergencyWithdraw(address withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE){
+    function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE){
+        require(!migrated,"vault already migrated");
         require(paused != 0, "required pause");
-        require(withdrawTo != address(0),"withdrawTo: Zero addr");
+        require(newVaultPackage != address(0),"withdrawTo: Zero addr");
         for(uint i = 0; i < listOfSupportedTokens.length;i++)
         {
-            uint256 balance = IERC20(listOfSupportedTokens[i]).balanceOf(address(this));
-            IERC20(listOfSupportedTokens[i]).safeTransfer(withdrawTo, balance);
+            address token = listOfSupportedTokens[i];
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            IERC20(token).safeApprove(newVaultPackage,balance);
+            IVault(newVaultPackage).deposit(address(this), listOfSupportedTokens[i],balance);
         }
+        migrated = true;
     }
 
     function _addSupportedToken(address _token) internal {

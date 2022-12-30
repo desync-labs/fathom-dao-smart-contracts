@@ -16,7 +16,9 @@ interface IVault {
     
     function emergencyStop() external;
 
-    function emergencyWithdraw(address withdrawTo) external;
+    function migrate(address vaultPackageMigrateTo) external;
 
     function isSupportedToken(address token) external view returns (bool);
+
+    function migrated() external view returns(bool);
 }

@@ -62,14 +62,6 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
     }
 
-    function getStreamsCount() external view override returns (uint256) {
-        return streams.length;
-    }
-
-    function getLatestRewardsPerShare(uint256 streamId) external view override returns (uint256) {
-        return _getLatestRewardsPerShare(streamId);
-    }
-
     function getWeight() external view override returns (Weight memory) {
         return weight;
     }
