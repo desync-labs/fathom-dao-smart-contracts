@@ -202,7 +202,7 @@ describe('Proposal flow', () => {
         const _stakeMainGetVe = async (_account) => {
 
             await _transferFromMultiSigTreasury(_account);
-            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(vaultService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -428,7 +428,7 @@ describe('Proposal flow', () => {
         const _stakeMainGetVe = async (_account) => {
             
             await _transferFromMultiSigTreasury(_account);
-            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(vaultService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;

@@ -347,7 +347,7 @@ describe("Staking Test", () => {
         expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
             // So that staker 1 can actually stake the token:
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
             const beforeFTHMBalance = await FTHMToken.balanceOf(staker_1);
 
             await blockchain.increaseTime(20);
@@ -416,9 +416,9 @@ describe("Staking Test", () => {
             
             const sumToDepositForAll = web3.utils.toWei('100', 'ether');
 
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2})
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_3})
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_4})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_3})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_4})
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             
@@ -1129,7 +1129,7 @@ describe("Staking Test", () => {
             
             const sumToApprove = web3.utils.toWei('20000','ether');
 
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: accounts[9]})  
             const lockingPeriod = 365 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
 
@@ -1252,6 +1252,32 @@ describe("Staking Test", () => {
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should make lock position on behalf', async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should make lock position on behalf', async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should revert after max lock positions on behalf',async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const errorMessage = "max lock on behalf";
+            await shouldRevert(
+                stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_3, gas: maxGasForTxn}),
+                errTypes.revert,
+                errorMessage
+            )
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 

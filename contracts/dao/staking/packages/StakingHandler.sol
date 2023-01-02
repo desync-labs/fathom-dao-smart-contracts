@@ -35,7 +35,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         Weight calldata _weight,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract
+        address _rewardsContract,
+        uint256 _maxOnBehalfLockPositions
     ) external override initializer{
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
@@ -44,6 +45,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
         maxLockPeriod = ONE_YEAR;
+        maxOnBehalfLockPositions = _maxOnBehalfLockPositions;
     }
 
     function initializeMainStream(
@@ -262,13 +264,13 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     /**
      * @dev Disregard rewards for emergency unlock and withdraw
      */
-    function emergencyUnlockAndWithdraw() public {
+    function emergencyUnlockAndWithdraw() public override{
         require(paused != 0,"nt emergency");
         uint256 numberOfLocks = locks[msg.sender].length;
-        for(uint i = 0;i <= numberOfLocks;i++){
-            LockedBalance storage lock = locks[msg.sender][i];
+        for(uint lockId = 1;lockId <= numberOfLocks;lockId++){
+            LockedBalance storage lock = locks[msg.sender][lockId];
             uint256 stakeValue = lock.amountOfToken;
-            _unlock(stakeValue, stakeValue, i+1, msg.sender);
+            _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
         _withdraw(MAIN_STREAM);
     }
@@ -294,7 +296,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lockPeriod <= maxLockPeriod, "max time");
         _updateStreamRPS();
         _lock(account, amount, lockPeriod);
-        IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
+        IVault(vault).deposit(msg.sender, mainToken, amount);
     }
 
     function _verifyUnlock(uint256 lockId) internal  {

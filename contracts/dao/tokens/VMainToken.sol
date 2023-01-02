@@ -45,7 +45,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
     }
-    //AuditFix When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update
     function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)){
         _grantRole(MINTER_ROLE, _minter);
         addToWhitelist(_minter);

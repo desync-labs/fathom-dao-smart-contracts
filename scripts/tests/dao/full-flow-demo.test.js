@@ -410,7 +410,7 @@ describe("DAO Demo", () => {
         let expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
 
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
             
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
@@ -447,7 +447,7 @@ describe("DAO Demo", () => {
         })
 
         it('Should create 2 lock positions with lockId = 1 and lockId = 2 for staker_2', async() => {
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2});
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2});
             
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
@@ -954,7 +954,7 @@ describe("DAO Demo", () => {
             result = await multiSigWallet.submitTransaction(
                 FTHMToken.address,
                 EMPTY_BYTES, 
-                _encodeStakeApproveFunction(approveAmount, stakingService.address),
+                _encodeStakeApproveFunction(approveAmount, vaultService.address),
                 0,
                 {"from": accounts[0]}
             );

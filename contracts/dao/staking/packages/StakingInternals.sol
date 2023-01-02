@@ -49,7 +49,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
             totalAmountOfVoteToken += nVoteToken;
         }
         if(account != msg.sender){
-            require(nOnBehalfLocks[account] <= maxOnBehalfLockPositions,"max lock on behalf");
+            require(nOnBehalfLocks[account] < maxOnBehalfLockPositions,"max lock on behalf");
             nOnBehalfLocks[account]+=1;
         }
         LockedBalance memory _newLock = LockedBalance({

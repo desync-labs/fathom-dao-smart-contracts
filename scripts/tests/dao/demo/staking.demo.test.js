@@ -307,7 +307,7 @@ describe("Staking Test and Upgrade Test", () => {
         expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
             // So that staker 1 can actually stake the token:
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
             const beforeFTHMBalance = await FTHMToken.balanceOf(staker_1);
 
             await blockchain.increaseTime(20);
@@ -385,8 +385,8 @@ describe("Staking Test and Upgrade Test", () => {
             
             const sumToDepositForAll = web3.utils.toWei('0.11', 'ether');
 
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2})
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_3})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_3})
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
@@ -519,7 +519,7 @@ describe("Staking Test and Upgrade Test", () => {
         });
 
         it("Should not early unlock", async() => {
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: SYSTEM_ACC})
+            await FTHMToken.approve(vaultService.address, sumToApprove, {from: SYSTEM_ACC})
             let lockingPeriod = 365 * 24 * 60 * 60;
             await stakingService.createLockWithoutEarlyWithdraw(sumToDeposit,lockingPeriod, staker_5,{from: SYSTEM_ACC});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
@@ -531,6 +531,7 @@ describe("Staking Test and Upgrade Test", () => {
                 errorMessage
             );
         })
+        
     });
     
     describe('Creating Streams and Rewards Calculations', async() => {

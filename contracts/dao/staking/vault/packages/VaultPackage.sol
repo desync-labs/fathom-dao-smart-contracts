@@ -39,8 +39,8 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(isSupportedToken[_token], "Unsupported token");
         require(_amount!=0,"amount zero");
         require(IERC20(_token).balanceOf(address(this))>=_amount,"not enough balance");
-        //require(deposited[_token] >= _amount,"payRewards: not enough deposit");
-       // deposited[_token] -= _amount;
+        require(deposited[_token] >= _amount,"payRewards: not enough deposit");
+        deposited[_token] -= _amount;
         IERC20(_token).safeTransfer(_user,_amount);
     }
 
@@ -63,6 +63,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     /// @param _token stream ERC20 token address
     function removeSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) pausable(1) {
         require(isSupportedToken[_token], "Token does not exist");
+        require(deposited[_token] == 0,"Token is still in use");
         isSupportedToken[_token] = false;
         _removeToken(_token);
         emit TokenRemoved(_token, msg.sender, block.timestamp);

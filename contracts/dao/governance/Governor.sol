@@ -29,7 +29,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
-    //AuditFix There is no validation for `maxTargets` when executing in `Governor` - ASK THIS, to make it modifiable
     uint256 public maxTargets;
     string private _name;
     uint256[] private proposalIds;
@@ -90,7 +89,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
-        //ASK MAX JI:
         uint256 totalValue = 0;
         for (uint256 i = 0;i < values.length; i++){
             totalValue += values[i];
@@ -202,7 +200,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
-    //AuditFix There is no possibility to update `multisig` in `Governor
     function updateMultiSig(address newMultiSig) public onlyMultiSig {
         require(newMultiSig != address(0), "updateMultiSig: newMultiSig cant be set to zero address");
         emit MultiSigUpdated(newMultiSig, multiSig);
