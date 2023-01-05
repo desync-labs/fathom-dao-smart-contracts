@@ -4,7 +4,6 @@
 
 pragma solidity 0.8.13;
 
-import "./StakingStructs.sol";
 import "./interfaces/IStakingStorage.sol";
 import "./library/StakingLibrary.sol";
 

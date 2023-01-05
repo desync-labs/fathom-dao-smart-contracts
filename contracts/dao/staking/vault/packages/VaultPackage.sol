@@ -55,13 +55,13 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     /// supported tokens means any future stream token should be
     /// whitelisted here
     /// @param _token stream ERC20 token address
-    function addSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) pausable(1) {
+    function addSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         _addSupportedToken(_token);
     }
 
     /// @notice removed token as a supproted rewards token by Treasury
     /// @param _token stream ERC20 token address
-    function removeSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) pausable(1) {
+    function removeSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE)  {
         require(isSupportedToken[_token], "Token does not exist");
         require(deposited[_token] == 0,"Token is still in use");
         isSupportedToken[_token] = false;
@@ -69,9 +69,6 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
-    function emergencyStop() external override {
-        _adminPause(1);
-    }
 
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE){
         require(!migrated,"vault already migrated");

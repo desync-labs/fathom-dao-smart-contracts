@@ -22,8 +22,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
     }
 
     function initToken(address _admin, address _minter) public override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!initialized, "already init");
-        initialized = true;
         require(_admin != msg.sender, "initToken: Admin should be different than msg.sender");
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);

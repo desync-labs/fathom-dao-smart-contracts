@@ -8,7 +8,6 @@ const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const blockchain = require("../../tests/helpers/blockchain");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
-//TODO: Do it in prod script
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp();
     return timestamp;

@@ -10,7 +10,6 @@ import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
-    uint256 internal constant ONE_MONTH = 2629746;
     uint256 internal constant ONE_YEAR = 31536000;
     uint256 internal constant WEEK = 604800;
 

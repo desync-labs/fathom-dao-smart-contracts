@@ -335,7 +335,7 @@ bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
 ```
 
 
-#### [NEW] Transaction should be marked as `executed` if the call fails[DONE, understand more]
+#### [NEW] Transaction should be marked as `executed` if the call fails[DONE, Ask]
 
 ##### Description
 
@@ -681,7 +681,7 @@ https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6
 We recommend limiting values of `scheduleTimes` or `scheduleRewards`.[NOTDONE]
 
 
-#### [NEW] It is possible to remove tokens that are used by another contract in `VaultPackage`[NOTDONE]
+#### [NEW] It is possible to remove tokens that are used by another contract in `VaultPackage`[DONE]
 
 ##### Description
 Calling the [`removeSupportedToken`](
@@ -694,7 +694,7 @@ We recommend adding logic to check that tokens are not used in any other contrac
 ### INFO
 
 
-#### [NEW] There's no logging of reverted transactions in `MultiSigWallet`
+#### [NEW] There's no logging of reverted transactions in `MultiSigWallet`[DONE]
 ##### Description
 In the function [`executeConfirmation`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L144) there's no logging of failed transactions.
 ```solidity
@@ -718,7 +718,7 @@ if (success) {
 This will allow monitoring of suspicious activity that involves using of `MultiSigWallet`.
 
 
-#### [NEW] Non-optimal packing of the `Transaction` structure in `MultiSigWallet`
+#### [NEW] Non-optimal packing of the `Transaction` structure in `MultiSigWallet`[DONE]
 ##### Description
 
 The structure [`Transaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L9) uses a non-optimized storage layout.
@@ -736,7 +736,7 @@ struct Transaction {
 }
 ```
 
-#### [NEW] Incorrect status check in `execute` function in `Governor`
+#### [NEW] Incorrect status check in `execute` function in `Governor`[DONE]
 ##### Description
 In the [`execute`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol#L76) function there is an incorrect check of `Proposal` status:
 ```solidity
@@ -749,14 +749,14 @@ We recommend changing the status check for `Proposal`:
 require(status == ProposalState.Queued, "Governor: proposal not successful");
 ```
 
-#### [NEW] `_minDelay` can be set to zero in `TimelockController`
+#### [NEW] `_minDelay` can be set to zero in `TimelockController`[NOTDONE]
 ##### Description
 In the `TimelockController` contract the `_minDelay` parameter can be set to `0` during [initialization](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol#L67) and in the [`updateDelay`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol#L149) function. This will result in batch being able to be executed in the same block it was queued for execution.
 
 ##### Recommendation
 We recommend adding a check that `_minDelay != 0`.
 
-#### [NEW] There is a redundant `initialized` check in `VMainToken`
+#### [NEW] There is a redundant `initialized` check in `VMainToken`[DONE]
 ##### Description
 ```solidity
 require(!initialized, "already init");
@@ -767,13 +767,13 @@ The [`initToken`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/
 We recommend deleting these lines.
 
 
-#### [NEW] There is redundant code in the `VMainToken` contract
+#### [NEW] There is redundant code in the `VMainToken` contract[NOTDONE for future]
 ##### Description
 The [`_mint`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L74) and [`_burn`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L78) functions in the `VMainToken.sol` contract are redundant and essentially do not overload the parent functions.
 ##### Recommendation
 We recommend deleting these functions.
 
-#### [NEW] The `Governor` and `TimeLockController` do not support the `ERC721` and `ERC1155` tokens
+#### [NEW] The `Governor` and `TimeLockController` do not support the `ERC721` and `ERC1155` tokens[DOESNT REQUIRE]
 ##### Description
 The [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) and [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol) contracts lack the following methods:
 
@@ -821,7 +821,7 @@ Thus `Governor` and `TimeLockController` do not support tokens with `ERC721` and
 ##### Recommendation
 We recommend implementing these functions if the `Governor` and `TimeLockController` contracts require support for the `ERC721` and `ERC1155` tokens. And also create a list of trusted tokens that can work with (see above - `ERC20` standard tokens transfer possibility).
 
-#### [NEW] The `addSupportedToken` and `removeSupportedToken` calls have an redundant `pausable` modifier in the `VaultPackage` contract
+#### [NEW] The `addSupportedToken` and `removeSupportedToken` calls have an redundant `pausable` modifier in the `VaultPackage` contract[DONE]
 ##### Description
 In the `VaultPackage` contract the calls [`addSupportedToken`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L41) and [`removeSupportedToken`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L47) have a redundant modifier `pausable` since the calls are only possible from the `DEFAULT_ADMIN_ROLE` address and the modifier `pausable` contains the following condition
 ```solidity
@@ -832,7 +832,7 @@ where the `paused` condition will be ignored.
 ##### Recommendation
 We recommend reconsidering the `addSupportedToken` and `removeSupportedToken` function modifiers or removing the `pausable` modifier.
 
-#### [NEW] There are no checks that `admin`, `proposers` and `executors` are not zero addresses in `TimelockController`
+#### [NEW] There are no checks that `admin`, `proposers` and `executors` are not zero addresses in `TimelockController`[NOTDONE]
 
 ##### Description
 
@@ -854,7 +854,7 @@ We recommend adding checks that `admin`, `proposers` and `executors` are not zer
 
 We recommend removing it to keep the codebase clean.
 
-#### [NEW] Unused constant `ONE_MONTH` in `StakingGettersHelper`
+#### [NEW] Unused constant `ONE_MONTH` in `StakingGettersHelper`[DONE]
 
 ##### Description
 
@@ -865,7 +865,7 @@ https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6
 We recommend removing it to keep the codebase clean.
 
 
-#### [NEW] Non-optimal storage layout for `Stream` struct in `StakingStructs`
+#### [NEW] Non-optimal storage layout for `Stream` struct in `StakingStructs`[DONE]
 
 ##### Description
 
@@ -889,7 +889,7 @@ struct Stream {
 }
 ```
 
-#### [NEW] Unnecessary `'` in a `RewardsLibrary` comment
+#### [NEW] Unnecessary `'` in a `RewardsLibrary` comment[DONE]
 
 ##### Description
 There is an explicit `'` in the comment in [`RewardsLibrary.sol#L82`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/library/RewardsLibrary.sol#L82) line.
@@ -898,7 +898,7 @@ There is an explicit `'` in the comment in [`RewardsLibrary.sol#L82`](https://gi
 We recommend removing `'` from the comment.
 
 
-#### [NEW] There is a typo in a comment in `StakingInternals`
+#### [NEW] There is a typo in a comment in `StakingInternals`[DONE]
 
 ##### Description
 
@@ -915,7 +915,7 @@ We recommend changing it to:
 // user does not have enough voteToken, it is still able to burn and unlock
 ```
 
-#### [NEW] Redundant check for `maxDepositAmount > 0` in `RewardsCalculator`
+#### [NEW] Redundant check for `maxDepositAmount > 0` in `RewardsCalculator`[DONE]
 
 ##### Description
 
@@ -931,7 +931,7 @@ Since `minDepositAmount` is already greater than `0` and `maxDepositAmount` must
 We recommend removing requirement of `maxDepositAmount > 0` for gas savings and improving code readability.
 
 
-#### [NEW] It is not possible to withdraw tokens that were sent by mistake
+#### [NEW] It is not possible to withdraw tokens that were sent by mistake[NOTDONE, no tokens are sent there]
 
 ##### Description
 
@@ -947,14 +947,14 @@ It is not possible to withdraw tokens that were sent by mistake it the following
 We recommend adding `sweep` function to withdraw tokens that were sent by mistake.
 
 
-#### [NEW] Unused import of `ReentracyGuard` in `StakingHandlers`
+#### [NEW] Unused import of `ReentracyGuard` in `StakingHandlers`[DONE]
 ##### Description
 There is import of [`ReentracyGuard`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L11) in the `StakingHandlers` contract but `nonReentrant` from this class is never used in `StakingHandlers`.
 
 ##### Recommendation
 We recommend removing the unused import.
 
-#### [NEW] Сustom `initializer` modifier is used instead of one from OpenZeppelin
+#### [NEW] Сustom `initializer` modifier is used instead of one from OpenZeppelin[DONE]
 
 ##### Description
 
@@ -969,7 +969,7 @@ It is better to use [Openzeppelin `initializer` ](https://github.com/OpenZeppeli
 We recommend using `initializer` and `initializable` modifiers from Openzeppelin instead of implementing custom modifiers.
 
 
-#### [NEW] Stream manager, treasury manager and admin represent the same account in `StakingHandlers`
+#### [NEW] Stream manager, treasury manager and admin represent the same account in `StakingHandlers`[NTDONE]
 
 ##### Description
 
@@ -979,7 +979,7 @@ In the [`initializeStaking`](https://github.com/Into-the-Fathom/fathom-dao-smart
 We recommend to transfer treasury role after the deployment and the staking setting. Admin and manager of the initial `stream` should be two different roles.
 
 
-#### [NEW] Revert message strings are too long
+#### [NEW] Revert message strings are too long[NTDONE]
 
 ##### Description
 
@@ -1001,7 +1001,7 @@ We recommend making revert strings shorter.
 Note that if your contracts already allow Solidity `0.8.4` and above, then consider using [custom errors](https://blog.soliditylang.org/2021/04/21/custom-errors). They provide more gas efficiency and also allow developers to describe the errors in detail using [NatSpec](https://docs.soliditylang.org/en/latest/natspec-format.html). The main disadvantage of this approach is that some tooling may not have proper support for it yet.
 
 
-#### [NEW] Unnecessary reads from storage
+#### [NEW] Unnecessary reads from storage[DONE for applicable]
 
 ##### Description
 
@@ -1020,7 +1020,7 @@ In the next lines using `MLOAD` and `MSTORE` to cache the variable in `memory` s
 We recommend caching this storage variable in `memory` to reduce unnecessary reads from storage and save more gas.
 
 
-#### [NEW] Misleading check `(scheduleTimeLength > 0)` in the `RewardsCalculator`
+#### [NEW] Misleading check `(scheduleTimeLength > 0)` in the `RewardsCalculator`[DONE]
 
 ##### Description
 

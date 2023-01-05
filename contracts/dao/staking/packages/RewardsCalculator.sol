@@ -18,7 +18,6 @@ contract RewardsCalculator is IRewardsHandler {
     ) public view override {
         require(streamOwner != address(0), "bad owner");
         require(rewardToken != address(0), "bad reward token");
-        require(maxDepositAmount > 0, "No Max Deposit");
         require(minDepositAmount > 0, "No Min Deposit");
         require(minDepositAmount <= maxDepositAmount, "bad Min Deposit");
         require(maxDepositAmount == scheduleRewards[0], "Invalid Max Deposit");
@@ -91,7 +90,7 @@ contract RewardsCalculator is IRewardsHandler {
         uint256 end
     ) internal pure returns (uint256 startIndex, uint256 endIndex) {
         uint256 scheduleTimeLength = schedule.time.length;
-        require(scheduleTimeLength > 0, "bad schedules");
+        require(scheduleTimeLength >=2, "bad schedules");
         require(end > start, "bad query period");
         require(start >= schedule.time[0], "query before start");
         require(end <= schedule.time[scheduleTimeLength - 1], "query after end");

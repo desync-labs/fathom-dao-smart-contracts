@@ -99,7 +99,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
-        require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
+        require(status == ProposalState.Queued, "Governor: proposal not successful");
         uint256 totalValue = 0;
         for (uint256 i = 0;i < values.length; i++){
             totalValue += values[i];
@@ -385,7 +385,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     function _countVote(uint256 proposalId, address account, uint8 support, uint256 weight, bytes memory params) internal virtual;
 
     function _execute(
-        uint256 /* proposalId */,
+        uint256  /*proposalId*/ ,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
@@ -397,6 +397,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
             Address.verifyCallResult(success, returndata, errorMessage);
         }
     }
+
 
     function _beforeExecute(
         uint256 /* proposalId */,
