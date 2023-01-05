@@ -72,9 +72,9 @@ module.exports = async function(deployer) {
         );
         
        // const thirteenDecemberTimestampMidNight = 1670889600
-        const JanuarySixTweleveAMUAETime = 1672948800;
+        const JanuaryFiveEIGHTPMUAE = 1672934400;
 
-        const startTime =  JanuarySixTweleveAMUAETime;
+        const startTime =  JanuaryFiveEIGHTPMUAE;
 
         const scheduleTimes = [
             startTime,

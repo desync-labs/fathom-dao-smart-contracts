@@ -403,7 +403,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         require(state(proposalId) == ProposalState.Active, "Governor: vote not currently active");
 
         uint256 weight = _getVotes(account, proposal.voteStart.getDeadline(), params);
-        require(weight>0, "vFTHM balance is 0");
         _countVote(proposalId, account, support, weight, params);
 
         if (params.length == 0) {
