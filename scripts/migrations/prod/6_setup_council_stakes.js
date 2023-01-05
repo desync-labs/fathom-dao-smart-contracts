@@ -57,7 +57,13 @@ module.exports = async function(deployer) {
 
     await mainToken.approve(VaultProxy.address, T_TO_TRANSFER, {gas: 8000000});
     
-    await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, accounts[0], {gas: 600000});
-    await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, COUNCIL_1, {gas: 600000});
-    await stakingService.createLockWithoutEarlyWithdraw(T_TO_STAKE, LOCK_PERIOD, COUNCIL_2, {gas: 600000});
+    const AMOUNTS_TO_STAKE = [T_TO_STAKE, T_TO_STAKE, T_TO_STAKE]
+    const LOCK_PERIODS = [LOCK_PERIOD, LOCK_PERIOD, LOCK_PERIOD]
+    const COUNCILS = [accounts[0], COUNCIL_1, COUNCIL_2]
+    await stakingService.createLocksForCouncils(
+        AMOUNTS_TO_STAKE,
+        LOCK_PERIODS,
+        COUNCILS,
+        {gas: 8000000}
+    );
 }

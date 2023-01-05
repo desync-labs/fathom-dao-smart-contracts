@@ -15,8 +15,7 @@ interface IStakingHandler {
         Weight calldata _weight,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract,
-        uint256 _maxOnBehalfLockPositions
+        address _rewardsContract
     ) external;
 
     function initializeMainStream(
@@ -41,17 +40,14 @@ interface IStakingHandler {
 
     function removeStream(uint256 streamId, address streamFundReceiver) external;
 
-    function createLock(uint256 amount, uint256 lockPeriod, address account) external;
+    function createLock(uint256 amount, uint256 lockPeriod) external;
 
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) external;
 
     function unlockPartially(uint256 lockId, uint256 amount) external;
 
     function unlock(uint256 lockId) external;
 
     function earlyUnlock(uint256 lockId) external;
-
-    function claimRewards(uint256 streamId, uint256 lockId) external;
 
     function claimAllStreamRewardsForLock(uint256 lockId) external;
 
@@ -65,4 +61,5 @@ interface IStakingHandler {
 
     function updateVault(address _vault) external;
     function emergencyUnlockAndWithdraw() external;
+    function createLocksForCouncils(uint256[] memory amounts, uint256[] memory lockPeriods, address[] memory accounts) external;
 }

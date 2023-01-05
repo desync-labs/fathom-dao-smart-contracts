@@ -137,22 +137,22 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
-const _encodeStakeFunction = (amount, lockPeriod, account, flag) => {
+const _encodeStakeFunction = (amounts, lockPeriods, accounts) => {
     // encoded transfer function call for staking on behalf of someone else from treasury.
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'createLockWithoutEarlyWithdraw',
+        name: 'createLocksForCouncils',
         type: 'function',
         inputs: [{
-            type: 'uint256',
-            name: 'amount'
+            type: 'uint256[]',
+            name: 'amounts'
         },{
-            type: 'uint256',
-            name: 'lockPeriod'
+            type: 'uint256[]',
+            name: 'lockPeriods'
         },{
-            type: 'address',
-            name: 'account'
+            type: 'address[]',
+            name: 'accounts'
         }]
-    }, [amount, lockPeriod, account]);
+    }, [amounts, lockPeriods, accounts]);
 
     return toRet;
 }
@@ -416,7 +416,7 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60;
             const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             console.log(".........Total Staked Protocol Token Amount for Lock Position for a year", _convertToEtherBalance(sumToDeposit));
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -431,7 +431,7 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60/2;
             const unlockTime = lockingPeriod;
             const beforeLockTimestamp = await _getTimeStamp()
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1, {from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_1});
             console.log(".........Total Staked Protocol Token Amount for Lock Position for 1/2 a year", _convertToEtherBalance(sumToDeposit));
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp);
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -453,9 +453,9 @@ describe("DAO Demo", () => {
             let lockingPeriod = 365 * 24 * 60 * 60;
 
             const unlockTime = lockingPeriod;
-            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_2});
             await blockchain.increaseTime(20);
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_2, {from: staker_2});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2});
         });
 
         it("Should propose the first staking stream, stream - 1", async() => {
@@ -533,7 +533,7 @@ describe("DAO Demo", () => {
             const unlockTime = lockingPeriod;
             
             let beforeLockTimestamp = await _getTimeStamp();
-            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_2,gas: maxGasForTxn});
 
             lockingPeriod = lockingPeriod - (await _getTimeStamp() - beforeLockTimestamp)
             const mineToTimestamp = 20 * 24 * 60 * 60
@@ -545,7 +545,7 @@ describe("DAO Demo", () => {
             const rewardsPeriodBN = new web3.utils.toBN(rewardsPeriod)
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             
-            await stakingService.claimRewards(streamId,lockId,{from:staker_2, gas: maxGasForTxn});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_2, gas: maxGasForTxn});
             
             //Getting params from contracts to calculate the expected rewards:
             
@@ -815,7 +815,8 @@ describe("DAO Demo", () => {
         
 
         it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {
-
+            const eightHours = 28800
+            await blockchain.mineBlock(await _getTimeStamp() + eightHours);    
             // create a proposal in MainToken governor
             result = await mainTokenGovernor.propose(
                 [multiSigWallet.address],
@@ -959,25 +960,18 @@ describe("DAO Demo", () => {
                 {"from": accounts[0]}
             );
             txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+            const amounts = [amount,amount]
+            const lockPeriods = [oneYr,oneYr]
+            const commityAccounts = [comity_1,comity_2]
 
             let result2 = await multiSigWallet.submitTransaction(
                 stakingService.address,
                 EMPTY_BYTES, 
-                _encodeStakeFunction(amount, oneYr, comity_1, true),
+                _encodeStakeFunction(amounts, lockPeriods, commityAccounts),
                 0,
                 {"from": accounts[0]}
             );
             txIndex5 = eventsHelper.getIndexedEventArgs(result2, SUBMIT_TRANSACTION_EVENT)[0];
-
-            let result_temp = await multiSigWallet.submitTransaction(
-                stakingService.address,
-                EMPTY_BYTES, 
-                _encodeStakeFunction(amount, oneYr, comity_2, true),
-                0,
-                {"from": accounts[0]}
-            );
-            txIndex6 = eventsHelper.getIndexedEventArgs(result_temp, SUBMIT_TRANSACTION_EVENT)[0];
-        
         })
 
         it('Confirm and execute multiSig transactions to stake on behalf of comity', async() => {
@@ -988,15 +982,11 @@ describe("DAO Demo", () => {
             await multiSigWallet.confirmTransaction(txIndex5, {"from": accounts[0]});
             await multiSigWallet.confirmTransaction(txIndex5, {"from": accounts[1]});
 
-            await multiSigWallet.confirmTransaction(txIndex6, {"from": accounts[0]});
-            await multiSigWallet.confirmTransaction(txIndex6, {"from": accounts[1]});
-
             // execute:
             await multiSigWallet.executeTransaction(txIndex3, {"from": accounts[0]});
             await blockchain.increaseTime(20);
             await multiSigWallet.executeTransaction(txIndex5, {"from": accounts[0]});
             await blockchain.increaseTime(20);
-            await multiSigWallet.executeTransaction(txIndex6, {"from": accounts[0]});
         });
 
         it("Check that the lock possitions have been made on behalf of the comity", async() => {

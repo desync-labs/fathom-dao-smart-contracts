@@ -189,7 +189,7 @@ In the structure [`Transaction`](https://github.com/Into-the-Fathom/fathom-dao-s
 ##### Recommendation
 We recommend adding an individual parameter, which is responsible for the maximum time until the transaction can be executed, e.g. `expired` and check it before running transactions.
 
-#### [NEW] Governance can delete `TimelockAdmin` and the contract will lose its control in `TimelockController`[DONE]
+#### [NEW] Governance can delete `TimelockAdmin` and the contract will lose its control in `TimelockController`[DONE, MAXJI]
 ##### Description
 In the [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol) contract, Governance can take away the `TIMELOCK_ADMIN_ROLE` rights from the address `admin`. In the case of an attack on `Governance` and `Council` this would make it impossible to revoke the role from the captured contracts.
 ##### Recommendation
@@ -231,7 +231,7 @@ In the `GovernorVotesQuorumFraction` contract in the [`_updateQuorumNumerator`](
 We recommend adding a constant with the minimum allowable value of `_quorumNumerator` and perform a corresponding check in the `_updateQuorumNumerator` function.
 
 
-#### [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE,check it again]
+#### [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE,Check Again, TODO]
 ##### Description
 In the [VMainToken](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol) contract, for mint tokens, calling account, in addition to having `MINTER_ROLE` rights, must also be in the `isWhiteListed` list, since the mint function calls `_mint,` which contains [`_beforeTokenTransfer`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L65) call.
 When `_beforeTokenTransfer` is called, it checks that the `msg.sender` address is in the `isWhiteListed` list.

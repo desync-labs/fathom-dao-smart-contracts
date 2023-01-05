@@ -22,7 +22,7 @@ contract MainTokenGovernor is
 {   
     using SafeERC20 for IERC20;
     mapping(address => bool) public isSupportedToken;
-    
+    uint256 public constant EIGHT_HOURS = 28800;
     constructor(
         IVotes _token,
         TimelockController _timelock,
@@ -31,7 +31,7 @@ contract MainTokenGovernor is
         uint256 _votingPeriod,
         uint256 _initialProposalThreshold
     )
-        Governor("MainTokenGovernor", _multiSig,20)
+        Governor("MainTokenGovernor", _multiSig,20,EIGHT_HOURS)
         GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
@@ -90,11 +90,17 @@ contract MainTokenGovernor is
         isSupportedToken[_token] = false;
     }
 
-    function withdrawToken(address _token, address _withdrawTo) public onlyMultiSig {
-        require(isSupportedToken[_token],"Token is not supported");
-        uint256 balance = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).safeTransfer(_withdrawTo, balance);
-    } 
+    /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relay(address target, uint256 value, bytes calldata data) external payable virtual onlyGovernance {
+        require(isSupportedToken[target],"relay: token not supported");
+        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
+    }
 
     function _execute(
         uint256 proposalId,
@@ -119,6 +125,4 @@ contract MainTokenGovernor is
     function _executor() internal view override(Governor, GovernorTimelockControl) returns (address) {
         return super._executor();
     }
-
-    
 }

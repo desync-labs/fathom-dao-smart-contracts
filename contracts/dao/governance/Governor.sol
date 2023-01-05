@@ -14,8 +14,9 @@ import "../../common/Context.sol";
 import "../../common/Strings.sol";
 import "./GovernorStructs.sol";
 import "./interfaces/IGovernor.sol";
+import "../../common/security/Pausable.sol";
 
-abstract contract Governor is Context, ERC165, EIP712, IGovernor {
+abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using SafeCast for uint256;
     using Strings for *;
@@ -26,18 +27,21 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     event ExecuteProposal(address indexed signer, uint indexed proposalId);
     event MultiSigUpdated(address newMultiSig, address oldMultiSig);
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
+    event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
     uint256 public maxTargets;
+    uint256 public proposalTimeDelay;
     string private _name;
     uint256[] private proposalIds;
-   
+    
     address private multiSig;
 
     mapping(uint256 => ProposalCore) internal _proposals;
     mapping(uint256 => string) internal _descriptions;
     mapping(uint => bool) public isConfirmed;
+    mapping(address => uint) public nextAcceptableProposalTimestamp;
 
     DoubleEndedQueue.Bytes32Deque private _governanceCall;
 
@@ -66,12 +70,19 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         _;
     }
 
-    constructor(string memory name_, address _multiSig, uint256 _maxTargets) EIP712(name_, version()) {
-        require(_multiSig != address(0),"multiSig address cant be zero address");
-        require(_maxTargets != 0,"maxTarget cant be zero");
+    constructor(
+        string memory name_, 
+        address multiSig_, 
+        uint256 maxTargets_,
+        uint256 proposalTimeDelay_)  EIP712(name_, version()) 
+    {
+        require(multiSig_ != address(0),"multiSig address cant be zero address");
+        require(maxTargets_ != 0,"maxTarget cant be zero");
+        require(proposalTimeDelay_ != 0,"proposalTimeDelay cant be zero");
         _name = name_;
-        multiSig = _multiSig;
-        maxTargets = _maxTargets;
+        multiSig = multiSig_;
+        maxTargets = maxTargets_;
+        proposalTimeDelay = proposalTimeDelay_;
     }
 
     receive() external payable virtual {
@@ -83,7 +94,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public payable virtual override returns (uint256) {
+    ) public whenNotPaused payable virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
         requireConfirmed(proposalId);
 
@@ -158,15 +169,21 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public virtual override returns (uint256) {
+    ) public whenNotPaused virtual override returns (uint256) {
+
         require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below proposal threshold");
+    
+        require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], 
+                "Governor: Can only submit one proposal for a certain interval");
+                
+        nextAcceptableProposalTimestamp[msg.sender] = block.timestamp + proposalTimeDelay;
 
         uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
 
         require(targets.length == values.length, "Governor: invalid proposal length");
         require(targets.length == calldatas.length, "Governor: invalid proposal length");
         require(targets.length > 0, "Governor: empty proposal");
-        require(targets.length <= maxTargets,"Governor: invalid proposal length");
+        require(targets.length <= maxTargets,"Governor: max target length");
 
         ProposalCore storage proposal = _proposals[proposalId];
         require(proposal.voteStart.isUnset(), "Governor: proposal already exists");
@@ -211,6 +228,21 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         emit MaxTargetUpdated(newMaxTargets, maxTargets);
         maxTargets = newMaxTargets;
     }
+
+    function updateProposalTimeDelay(uint256 newProposalTimeDelay) public onlyMultiSig {
+        require(newProposalTimeDelay != 0,"updateProposalTimeDelay: newProposalTimeDelay cant be zero");
+        emit MaxTargetUpdated(newProposalTimeDelay, proposalTimeDelay);
+        proposalTimeDelay = newProposalTimeDelay;
+    }
+
+    function emergencyStop() public onlyMultiSig{
+        _pause();
+    }
+
+    function unpause() public onlyMultiSig{
+        _unpause();
+    }
+    
     function getProposals(uint _numIndexes) public view override returns (string[] memory, string[] memory, string[] memory) {
         uint len = proposalIds.length;
 

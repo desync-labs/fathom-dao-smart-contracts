@@ -172,7 +172,7 @@ describe('Token Creation Through Governance', () => {
 
             let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime,{from: _account, gas: 600000});
         }
 
         it('Stake MainToken and receive vMainToken', async() => {

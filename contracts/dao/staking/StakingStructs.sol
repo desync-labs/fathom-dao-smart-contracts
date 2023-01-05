@@ -49,7 +49,6 @@ struct LockedBalance {
     uint128 amountOfVoteToken;
     uint128 positionStreamShares;
     uint64 end;
-    bool onBehalf;
     address owner;
 }
 struct Stream {

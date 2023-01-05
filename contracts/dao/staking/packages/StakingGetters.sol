@@ -18,7 +18,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     }
 
     function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId) external view override returns (uint256) {
-        require(streams[streamId].status == StreamStatus.ACTIVE, "stream not active");
+        require(streams[streamId].status == StreamStatus.ACTIVE, "stream inactive");
         require(lockId <= locks[account].length, "bad index");
         uint256 latestRps = _getLatestRewardsPerShare(streamId);
         User storage userAccount = users[account];

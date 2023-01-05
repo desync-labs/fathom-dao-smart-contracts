@@ -35,8 +35,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         Weight calldata _weight,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract,
-        uint256 _maxOnBehalfLockPositions
+        address _rewardsContract
     ) external override initializer{
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
@@ -45,7 +44,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
         maxLockPeriod = ONE_YEAR;
-        maxOnBehalfLockPositions = _maxOnBehalfLockPositions;
     }
 
     function initializeMainStream(
@@ -149,7 +147,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (rewardTokenAmount < stream.maxDepositAmount) {
             _updateStreamsRewardsSchedules(streamId, rewardTokenAmount);
         }
-        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start point");
+        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start");
 
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, rewardTokenAmount);
         IVault(vault).deposit(msg.sender, stream.rewardToken, rewardTokenAmount);
@@ -165,7 +163,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function removeStream(uint256 streamId, address streamFundReceiver) public override onlyRole(STREAM_MANAGER_ROLE) {
         require(streamId != 0, "Stream 0");
-        require(streamTotalUserPendings[streamId] == 0, "stream not withdrawn");
+        require(streamTotalUserPendings[streamId] == 0, "nt withdrawn");
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
         stream.status = StreamStatus.INACTIVE;
@@ -181,16 +179,28 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
-        prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-        _createLock(amount, lockPeriod, account);
+    function createLocksForCouncils(
+        uint256[] memory amounts, 
+        uint256[] memory lockPeriods, 
+        address[] memory accounts) public override
+    {
+        require(!councilsInitialized,"already created");
+        require(
+            amounts.length == lockPeriods.length 
+            && amounts.length == lockPeriods.length,"bad len");
+        
+        councilsInitialized = true;
+        for(uint i = 0; i < amounts.length; i++){
+            prohibitedEarlyWithdraw[accounts[i]][locks[accounts[i]].length + 1] = true;
+            _createLock(amounts[i], lockPeriods[i], accounts[i]);
+        }
     }
 
-    function createLock(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
-        _createLock(amount, lockPeriod, account);
+    function createLock(uint256 amount, uint256 lockPeriod) public override pausable(1) {
+        _createLock(amount, lockPeriod, msg.sender);
     }
 
-    function unlock(uint256 lockId) public override  {
+    function unlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.end <= block.timestamp, "lock not open");
@@ -220,13 +230,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
     
 
-    function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "bad lockid");
-        require(lockId != 0, "lockId zero");
-        _updateStreamRPS();
-        _moveRewardsToPending(msg.sender, streamId, lockId);
-    }
-
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         require(lockId <= locks[msg.sender].length, "bad lockid");
         require(lockId != 0, "lockId zero");
@@ -244,7 +247,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         User storage userAccount = users[msg.sender];
         require(userAccount.pendings[streamId] != 0, "no pendings");
         require(block.timestamp > userAccount.releaseTime[streamId], "not released");
-        require(streams[streamId].status == StreamStatus.ACTIVE,"stream nt active");
+        require(streams[streamId].status == StreamStatus.ACTIVE,"stream inactive");
         _withdraw(streamId);
     }
 
@@ -279,7 +282,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
-        require(paused != 0, "required pause");
+        require(paused != 0, "require pause");
         require(_vault != address(0), "zero addr");
         require(IVault(vault).migrated(),"nt migrated");
         vault = _vault;
@@ -299,14 +302,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IVault(vault).deposit(msg.sender, mainToken, amount);
     }
 
-    function _verifyUnlock(uint256 lockId) internal  {
+    function _verifyUnlock(uint256 lockId) internal view{
         require(lockId > 0, "zero lockid");
         require(lockId <= locks[msg.sender].length, "bad lockid");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfToken > 0, "no amount");
         require(lock.owner == msg.sender, "bad owner");
-        if(lock.onBehalf == true && nOnBehalfLocks[msg.sender] >0){
-            nOnBehalfLocks[msg.sender] -= 1;
-        }
     }
 }
