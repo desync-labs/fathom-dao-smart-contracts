@@ -64,3 +64,9 @@ struct Stream {
     uint256 rps; // Reward per share for a stream j>0
     Schedule schedule;
 }
+
+struct CreateLockParams{
+        uint256 amount;
+        uint256 lockPeriod;
+        address account;
+    }

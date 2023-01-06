@@ -33,7 +33,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        VoteCoefficient memory voteCoef,
+        VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
         address _rewardsContract
     ) external override initializer{
@@ -180,19 +180,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function createLocksForCouncils(
-        uint256[] memory amounts, 
-        uint256[] memory lockPeriods, 
-        address[] memory accounts) public override
+        CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE)
     {
         require(!councilsInitialized,"already created");
-        require(
-            amounts.length == lockPeriods.length 
-            && amounts.length == lockPeriods.length,"bad len");
-        
         councilsInitialized = true;
-        for(uint i = 0; i < amounts.length; i++){
-            prohibitedEarlyWithdraw[accounts[i]][locks[accounts[i]].length + 1] = true;
-            _createLock(amounts[i], lockPeriods[i], accounts[i]);
+        for(uint i = 0; i < lockParams.length; i++){
+            address account = lockParams[i].account;
+            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
         }
     }
 

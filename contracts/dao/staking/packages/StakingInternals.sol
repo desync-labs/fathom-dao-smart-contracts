@@ -30,7 +30,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
         require(weight.penaltyWeightMultiplier * weight.maxWeightPenalty <= 100000, "wrong weight");
-        
+        require(_voteLockCoef!=0,"zero coef");
         mainToken = _mainToken;
         voteToken = _voteToken;
         weight = _weight;

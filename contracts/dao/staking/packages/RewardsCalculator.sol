@@ -4,6 +4,7 @@
 pragma solidity 0.8.13;
 import "../StakingStructs.sol";
 import "../interfaces/IRewardsHandler.sol";
+import "../../../common/math/FullMath.sol";
 
 contract RewardsCalculator is IRewardsHandler {
     // solhint-disable not-rely-on-time
@@ -66,6 +67,9 @@ contract RewardsCalculator is IRewardsHandler {
         if (startIndex == endIndex) {
             // start and end are within the same schedule period
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
+            rewardScheduledAmount = FullMath.mulDiv(
+                                            reward, (end - start), 
+                                            (schedule.time[startIndex + 1] - schedule.time[startIndex]));
             rewardScheduledAmount = (reward * (end - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
         } else {
             // start and end are not within the same schedule period
@@ -79,7 +83,9 @@ contract RewardsCalculator is IRewardsHandler {
             rewardScheduledAmount += schedule.reward[startIndex + 1] - schedule.reward[endIndex];
             // Reward at the end schedule where schedule.time[endIndex] '
             reward = schedule.reward[endIndex] - schedule.reward[endIndex + 1];
-            rewardScheduledAmount += (reward * (end - schedule.time[endIndex])) / (schedule.time[endIndex + 1] - schedule.time[endIndex]);
+            rewardScheduledAmount += FullMath.mulDiv(reward, 
+                                    (end - schedule.time[endIndex]),
+                                    (schedule.time[endIndex + 1] - schedule.time[endIndex]));
         }
         return rewardScheduledAmount;
     }

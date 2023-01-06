@@ -38,7 +38,6 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "payRewards: No role");
         require(isSupportedToken[_token], "Unsupported token");
         require(_amount!=0,"amount zero");
-        require(IERC20(_token).balanceOf(address(this))>=_amount,"not enough balance");
         require(deposited[_token] >= _amount,"payRewards: not enough deposit");
         deposited[_token] -= _amount;
         IERC20(_token).safeTransfer(_user,_amount);
@@ -69,7 +68,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
-
+    /// @notice we believe newVaultPackage is safe
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE){
         require(!migrated,"vault already migrated");
         require(paused != 0, "required pause");
@@ -78,6 +77,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         {
             address token = listOfSupportedTokens[i];
             uint256 balance = IERC20(token).balanceOf(address(this));
+            deposited[token] = 0;
             IERC20(token).safeApprove(newVaultPackage,balance);
             IVault(newVaultPackage).deposit(address(this), listOfSupportedTokens[i],balance);
         }

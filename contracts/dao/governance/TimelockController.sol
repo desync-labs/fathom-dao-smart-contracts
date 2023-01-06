@@ -47,6 +47,8 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
     }
 
     function initialize(uint256 minDelay, address admin, address[] memory proposers, address[] memory executors) public override initializer {
+        require(minDelay!=0,"minDelay should be greater than zero");
+        require(admin!=address(0),"admin should not be zero address");
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -58,11 +60,13 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
 
         for (uint256 i = 0; i < proposers.length; ++i) {
+            require(proposers[i] !=address(0),"proposer should not be zero address");
             _setupRole(PROPOSER_ROLE, proposers[i]);
             _setupRole(CANCELLER_ROLE, proposers[i]);
         }
 
         for (uint256 i = 0; i < executors.length; ++i) {
+            require(executors[i] !=address(0),"executor should not be zero address");
             _setupRole(EXECUTOR_ROLE, executors[i]);
         }
 
@@ -118,11 +122,15 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes32 salt
     ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
         bytes32 id = hashOperation(target, value, payload, predecessor, salt);
-
+        require(msg.value >= value,"execute: msg.value insufficient sent");
         _beforeCall(id, predecessor);
         _execute(target, value, payload);
         emit CallExecuted(id, 0, target, value, payload);
         _afterCall(id);
+        if(msg.value > value){
+            (bool sent, ) = msg.sender.call{value: (msg.value - value)}("");
+            require(sent, "Failed to send ether");
+        }
     }
 
     function executeBatch(
@@ -150,6 +158,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
 
     function updateDelay(uint256 newDelay) public virtual {
         require(msg.sender == address(this), "TimelockController: caller must be timelock");
+        require(newDelay>0,"new delay should be greater than zero");
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
     }

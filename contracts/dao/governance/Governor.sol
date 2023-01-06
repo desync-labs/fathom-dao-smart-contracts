@@ -231,7 +231,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
 
     function updateProposalTimeDelay(uint256 newProposalTimeDelay) public onlyMultiSig {
         require(newProposalTimeDelay != 0,"updateProposalTimeDelay: newProposalTimeDelay cant be zero");
-        emit MaxTargetUpdated(newProposalTimeDelay, proposalTimeDelay);
+        emit ProposalTimeDelayUpdated(newProposalTimeDelay, proposalTimeDelay);
         proposalTimeDelay = newProposalTimeDelay;
     }
 

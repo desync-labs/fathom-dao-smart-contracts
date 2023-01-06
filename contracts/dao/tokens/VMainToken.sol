@@ -78,12 +78,4 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
     function _afterTokenTransfer(address from, address to, uint256 amount) internal override {
         super._afterTokenTransfer(from, to, amount);
     }
-
-    function _mint(address to, uint256 amount) internal override {
-        super._mint(to, amount);
-    }
-
-    function _burn(address account, uint256 amount) internal override {
-        super._burn(account, amount);
-    }
 }
