@@ -880,7 +880,7 @@ describe('Proposal flow', () => {
         });
 
         
-        it('Create multiSig transaction to confirm proposal for adding supported tokens', async() => {
+        it('Create multiSig transaction to confirm proposal for relaying supported tokens', async() => {
             encodedConfirmation1 = _encodeConfirmation(proposalIdForRelayFunction);
 
             const result = await multiSigWallet.submitTransaction(

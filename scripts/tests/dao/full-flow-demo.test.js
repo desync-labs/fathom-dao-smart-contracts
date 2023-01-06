@@ -97,6 +97,16 @@ const _calculateNumberOfVFTHM = (sumToDeposit, lockingPeriod, lockingWeight) =>{
     return sumToDepositBN.mul(lockingPeriodBN).div(lockingWeightBN);
 }
 
+const _createLockParamObject = (
+    _amount,
+    _lockPeriod,
+    _account) => {
+    return {
+        amount: _amount,
+        lockPeriod: _lockPeriod,
+        account: _account
+    }
+}
 
 const _calculateRemainingBalance = (depositAmount, beforeBalance) => {
     const depositAmountBN = new web3.utils.BN(depositAmount);
@@ -137,24 +147,23 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
-const _encodeStakeFunction = (amounts, lockPeriods, accounts) => {
+const _encodeStakeFunction = (_createLockParam) => {
     // encoded transfer function call for staking on behalf of someone else from treasury.
-    let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'createLocksForCouncils',
-        type: 'function',
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name:'createLocksForCouncils',
+        type:'function',
         inputs: [{
-            type: 'uint256[]',
-            name: 'amounts'
-        },{
-            type: 'uint256[]',
-            name: 'lockPeriods'
-        },{
-            type: 'address[]',
-            name: 'accounts'
-        }]
-    }, [amounts, lockPeriods, accounts]);
-
-    return toRet;
+                type: 'tuple[]',
+                name: 'CreateLockParams',
+                components: [
+                    {"type":"uint256", "name":"amount"},
+                    {"type":"uint256", "name":"lockPeriod"},
+                    {"type":"address", "name":"account"}
+                ]
+            }
+        ]
+    },[_createLockParam])
+    return toRet
 }
 
 const _encodeStakeApproveFunction = (amount, spender) => {
@@ -960,14 +969,15 @@ describe("DAO Demo", () => {
                 {"from": accounts[0]}
             );
             txIndex3 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-            const amounts = [amount,amount]
-            const lockPeriods = [oneYr,oneYr]
-            const commityAccounts = [comity_1,comity_2]
-
+            const LockParamObjectForAllCouncils = [
+                _createLockParamObject(amount,oneYr,comity_1),
+                _createLockParamObject(amount,oneYr,comity_2)
+            ]
+            
             let result2 = await multiSigWallet.submitTransaction(
                 stakingService.address,
                 EMPTY_BYTES, 
-                _encodeStakeFunction(amounts, lockPeriods, commityAccounts),
+                _encodeStakeFunction(LockParamObjectForAllCouncils),
                 0,
                 {"from": accounts[0]}
             );
