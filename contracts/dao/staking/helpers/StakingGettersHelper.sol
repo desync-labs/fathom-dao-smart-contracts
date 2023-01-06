@@ -30,7 +30,18 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return locks.length;
     }
 
-    function getLock(address account, uint lockId) public view override returns (uint128, uint128, uint128, uint64, address) {
+    function getLock(address account, uint256 lockId)
+        public
+        view
+        override
+        returns (
+            uint128,
+            uint128,
+            uint128,
+            uint64,
+            address
+        )
+    {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
@@ -43,8 +54,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalDeposit = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalDeposit = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalDeposit += locks[lockId - 1].amountOfToken;
         }
         return totalDeposit;
@@ -55,8 +66,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalRewards = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalRewards = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalRewards += IStakingHelper(stakingContract).getStreamClaimableAmountPerLock(streamId, account, lockId);
         }
         return totalRewards;
@@ -67,8 +78,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalVotes = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalVotes = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalVotes += locks[lockId - 1].amountOfVoteToken;
         }
         return totalVotes;
@@ -95,7 +106,7 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
 
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
-        uint maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
+        uint256 maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
         uint256 slopeStart = lockEnd;
         if (timestamp >= slopeStart) return 0;
         uint256 remainingTime = slopeStart - timestamp;

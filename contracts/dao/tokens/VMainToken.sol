@@ -43,12 +43,13 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
     }
-    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)){
+
+    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
         addToWhitelist(_minter);
     }
 
-    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)){
+    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
         removeFromWhitelist(_minter);
     }
@@ -70,12 +71,20 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         _burn(account, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override whenNotPaused {
         require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal override {
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         super._afterTokenTransfer(from, to, amount);
     }
 }

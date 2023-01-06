@@ -58,7 +58,11 @@ library RewardsLibrary {
         return _getRewardsSchedule(stream, start, end);
     }
 
-    function _getRewardsSchedule(Stream memory stream, uint256 start, uint256 end) internal pure returns (uint256) {
+    function _getRewardsSchedule(
+        Stream memory stream,
+        uint256 start,
+        uint256 end
+    ) internal pure returns (uint256) {
         Schedule memory schedule = stream.schedule;
         uint256 startIndex;
         uint256 endIndex;

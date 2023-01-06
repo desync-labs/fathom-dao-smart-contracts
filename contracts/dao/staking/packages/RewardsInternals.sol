@@ -16,7 +16,11 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
     }
 
-    function _moveRewardsToPending(address account, uint256 streamId, uint256 lockId) internal {
+    function _moveRewardsToPending(
+        address account,
+        uint256 streamId,
+        uint256 lockId
+    ) internal {
         LockedBalance storage lock = locks[account][lockId - 1];
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];

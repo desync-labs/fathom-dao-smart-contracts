@@ -22,7 +22,8 @@ interface IStakingHandler {
         address _owner,
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
-        uint256 tau) external;
+        uint256 tau
+    ) external;
 
     function proposeStream(
         address streamOwner,
@@ -59,6 +60,8 @@ interface IStakingHandler {
     function withdrawPenalty(address penaltyReceiver) external;
 
     function updateVault(address _vault) external;
+
     function emergencyUnlockAndWithdraw() external;
+
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
 }

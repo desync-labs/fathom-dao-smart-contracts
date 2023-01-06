@@ -65,8 +65,8 @@ struct Stream {
     Schedule schedule;
 }
 
-struct CreateLockParams{
-        uint256 amount;
-        uint256 lockPeriod;
-        address account;
-    }
+struct CreateLockParams {
+    uint256 amount;
+    uint256 lockPeriod;
+    address account;
+}

@@ -58,7 +58,11 @@ contract RewardsCalculator is IRewardsHandler {
         return _getRewardsSchedule(schedule, start, end);
     }
 
-    function _getRewardsSchedule(Schedule memory schedule, uint256 start, uint256 end) internal pure returns (uint256) {
+    function _getRewardsSchedule(
+        Schedule memory schedule,
+        uint256 start,
+        uint256 end
+    ) internal pure returns (uint256) {
         uint256 startIndex;
         uint256 endIndex;
         (startIndex, endIndex) = _getStartEndScheduleIndex(schedule, start, end);
@@ -67,9 +71,7 @@ contract RewardsCalculator is IRewardsHandler {
         if (startIndex == endIndex) {
             // start and end are within the same schedule period
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
-            rewardScheduledAmount = FullMath.mulDiv(
-                                            reward, (end - start), 
-                                            (schedule.time[startIndex + 1] - schedule.time[startIndex]));
+            rewardScheduledAmount = FullMath.mulDiv(reward, (end - start), (schedule.time[startIndex + 1] - schedule.time[startIndex]));
             rewardScheduledAmount = (reward * (end - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
         } else {
             // start and end are not within the same schedule period
@@ -83,9 +85,11 @@ contract RewardsCalculator is IRewardsHandler {
             rewardScheduledAmount += schedule.reward[startIndex + 1] - schedule.reward[endIndex];
             // Reward at the end schedule where schedule.time[endIndex] '
             reward = schedule.reward[endIndex] - schedule.reward[endIndex + 1];
-            rewardScheduledAmount += FullMath.mulDiv(reward, 
-                                    (end - schedule.time[endIndex]),
-                                    (schedule.time[endIndex + 1] - schedule.time[endIndex]));
+            rewardScheduledAmount += FullMath.mulDiv(
+                reward,
+                (end - schedule.time[endIndex]),
+                (schedule.time[endIndex + 1] - schedule.time[endIndex])
+            );
         }
         return rewardScheduledAmount;
     }
@@ -96,7 +100,7 @@ contract RewardsCalculator is IRewardsHandler {
         uint256 end
     ) internal pure returns (uint256 startIndex, uint256 endIndex) {
         uint256 scheduleTimeLength = schedule.time.length;
-        require(scheduleTimeLength >=2, "bad schedules");
+        require(scheduleTimeLength >= 2, "bad schedules");
         require(end > start, "bad query period");
         require(start >= schedule.time[0], "query before start");
         require(end <= schedule.time[scheduleTimeLength - 1], "query after end");

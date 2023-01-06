@@ -19,10 +19,11 @@ contract MainTokenGovernor is
     GovernorVotes,
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
-{   
+{
     using SafeERC20 for IERC20;
     mapping(address => bool) public isSupportedToken;
     uint256 public constant EIGHT_HOURS = 28800;
+
     constructor(
         IVotes _token,
         TimelockController _timelock,
@@ -31,7 +32,7 @@ contract MainTokenGovernor is
         uint256 _votingPeriod,
         uint256 _initialProposalThreshold
     )
-        Governor("MainTokenGovernor", _multiSig,20,EIGHT_HOURS)
+        Governor("MainTokenGovernor", _multiSig, 20, EIGHT_HOURS)
         GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
@@ -52,7 +53,7 @@ contract MainTokenGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public onlyMultiSig override returns (uint256) {
+    ) public override onlyMultiSig returns (uint256) {
         return _cancel(targets, values, calldatas, descriptionHash);
     }
 
@@ -96,9 +97,13 @@ contract MainTokenGovernor is
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relay(address target, uint256 value, bytes calldata data) external payable virtual onlyGovernance {
-        require(isSupportedToken[target],"relay: token not supported");
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+    function relay(
+        address target,
+        uint256 value,
+        bytes calldata data
+    ) external payable virtual onlyGovernance {
+        require(isSupportedToken[target], "relay: token not supported");
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
         Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
     }
 
