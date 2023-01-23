@@ -57,7 +57,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "deposit: No role");
         require(isSupportedToken[_token], "Unsupported token");
         deposited[_token] += _amount;
-        IERC20(_token).safeTransferFrom(_user, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /// @notice adds token as a supproted rewards token by Vault
@@ -78,6 +78,20 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
+    function withdrawExtraTokens(address _token, address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 balanceToWithdraw;
+        uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
+        if(isSupportedToken[_token] && balanceInContract > deposited[_token]){
+            balanceToWithdraw =  balanceInContract - deposited[_token];
+        }else{
+            balanceToWithdraw = balanceInContract;
+        }
+
+        if(balanceToWithdraw > 0){
+            IERC20(_token).transfer(_withdrawTo, balanceToWithdraw);
+        }
+    }
+
     /// @notice we believe newVaultPackage is safe
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(!migrated, "vault already migrated");
@@ -85,10 +99,9 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(newVaultPackage != address(0), "withdrawTo: Zero addr");
         for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             address token = listOfSupportedTokens[i];
-            uint256 balance = IERC20(token).balanceOf(address(this));
             deposited[token] = 0;
-            IERC20(token).safeApprove(newVaultPackage, balance);
-            IVault(newVaultPackage).deposit(address(this), listOfSupportedTokens[i], balance);
+            IERC20(token).safeApprove(newVaultPackage, deposited[token]);
+            IVault(newVaultPackage).deposit(address(this),listOfSupportedTokens[i], deposited[token]);
         }
         migrated = true;
     }

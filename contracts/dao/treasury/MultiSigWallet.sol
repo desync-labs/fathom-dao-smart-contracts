@@ -120,6 +120,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
             isOwner[owner] = true;
             owners.push(owner);
+            emit OwnerAddition(owner);
         }
 
         numConfirmationsRequired = _numConfirmationsRequired;

@@ -34,24 +34,24 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         emit MemberAddedToWhitelist(_minter);
     }
 
-    function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {
+    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+        _grantRole(MINTER_ROLE, _minter);
+        _addToWhitelist(_minter);
+    }
+
+    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+        _revokeRole(MINTER_ROLE, _minter);
+        _removeFromWhitelist(_minter);
+    }
+
+    function _addToWhitelist(address _toAdd) internal {
         isWhiteListed[_toAdd] = true;
         emit MemberAddedToWhitelist(_toAdd);
     }
 
-    function removeFromWhitelist(address _toRemove) public override onlyRole(WHITELISTER_ROLE) {
+    function _removeFromWhitelist(address _toRemove) internal {
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
-    }
-
-    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
-        _grantRole(MINTER_ROLE, _minter);
-        addToWhitelist(_minter);
-    }
-
-    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
-        _grantRole(MINTER_ROLE, _minter);
-        removeFromWhitelist(_minter);
     }
 
     function pause() public override onlyRole(PAUSER_ROLE) {

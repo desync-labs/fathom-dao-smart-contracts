@@ -9,12 +9,14 @@ import "../StakingStorage.sol";
 import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/AdminPausable.sol";
+import "../../../common/SafeERC20.sol";
 
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
+    using SafeERC20 for address;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-
+    
     constructor() {
         _disableInitializers();
     }
@@ -55,6 +57,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256[] memory scheduleRewards,
         uint256 tau
     ) external override onlyRole(STREAM_MANAGER_ROLE) {
+        require(!mainStreamInitialized,"init done");
         _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
@@ -73,8 +76,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
                 rps: 0
             })
         );
-        IVault(vault).deposit(msg.sender, mainToken, scheduleRewards[0]);
         _adminPause(0);
+        mainStreamInitialized =true;
+        IVault(vault).deposit(msg.sender, mainToken, scheduleRewards[0]);
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
         emit StreamCreated(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
     }
@@ -170,7 +174,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             stream.rewardToken,
             releaseRewardAmount <= rewardTreasury ? releaseRewardAmount : rewardTreasury // should not happen
         );
-
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
@@ -205,6 +208,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, amount, lockId, msg.sender);
+        prohibitedEarlyWithdraw[msg.sender][lockId] = false;
     }
 
     function earlyUnlock(uint256 lockId) public override pausable(1) {
@@ -214,7 +218,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.end > block.timestamp, "lock opened");
         _updateStreamRPS();
         _earlyUnlock(lockId, msg.sender);
-        prohibitedEarlyWithdraw[msg.sender][lockId] = false;
     }
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {

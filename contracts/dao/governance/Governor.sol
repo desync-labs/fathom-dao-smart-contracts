@@ -246,10 +246,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         _pause();
     }
 
-    function unpause() public onlyMultiSig {
-        _unpause();
-    }
-
     function getProposals(uint256 _numIndexes)
         public
         view

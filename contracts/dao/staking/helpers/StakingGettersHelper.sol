@@ -12,11 +12,16 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
     uint256 internal constant ONE_YEAR = 31536000;
     uint256 internal constant WEEK = 604800;
-
+    uint256 public constant WEIGHT_SLOT = 14;
     constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
+
+    function getStreamSchedule(uint256 streamId) external view override
+        returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards){
+
+        }
 
     function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
         LockedBalance[] memory locks = _getAllLocks(account);

@@ -10,10 +10,6 @@ interface IVMainToken {
 
     function initToken(address _admin, address _minter) external;
 
-    function addToWhitelist(address _toAdd) external;
-
-    function removeFromWhitelist(address _toRemove) external;
-
     function pause() external;
 
     function unpause() external;

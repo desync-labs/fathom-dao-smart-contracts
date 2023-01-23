@@ -27,4 +27,6 @@ interface IVault {
     function isSupportedToken(address token) external view returns (bool);
 
     function migrated() external view returns (bool);
+
+    function withdrawExtraTokens(address _token, address _withdrawTo) external;
 }

@@ -27,7 +27,6 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         require(lock.amountOfToken != 0, "No Stake");
         uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) * lock.positionStreamShares) /
             RPS_MULTIPLIER;
-
         if (reward == 0) return; // All rewards claimed or stream schedule didn't start
         userAccount.pendings[streamId] += reward;
         streamTotalUserPendings[streamId] += reward;
@@ -65,7 +64,6 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
                 }
             }
         }
-
         touchedAt = block.timestamp;
     }
 

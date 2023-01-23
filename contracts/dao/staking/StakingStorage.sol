@@ -42,6 +42,7 @@ contract StakingStorage {
     address public vault;
     address public rewardsCalculator;
     bool public councilsInitialized;
+    bool public mainStreamInitialized;
 
     ///Weighting coefficient for shares and penalties
     Weight internal weight;

@@ -97,12 +97,26 @@ contract MainTokenGovernor is
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relay(
+    function relayERC20(
+        address target,
+        bytes calldata data
+    ) external payable virtual onlyGovernance {
+        require(isSupportedToken[target], "relay: token not supported");
+        (bool success, bytes memory returndata) = target.call(data);
+        Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
+    }
+
+        /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relayNativeToken(
         address target,
         uint256 value,
         bytes calldata data
     ) external payable virtual onlyGovernance {
-        require(isSupportedToken[target], "relay: token not supported");
         (bool success, bytes memory returndata) = target.call{ value: value }(data);
         Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
     }
