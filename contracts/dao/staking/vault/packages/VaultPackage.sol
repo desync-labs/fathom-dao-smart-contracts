@@ -57,7 +57,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "deposit: No role");
         require(isSupportedToken[_token], "Unsupported token");
         deposited[_token] += _amount;
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeTransferFrom(_user, address(this), _amount);
     }
 
     /// @notice adds token as a supproted rewards token by Vault

@@ -6,7 +6,7 @@ pragma solidity 0.8.13;
 import "../StakingStructs.sol";
 
 interface IStakingGetter {
-    function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
+    // function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
 
     // function getStream(uint256 streamId)
     //     external
@@ -30,11 +30,14 @@ interface IStakingGetter {
         uint256 lockId
     ) external view returns (uint256);
 
-    function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
+    function readBySlot(uint256 slot) external view returns(bytes32);
+    function getAddressToList(uint256 slot,uint256 index, address account) external view  returns(bytes memory value);
+
+//  function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
 
     //  function getStreamsCount() external view returns (uint256);
 
     //  function getLatestRewardsPerShare(uint256 streamId) external view returns (uint256);
 
-    function getWeight() external view returns (Weight memory);
+    // function getWeight() external view returns (Weight memory);
 }

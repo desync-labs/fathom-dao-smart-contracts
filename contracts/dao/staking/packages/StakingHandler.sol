@@ -77,8 +77,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             })
         );
         _adminPause(0);
-        mainStreamInitialized =true;
         IVault(vault).deposit(msg.sender, mainToken, scheduleRewards[0]);
+        mainStreamInitialized =true;
+        
+        
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
         emit StreamCreated(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
     }

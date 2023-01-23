@@ -9,13 +9,6 @@ import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
 contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
-    function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
-        return users[account].pendings[streamId];
-    }
-
-    function getAllLocks(address account) external view override returns (LockedBalance[] memory) {
-        return locks[account];
-    }
 
     function getStreamClaimableAmountPerLock(
         uint256 streamId,
@@ -30,6 +23,19 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         uint256 userRpsPerLock = userAccount.rpsDuringLastClaimForLock[lockId][streamId];
         uint256 userSharesOfLock = lock.positionStreamShares;
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
+    }
+
+    function readBySlot(uint256 slot) external view override returns(bytes32 value) {
+        assembly {
+            value := sload(slot)
+        }
+    }
+
+    function getAddressToList(uint256 slot,uint256 index, address account) external view override returns(bytes memory value){
+        bytes32 location = keccak256(abi.encode(keccak256(abi.encode(account, slot))));
+        assembly {
+            value := sload(add(location,index))
+        }
     }
 
     // function getStream(uint256 streamId)
@@ -60,10 +66,4 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     //     );
     // }
 
-    function getStreamSchedule(uint256 streamId) external view override returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {
-        return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
-    }
-    function getWeight() external view override returns (Weight memory) {
-        return weight;
-    }
 }

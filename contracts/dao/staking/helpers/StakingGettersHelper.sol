@@ -13,101 +13,95 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     uint256 internal constant ONE_YEAR = 31536000;
     uint256 internal constant WEEK = 604800;
     uint256 public constant WEIGHT_SLOT = 14;
-    constructor(address _stakingContract, address admin) {
-        stakingContract = _stakingContract;
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
-    }
+    // constructor(address _stakingContract, address admin) {
+    //     stakingContract = _stakingContract;
+    //     _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    // }
 
-    function getStreamSchedule(uint256 streamId) external view override
-        returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards){
+    // function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     require(lockId <= locks.length, "out of index");
+    //     require(lockId > 0, "lockId cant be 0");
+    //     return locks[lockId - 1];
+    // }
 
-        }
+    // function getLocksLength(address account) public view override returns (uint256) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     return locks.length;
+    // }
 
-    function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        require(lockId <= locks.length, "out of index");
-        require(lockId > 0, "lockId cant be 0");
-        return locks[lockId - 1];
-    }
+    // function getLock(address account, uint256 lockId)
+    //     public
+    //     view
+    //     override
+    //     returns (
+    //         uint128,
+    //         uint128,
+    //         uint128,
+    //         uint64,
+    //         address
+    //     )
+    // {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     LockedBalance memory lock = locks[lockId - 1];
+    //     require(lockId <= locks.length, "out of index");
+    //     require(lockId > 0, "lockId cant be 0");
+    //     return (lock.amountOfToken, lock.amountOfVoteToken, lock.positionStreamShares, lock.end, lock.owner);
+    // }
 
-    function getLocksLength(address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        return locks.length;
-    }
+    // function getUserTotalDeposit(address account) public view override returns (uint256) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     if (locks.length == 0) {
+    //         return 0;
+    //     }
+    //     uint256 totalDeposit = 0;
+    //     for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
+    //         totalDeposit += locks[lockId - 1].amountOfToken;
+    //     }
+    //     return totalDeposit;
+    // }
 
-    function getLock(address account, uint256 lockId)
-        public
-        view
-        override
-        returns (
-            uint128,
-            uint128,
-            uint128,
-            uint64,
-            address
-        )
-    {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        LockedBalance memory lock = locks[lockId - 1];
-        require(lockId <= locks.length, "out of index");
-        require(lockId > 0, "lockId cant be 0");
-        return (lock.amountOfToken, lock.amountOfVoteToken, lock.positionStreamShares, lock.end, lock.owner);
-    }
+    // function getStreamClaimableAmount(uint256 streamId, address account) public view override returns (uint256) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     if (locks.length == 0) {
+    //         return 0;
+    //     }
+    //     uint256 totalRewards = 0;
+    //     for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
+    //         totalRewards += IStakingHelper(stakingContract).getStreamClaimableAmountPerLock(streamId, account, lockId);
+    //     }
+    //     return totalRewards;
+    // }
 
-    function getUserTotalDeposit(address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        if (locks.length == 0) {
-            return 0;
-        }
-        uint256 totalDeposit = 0;
-        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
-            totalDeposit += locks[lockId - 1].amountOfToken;
-        }
-        return totalDeposit;
-    }
+    // function getUserTotalVotes(address account) public view override returns (uint256) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     if (locks.length == 0) {
+    //         return 0;
+    //     }
+    //     uint256 totalVotes = 0;
+    //     for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
+    //         totalVotes += locks[lockId - 1].amountOfVoteToken;
+    //     }
+    //     return totalVotes;
+    // }
 
-    function getStreamClaimableAmount(uint256 streamId, address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        if (locks.length == 0) {
-            return 0;
-        }
-        uint256 totalRewards = 0;
-        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
-            totalRewards += IStakingHelper(stakingContract).getStreamClaimableAmountPerLock(streamId, account, lockId);
-        }
-        return totalRewards;
-    }
+    // function getFeesForEarlyUnlock(uint256 lockId, address account) public view override returns (uint256) {
+    //     LockedBalance[] memory locks = _getAllLocks(account);
+    //     require(lockId <= locks.length, "out of index");
+    //     LockedBalance memory lock = locks[lockId - 1];
+    //     require(lockId > 0, "lockId cant be 0");
+    //     require(lock.end > block.timestamp, "lock opened, no penalty");
 
-    function getUserTotalVotes(address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        if (locks.length == 0) {
-            return 0;
-        }
-        uint256 totalVotes = 0;
-        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
-            totalVotes += locks[lockId - 1].amountOfVoteToken;
-        }
-        return totalVotes;
-    }
-
-    function getFeesForEarlyUnlock(uint256 lockId, address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        require(lockId <= locks.length, "out of index");
-        LockedBalance memory lock = locks[lockId - 1];
-        require(lockId > 0, "lockId cant be 0");
-        require(lock.end > block.timestamp, "lock opened, no penalty");
-
-        uint256 amount = lock.amountOfToken;
-        uint256 lockEnd = lock.end;
-        uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
-        uint256 penalty = (weighingCoef * amount) / 100000;
-        return penalty;
-    }
+    //     uint256 amount = lock.amountOfToken;
+    //     uint256 lockEnd = lock.end;
+    //     uint256 weighingCoef = _weightedPenalty(lockEnd, block.timestamp);
+    //     uint256 penalty = (weighingCoef * amount) / 100000;
+    //     return penalty;
+    // }
 
     function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
-        LockedBalance[] memory locks = IStakingHelper(stakingContract).getAllLocks(account);
-        return locks;
-    }
+         
+     }
 
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
@@ -124,7 +118,33 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
             maxLockPeriod);
     }
 
-    function _getWeight() internal view returns (Weight memory) {
-        return IStakingHelper(stakingContract).getWeight();
+    function _getWeight() internal view returns (Weight memory returnWeight) {
+        bytes32 weight = IStakingHelper(stakingContract).readBySlot(WEIGHT_SLOT);
+        uint32 penaltyWeightMultiplier;
+        uint32 minWeightPenalty;
+        uint32 maxWeightPenalty;
+        uint32 minWeightShares;
+        uint32 maxWeightShares;
+        assembly {
+            let value := weight
+            let shifted := shr(96,value)
+            penaltyWeightMultiplier := and(0xffff, shifted)
+            shifted := shr(128,value)
+            minWeightPenalty := and(0xffff, shifted)
+            shifted := shr(160,value)
+            maxWeightPenalty := and(0xffff, shifted)
+            shifted := shr(192,value)
+            minWeightShares := and(0xffff, shifted)
+            shifted := shr(224,value)
+            maxWeightShares := and(0xffff, shifted)
+        }
+
+        return Weight(
+            minWeightPenalty,
+            maxWeightPenalty,
+            minWeightShares,
+            maxWeightShares,
+            penaltyWeightMultiplier
+        );
     }
 }
