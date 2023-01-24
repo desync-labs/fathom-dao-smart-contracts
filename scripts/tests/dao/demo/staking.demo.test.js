@@ -405,7 +405,7 @@ describe("Staking Test and Upgrade Test", () => {
 
         it("Should not unlock locked position before the end of the lock position's lock period - staker_1", async() => {
             
-            const errorMessage = "lock not open";
+            const errorMessage = "lock close";
 
             await shouldRevert(
                 stakingService.unlock(1, {from: staker_1}),

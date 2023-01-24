@@ -50,14 +50,13 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     }
 
     function deposit(
-        address _user,
         address _token,
         uint256 _amount
     ) external override pausable(1) {
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "deposit: No role");
         require(isSupportedToken[_token], "Unsupported token");
         deposited[_token] += _amount;
-        IERC20(_token).safeTransferFrom(_user, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /// @notice adds token as a supproted rewards token by Vault
@@ -101,7 +100,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
             address token = listOfSupportedTokens[i];
             deposited[token] = 0;
             IERC20(token).safeApprove(newVaultPackage, deposited[token]);
-            IVault(newVaultPackage).deposit(address(this),listOfSupportedTokens[i], deposited[token]);
+            IVault(newVaultPackage).deposit(listOfSupportedTokens[i], deposited[token]);
         }
         migrated = true;
     }

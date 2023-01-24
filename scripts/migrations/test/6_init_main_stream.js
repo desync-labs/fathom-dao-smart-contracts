@@ -82,7 +82,7 @@ module.exports = async function(deployer) {
     let resultApprove = await multiSigWallet.submitTransaction(
         MainToken.address,
         EMPTY_BYTES,
-        _encodeApproveFunction(VaultProxy.address,scheduleRewards[0]),
+        _encodeApproveFunction(StakingProxy.address,scheduleRewards[0]),
         0,
         {gas: 8000000}
     )

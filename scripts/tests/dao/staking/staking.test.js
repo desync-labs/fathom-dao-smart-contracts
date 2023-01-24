@@ -347,7 +347,7 @@ describe("Staking Test", () => {
         expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
             // So that staker 1 can actually stake the token:
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
             const beforeFTHMBalance = await FTHMToken.balanceOf(staker_1);
 
             await blockchain.increaseTime(20);
@@ -416,9 +416,9 @@ describe("Staking Test", () => {
             
             const sumToDepositForAll = web3.utils.toWei('100', 'ether');
 
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2})
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_3})
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_4})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_3})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_4})
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             
@@ -441,7 +441,7 @@ describe("Staking Test", () => {
 
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
             
-            const errorMessage = "lock not open";
+            const errorMessage = "lock close";
 
             await shouldRevert(
                 stakingService.unlock(1, {from: staker_1}),
@@ -648,7 +648,7 @@ describe("Staking Test", () => {
         it("Should Create a Stream", async() => {
             // Once createStream is called, the proposal will become live once start time is reached
             const RewardProposalAmountForAStream = web3.utils.toWei('800', 'ether');
-            await streamReward1.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
+            await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(1,RewardProposalAmountForAStream, {from: stream_rewarder_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
@@ -716,7 +716,7 @@ describe("Staking Test", () => {
 
         it("Should Create a Stream - 2", async() => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward2.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
+            await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(2,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
 
@@ -1129,7 +1129,7 @@ describe("Staking Test", () => {
             
             const sumToApprove = web3.utils.toWei('20000','ether');
 
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: accounts[9]})  
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
             const lockingPeriod = 365 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
 

@@ -9,7 +9,7 @@ interface IStakingEvents {
     event StreamProposed(uint256 indexed streamId, address indexed streamOwner, address indexed rewardToken, uint256 maxDepositAmount);
     event Released(uint256 indexed streamId, address indexed user, uint256 pendingAmount);
     event StreamProposalCancelled(uint256 indexed streamId, address indexed owner, address indexed token);
-    event StreamCreated(uint256 indexed streamId, address indexed owner, address indexed token, uint256 tokenAmount);
+    event StreamCreated(uint256 indexed streamId, address indexed owner, address indexed token, uint256[] scheduleRewards, uint256[] scheduleTimes);
     event StreamRemoved(uint256 indexed streamId, address indexed owner, address indexed token);
     event Unstaked(address indexed account, uint256 amount, uint256 indexed lockId);
     event PartialUnstaked(address indexed account, uint256 amount, uint256 indexed lockId);

@@ -5,7 +5,6 @@ interface IVault {
     function initVault(address _admin, address[] calldata supportedTokens) external;
 
     function deposit(
-        address _user,
         address _token,
         uint256 _amount
     ) external;

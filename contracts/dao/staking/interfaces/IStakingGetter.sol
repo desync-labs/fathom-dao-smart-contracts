@@ -23,17 +23,14 @@ interface IStakingGetter {
     //     );
 
     function getAllLocks(address account) external view returns (LockedBalance[] memory);
-
+    function getUsersPendingRewards(address account, uint256 streamId) external view returns (uint256);
     function getStreamClaimableAmountPerLock(
-        uint256 streamId,
-        address account,
-        uint256 lockId
-    ) external view returns (uint256);
-
+          uint256 streamId,
+          address account,
+          uint256 lockId
+      ) external view returns (uint256);
     function readBySlot(uint256 slot) external view returns(bytes32);
-    function getAddressToList(uint256 slot,uint256 index, address account) external view  returns(bytes memory value);
-
-//  function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
+  //function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
 
     //  function getStreamsCount() external view returns (uint256);
 
