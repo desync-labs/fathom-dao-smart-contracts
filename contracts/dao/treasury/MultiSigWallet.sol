@@ -34,6 +34,7 @@ contract MultiSigWallet is IMultiSigWallet {
     mapping(address => bytes32) internal whitelistedBytesCode;
 
     Transaction[] public transactions;
+    mapping(address => uint256[]) confirmedTransactions;
 
     modifier onlyOwnerOrGov() {
         require(isOwner[msg.sender] || governor == msg.sender, "MultiSig: MultiSigWallet, onlyOwnerOrGov(): Neither owner nor governor");
@@ -91,9 +92,7 @@ contract MultiSigWallet is IMultiSigWallet {
     ) {
         require(_expireTimestamp >= block.timestamp || _expireTimestamp == 0, "already expired");
 
-        if (_to.isContract()) {
-            require(_data.length > 0, "no calldata for contract call");
-        } else {
+        if (!_to.isContract()) {
             require(_data.length == 0 && _value > 0, "calldata for EOA call or 0 value");
         }
 
@@ -141,8 +140,16 @@ contract MultiSigWallet is IMultiSigWallet {
 
         if (numConfirmationsRequired > owners.length) changeRequirement(owners.length);
 
-        lastDisabledTransactionIndex = getTransactionCount();
-
+        uint256 nConfirmedTxnByOwner = confirmedTransactions[owner].length;
+        if(nConfirmedTxnByOwner > 0){
+            for(uint i = 0; i < nConfirmedTxnByOwner; i++){
+                uint256 _txIndex = confirmedTransactions[owner][i];
+                Transaction storage transaction = transactions[_txIndex];
+                transaction.numConfirmations -= 1;
+                isConfirmed[_txIndex][owner] = false;
+                emit RevokeConfirmation(owner, _txIndex);
+            }
+        }
         emit OwnerRemoval(owner);
     }
 
@@ -174,19 +181,21 @@ contract MultiSigWallet is IMultiSigWallet {
         address _to,
         uint256 _value,
         bytes memory _data,
-        uint256 _expireTimestamp
-    ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _expireTimestamp) {
+        uint256 _lifetime
+    ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _lifetime) {
         require(address(this).balance >= _value, "submitTransaction: not enough balance");
-        if (!_to.isContract()) {
-            require(_value != 0, "submitTransaction: value is zero");
-            require(_data.length > 0, "submitTransaction: not equal");
-        }
         uint256 txIndex = transactions.length;
 
         transactions.push(
-            Transaction({ to: _to, value: _value, data: _data, executed: false, numConfirmations: 0, expireTimestamp: _expireTimestamp })
+            Transaction({ 
+                to: _to, 
+                value: _value, 
+                data: _data, 
+                executed: false, 
+                numConfirmations: 0, 
+                expireTimestamp: _lifetime == 0 ? 0  : block.timestamp + _lifetime })
         );
-
+        
         whitelistedBytesCode[_to] = _to.getExtCodeHash();
 
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
@@ -208,6 +217,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.numConfirmations += 1;
         isConfirmed[_txIndex][msg.sender] = true;
+        confirmedTransactions[msg.sender].push(_txIndex);
 
         emit ConfirmTransaction(msg.sender, _txIndex);
     }
@@ -230,13 +240,8 @@ contract MultiSigWallet is IMultiSigWallet {
         transaction.executed = true;
 
         (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
-        if (success) {
-            emit ExecuteTransaction(msg.sender, _txIndex);
-        } else {
-            revert TransactionRevered(data);
-        }
-
-        emit ExecuteTransaction(msg.sender, _txIndex);
+        
+        emit ExecuteTransaction(msg.sender, _txIndex,success, data);
     }
 
     function revokeConfirmation(uint256 _txIndex)

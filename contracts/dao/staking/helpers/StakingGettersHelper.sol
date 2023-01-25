@@ -10,8 +10,6 @@ import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
-    uint256 internal constant ONE_YEAR = 31536000;
-    uint256 internal constant WEEK = 604800;
     uint256 public constant WEIGHT_SLOT = 14;
     constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
@@ -28,6 +26,9 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     function getLocksLength(address account) public view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         return locks.length;
+    }
+    function getWeight() public view override returns (Weight memory) {
+        return _getWeight();
     }
 
     function getLock(address account, uint256 lockId)
@@ -99,10 +100,12 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return penalty;
     }
 
+    
     function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
         return IStakingHelper(stakingContract).getAllLocks(account);
     }
 
+    
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
         uint256 maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
@@ -117,7 +120,6 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
             (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
             maxLockPeriod);
     }
-
     function _getWeight() internal view returns (Weight memory) {
         bytes32 weight = IStakingHelper(stakingContract).readBySlot(WEIGHT_SLOT);
         uint32 penaltyWeightMultiplier;
@@ -127,15 +129,19 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         uint32 maxWeightShares;
         assembly {
             let value := weight
-            maxWeightShares := and(0xffff, value)
+            maxWeightShares := and(0xffffffff, value)
+            //shift right by 32 and do and by 32 bytes to get the value
             let shifted_2 := shr(32,value)
-            minWeightShares := and(0xffff, shifted_2)
+            minWeightShares := and(0xffffffff, shifted_2)
+            //shift right by 64 and do and by 32 bytes to get the value
             let shifted_3 := shr(64,value)
-            maxWeightPenalty := and(0xffff, shifted_3)
+            maxWeightPenalty := and(0xffffffff, shifted_3)
+            //shift right by 96 and do and by 32 bytes to get the value
             let shifted_4 := shr(96,value)
-            minWeightPenalty := and(0xffff, shifted_4)
+            minWeightPenalty := and(0xffffffff, shifted_4)
+            //shift right by 128 and do and by 32 bytes to get the value
             let shifted_5 := shr(128,value)
-            penaltyWeightMultiplier := and(0xffff, shifted_5)
+            penaltyWeightMultiplier := and(0xffffffff, shifted_5)
         }
 
         return Weight(

@@ -5,14 +5,13 @@
 pragma solidity 0.8.13;
 
 import "./RewardsInternals.sol";
-import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../tokens/ERC20/IERC20.sol";
 import "../../tokens/IVMainToken.sol";
 import "../../../common/math/BoringMath.sol";
 
-contract StakingInternals is StakingStorage, RewardsInternals {
+contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
     function _initializeStaking(
         address _mainToken,
@@ -102,7 +101,7 @@ contract StakingInternals is StakingStorage, RewardsInternals {
         userAccount.voteTokenBalance = BoringMath.to128(remainingVoteTokenBalance);
         _unstake(amount, stakeValue, lockId, account);
         // This is for dust mitigation, so that even if the
-        // user does not hae enough voteToken, it is still able to burn and unlock
+        // user does not have enough voteToken, it is still able to burn and unlock
         // takes a bit of gas
         uint256 balance = IERC20(voteToken).balanceOf(account);
         if (balance < nVoteToken) {

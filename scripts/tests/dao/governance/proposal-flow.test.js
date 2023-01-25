@@ -212,7 +212,7 @@ describe('Proposal flow', () => {
         const _stakeMainGetVe = async (_account) => {
 
             await _transferFromMultiSigTreasury(_account);
-            await FTHMToken.approve(vaultService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -338,25 +338,7 @@ describe('Proposal flow', () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("4");
         });
 
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [box.address],
-                [0],
-                [encoded_function],
-                description_hash,
-                {"from": accounts[0]}
-            );            
-        });
+        
 
         
         it('Create multiSig transaction to confirm proposal 1', async() => {
@@ -380,7 +362,27 @@ describe('Proposal flow', () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+        });
 
+        it('Queue the proposal', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [box.address],
+                [0],
+                [encoded_function],
+                description_hash,
+                {"from": accounts[0]}
+            );  
+            
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
@@ -438,7 +440,7 @@ describe('Proposal flow', () => {
         const _stakeMainGetVe = async (_account) => {
             
             await _transferFromMultiSigTreasury(_account);
-            await FTHMToken.approve(vaultService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -543,15 +545,7 @@ describe('Proposal flow', () => {
             );            
         });
 
-        it('Queue the second proposal', async() => {
-            await mainTokenGovernor.queue(      
-                [multiSigWallet.address],
-                [0],
-                [encoded_treasury_function],
-                description_hash_2,
-                {"from": accounts[0]}
-            );
-        });
+        
 
         it('Create multiSig transaction to confirm proposal 1', async() => {
             encodedConfirmation1 = _encodeConfirmation(proposalId2);
@@ -574,7 +568,17 @@ describe('Proposal flow', () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
+        });
 
+        it('Queue the second proposal', async() => {
+            await mainTokenGovernor.queue(      
+                [multiSigWallet.address],
+                [0],
+                [encoded_treasury_function],
+                description_hash_2,
+                {"from": accounts[0]}
+            );
+            
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
@@ -585,6 +589,7 @@ describe('Proposal flow', () => {
                 nextBlock++;              
             }
             expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
+            
         });
 
         it('Wait 40 blocks and then check that the proposal status is: Queued', async() => {
@@ -712,25 +717,7 @@ describe('Proposal flow', () => {
             expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("4");
         });
 
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [mainTokenGovernor.address],
-                [0],
-                [encoded_function_add_supporting_token],
-                description_hash,
-                {"from": accounts[0]}
-            );            
-        });
+        
 
         
         it('Create multiSig transaction to confirm proposal for adding supported tokens', async() => {
@@ -754,10 +741,30 @@ describe('Proposal flow', () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+        });
 
+        it('Queue the proposal', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_add_supporting_token],
+                description_hash,
+                {"from": accounts[0]}
+            );  
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
+            
             
             var nextBlock = 1;
             while (nextBlock <= 40) {   
@@ -859,25 +866,7 @@ describe('Proposal flow', () => {
             expect((await mainTokenGovernor.state(proposalIdForRelayFunction)).toString()).to.equal("4");
         });
 
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [mainTokenGovernor.address],
-                [0],
-                [encoded_function_relay],
-                description_hash,
-                {"from": accounts[0]}
-            );            
-        });
+        
 
         
         it('Create multiSig transaction to confirm proposal for relaying supported tokens', async() => {
@@ -901,17 +890,36 @@ describe('Proposal flow', () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+        });
 
+        it('Queue the proposal', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_relay],
+                description_hash,
+                {"from": accounts[0]}
+            );  
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
             
+            const timestamp = block.timestamp;
             var nextBlock = 1;
             while (nextBlock <= 40) {   
                 await blockchain.mineBlock(timestamp + nextBlock); 
                 nextBlock++;              
             }
-            expect((await mainTokenGovernor.state(proposalIdForRelayFunction)).toString()).to.equal("5");
+            expect((await mainTokenGovernor.state(proposalIdForRelayFunction)).toString()).to.equal("5");         
         });
 
         it('Execute the proposal', async() => {

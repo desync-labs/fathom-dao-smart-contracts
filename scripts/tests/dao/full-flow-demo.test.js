@@ -419,7 +419,7 @@ describe("DAO Demo", () => {
         let expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
 
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
             
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
@@ -456,7 +456,7 @@ describe("DAO Demo", () => {
         })
 
         it('Should create 2 lock positions with lockId = 1 and lockId = 2 for staker_2', async() => {
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2});
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2});
             
             await blockchain.increaseTime(20);
             let lockingPeriod = 365 * 24 * 60 * 60;
@@ -531,7 +531,7 @@ describe("DAO Demo", () => {
         it("Should Create a stream, stream - 1", async() => {
             const streamId = 1
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward1.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1});
+            await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1});
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_1});
         });
 
@@ -650,25 +650,7 @@ describe("DAO Demo", () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("4");
         });
 
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [box.address],
-                [0],
-                [encoded_function],
-                description_hash,
-                {"from": accounts[0]}
-            );            
-        });
+        
 
 
         it('Create multiSig transaction to confirm proposal 1', async() => {
@@ -692,7 +674,27 @@ describe("DAO Demo", () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+        });
 
+        it('Queue the proposal', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [box.address],
+                [0],
+                [encoded_function],
+                description_hash,
+                {"from": accounts[0]}
+            );     
+            
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
@@ -877,15 +879,6 @@ describe("DAO Demo", () => {
         });
 
 
-        it('Queue the second proposal', async() => {
-            await mainTokenGovernor.queue(      
-                [multiSigWallet.address],
-                [0],
-                [encoded_treasury_function],
-                description_hash_2,
-                {"from": accounts[0]}
-            );
-        });
 
         it('Create multiSig transaction to confirm proposal 1', async() => {
             encodedConfirmation2 = _encodeConfirmation(proposalId2);
@@ -908,7 +901,16 @@ describe("DAO Demo", () => {
         
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex2, {"from": accounts[0]});
+        });
 
+        it('Queue the second proposal', async() => {
+            await mainTokenGovernor.queue(      
+                [multiSigWallet.address],
+                [0],
+                [encoded_treasury_function],
+                description_hash_2,
+                {"from": accounts[0]}
+            );
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
@@ -919,8 +921,8 @@ describe("DAO Demo", () => {
                 nextBlock++;              
             }
             expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
+            
         });
-
 
         it('Execute the second proposal', async() => {
             result = await mainTokenGovernor.execute(      
@@ -964,7 +966,7 @@ describe("DAO Demo", () => {
             result = await multiSigWallet.submitTransaction(
                 FTHMToken.address,
                 EMPTY_BYTES, 
-                _encodeStakeApproveFunction(approveAmount, vaultService.address),
+                _encodeStakeApproveFunction(approveAmount, stakingService.address),
                 0,
                 {"from": accounts[0]}
             );

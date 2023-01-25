@@ -28,6 +28,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     event MultiSigUpdated(address newMultiSig, address oldMultiSig);
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
+    event ExecuteTransaction(address indexed owner, bool success, bytes data);
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
@@ -37,6 +38,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     uint256[] private proposalIds;
 
     address private multiSig;
+    uint256 public proposalLifetime;
 
     mapping(uint256 => ProposalCore) internal _proposals;
     mapping(uint256 => string) internal _descriptions;
@@ -44,7 +46,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     mapping(address => uint256) public nextAcceptableProposalTimestamp;
 
     DoubleEndedQueue.Bytes32Deque private _governanceCall;
-
+    uint256 public constant MINIMUM_LIFETIME = 86400;//oneDay
+    
     modifier onlyGovernance() {
         require(_msgSender() == _executor(), "Governor: onlyGovernance");
         if (_executor() != address(this)) {
@@ -74,15 +77,19 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         string memory name_,
         address multiSig_,
         uint256 maxTargets_,
-        uint256 proposalTimeDelay_
+        uint256 proposalTimeDelay_,
+        uint256 proposalLifetime_
     ) EIP712(name_, version()) {
         require(multiSig_ != address(0), "multiSig address cant be zero address");
         require(maxTargets_ != 0, "maxTarget cant be zero");
         require(proposalTimeDelay_ != 0, "proposalTimeDelay cant be zero");
+        require(proposalLifetime_ >= MINIMUM_LIFETIME,"lifetime less than minimum");
         _name = name_;
         multiSig = multiSig_;
         maxTargets = maxTargets_;
         proposalTimeDelay = proposalTimeDelay_;
+        //TODO Updateable
+        proposalLifetime = proposalLifetime_;
     }
 
     receive() external payable virtual {
@@ -96,6 +103,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         bytes32 descriptionHash
     ) public payable virtual override whenNotPaused returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
+        requireNotExpired(proposalId);
         requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
@@ -200,6 +208,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
 
         proposal.voteStart.setDeadline(snapshot);
         proposal.voteEnd.setDeadline(deadline);
+        proposal.expireTimestamp = block.timestamp + proposalLifetime;
         _descriptions[proposalId] = description;
 
         proposalIds.push(proposalId);
@@ -210,6 +219,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     }
 
     function confirmProposal(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) notConfirmed(_proposalId) {
+        requireNotExpired(_proposalId);
         isConfirmed[_proposalId] = true;
         ProposalState status = state(_proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
@@ -240,6 +250,12 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         require(newProposalTimeDelay != 0, "updateProposalTimeDelay: newProposalTimeDelay cant be zero");
         emit ProposalTimeDelayUpdated(newProposalTimeDelay, proposalTimeDelay);
         proposalTimeDelay = newProposalTimeDelay;
+    }
+
+    function updateProposalLifetime(uint256 newProposalLifetime) public onlyMultiSig {
+        require(newProposalLifetime>= MINIMUM_LIFETIME, "updateProposalLifetime: updateProposalLifetime less than minimum");
+        emit ProposalTimeDelayUpdated(newProposalLifetime, newProposalLifetime);
+        proposalLifetime = newProposalLifetime;
     }
 
     function emergencyStop() public onlyMultiSig {
@@ -420,10 +436,9 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         bytes[] memory calldatas,
         bytes32 /*descriptionHash*/
     ) internal virtual {
-        string memory errorMessage = "Governor: call reverted without message";
         for (uint256 i = 0; i < targets.length; ++i) {
             (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(calldatas[i]);
-            Address.verifyCallResult(success, returndata, errorMessage);
+            emit ExecuteTransaction(msg.sender,success, returndata);
         }
     }
 
@@ -570,6 +585,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
 
     function requireConfirmed(uint256 _proposalId) internal view {
         require(isConfirmed[_proposalId], "proposal not confirmed");
+    }
+
+    function requireNotExpired(uint256 _proposalId) internal view {
+        require(_proposals[_proposalId].expireTimestamp >= block.timestamp,"proposal expired");
     }
 
     function _executor() internal view virtual returns (address) {

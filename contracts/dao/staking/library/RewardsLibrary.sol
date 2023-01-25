@@ -18,7 +18,6 @@ library RewardsLibrary {
     ) public view {
         require(streamOwner != address(0), "bad owner");
         require(rewardToken != address(0), "bad reward token");
-        require(maxDepositAmount > 0, "No Max Deposit");
         require(minDepositAmount > 0, "No Min Deposit");
         require(minDepositAmount <= maxDepositAmount, "bad Min Deposit");
         require(maxDepositAmount == scheduleRewards[0], "Invalid Max Deposit");

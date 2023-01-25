@@ -307,7 +307,7 @@ describe("Staking Test and Upgrade Test", () => {
         expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
             // So that staker 1 can actually stake the token:
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
             const beforeFTHMBalance = await FTHMToken.balanceOf(staker_1);
 
             await blockchain.increaseTime(20);
@@ -385,8 +385,8 @@ describe("Staking Test and Upgrade Test", () => {
             
             const sumToDepositForAll = web3.utils.toWei('0.11', 'ether');
 
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_2})
-            await FTHMToken.approve(vaultService.address, sumToApprove, {from: staker_3})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_2})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_3})
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             console.log(".........Creating a Lock Position for staker 2 and Staker 3.......");
@@ -590,7 +590,7 @@ describe("Staking Test and Upgrade Test", () => {
             console.log(".........Creating the stream proposed.........")
             console.log("Once create stream is called, the proposal will become live once start time is reached")
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward2.approve(vaultService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
+            await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
 

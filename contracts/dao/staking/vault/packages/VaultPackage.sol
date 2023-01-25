@@ -12,7 +12,6 @@ import "../../../../common/SafeERC20.sol";
 // solhint-disable not-rely-on-time
 contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     using SafeERC20 for IERC20;
-    bool private vaultInitialized;
     bytes32 public constant REWARDS_OPERATOR_ROLE = keccak256("REWARDS_OPERATOR_ROLE");
     mapping(address => uint256) public deposited;
     mapping(address => bool) public override isSupportedToken;
@@ -24,8 +23,6 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     }
 
     function initVault(address _admin, address[] calldata supportedTokens) external override initializer {
-        require(!vaultInitialized, "Vault: Already Initialized");
-        vaultInitialized = true;
         for (uint256 i = 0; i < supportedTokens.length; i++) {
             _addSupportedToken(supportedTokens[i]);
         }
@@ -85,7 +82,6 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         }else{
             balanceToWithdraw = balanceInContract;
         }
-
         if(balanceToWithdraw > 0){
             IERC20(_token).transfer(_withdrawTo, balanceToWithdraw);
         }

@@ -31,7 +31,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes32 descriptionHash
     ) public virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-
+        require(isConfirmed[proposalId], "queue: not confirmed by multisig");
         require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not successful");
 
         uint256 delay = _timelock.getMinDelay();

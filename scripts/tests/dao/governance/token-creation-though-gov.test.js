@@ -167,7 +167,7 @@ describe('Token Creation Through Governance', () => {
         const _stakeMainGetVe = async (_account) => {
 
             await _transferFromMultiSigTreasury(_account);
-            await FTHMToken.approve(vaultService.address, T_TO_STAKE, {from: _account});
+            await FTHMToken.approve(stakingService.address, T_TO_STAKE, {from: _account});
             await blockchain.increaseTime(20);
 
             let unlockTime = lockingPeriod;
@@ -293,25 +293,7 @@ describe('Token Creation Through Governance', () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("4");
         });
 
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [erc20Factory.address],
-                [0],
-                [encoded_factory_function],
-                description_hash,
-                {"from": accounts[0]}
-            );            
-        });
+        
 
         
         it('Create multiSig transaction to confirm proposal 1', async() => {
@@ -335,6 +317,28 @@ describe('Token Creation Through Governance', () => {
         it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
 
+            
+            
+        });
+
+        it('Queue the proposal', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [erc20Factory.address],
+                [0],
+                [encoded_factory_function],
+                description_hash,
+                {"from": accounts[0]}
+            );            
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;

@@ -22,7 +22,6 @@ contract MainTokenGovernor is
 {
     using SafeERC20 for IERC20;
     mapping(address => bool) public isSupportedToken;
-    uint256 public constant EIGHT_HOURS = 28800;
 
     constructor(
         IVotes _token,
@@ -30,9 +29,11 @@ contract MainTokenGovernor is
         address _multiSig,
         uint256 _initialVotingDelay,
         uint256 _votingPeriod,
-        uint256 _initialProposalThreshold
+        uint256 _initialProposalThreshold,
+        uint256 _proposalTimeDelay,
+        uint256 _proposalLifetime
     )
-        Governor("MainTokenGovernor", _multiSig, 20, EIGHT_HOURS)
+        Governor("MainTokenGovernor", _multiSig, 20, _proposalTimeDelay,_proposalLifetime)
         GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
@@ -101,9 +102,9 @@ contract MainTokenGovernor is
         address target,
         bytes calldata data
     ) external payable virtual onlyGovernance {
-        require(isSupportedToken[target], "relay: token not supported");
+        require(isSupportedToken[target], "relayERC20: token not supported");
         (bool success, bytes memory returndata) = target.call(data);
-        Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
+        Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
     }
 
         /**
@@ -112,13 +113,13 @@ contract MainTokenGovernor is
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relayNativeToken(
+    function relayETH(
         address target,
         uint256 value,
         bytes calldata data
     ) external payable virtual onlyGovernance {
         (bool success, bytes memory returndata) = target.call{ value: value }(data);
-        Address.verifyCallResult(success, returndata, "Governor: relay reverted without message");
+        Address.verifyCallResult(success, returndata, "Governor: relayETH reverted without message");
     }
 
     function _execute(

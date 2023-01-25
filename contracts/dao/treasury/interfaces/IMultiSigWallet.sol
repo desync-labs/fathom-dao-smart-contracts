@@ -8,7 +8,7 @@ interface IMultiSigWallet {
     event SubmitTransaction(uint256 indexed txIndex, address indexed owner, address indexed to, uint256 value, bytes data);
     event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
     event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
-    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
+    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex, bool success,bytes data);
     event OwnerRemoval(address indexed owner);
     event OwnerAddition(address indexed owner);
     event RequirementChange(uint256 required);

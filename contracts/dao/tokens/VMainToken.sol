@@ -13,7 +13,6 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
-    bool private initialized;
     // Mapping to keep track of who is allowed to transfer voting tokens
     mapping(address => bool) public isWhiteListed;
 

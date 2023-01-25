@@ -33,6 +33,8 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
 
+    event ExecuteTransaction(address indexed owner, bool success, bytes data);
+
     /**
      * @dev Modifier to make a function callable only by a certain role. In
      * addition to checking the sender's role, `address(0)` 's role is also
@@ -149,16 +151,22 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         require(targets.length == payloads.length, "TimelockController: length mismatch");
 
         bytes32 id = hashOperationBatch(targets, values, payloads, predecessor, salt);
-
+        uint256 totalValue;
         _beforeCall(id, predecessor);
         for (uint256 i = 0; i < targets.length; ++i) {
             address target = targets[i];
             uint256 value = values[i];
+            totalValue += value;
             bytes memory payload = payloads[i];
             _execute(target, value, payload);
             emit CallExecuted(id, i, target, value, payload);
         }
         _afterCall(id);
+        require(msg.value >= totalValue,"executeBatch: msg.value insufficient sent");
+        if(msg.value > totalValue){
+            (bool sent, ) = msg.sender.call{ value: (msg.value - totalValue) }("");
+            require(sent, "Failed to send ether");
+        }
     }
 
     function updateDelay(uint256 newDelay) public virtual {
@@ -217,13 +225,23 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         return keccak256(abi.encode(targets, values, payloads, predecessor, salt));
     }
 
+    function grantRoleByAdmin(bytes32 role, address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(role, account);
+    }
+
+    function revokeRoleByAdmin(bytes32 role, address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(role, account);
+    }
+
+    
+
     function _execute(
         address target,
         uint256 value,
         bytes memory data
     ) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
-        require(success, "TimelockController: underlying transaction reverted");
+        emit ExecuteTransaction(msg.sender,success, data);
     }
 
     function _afterCall(bytes32 id) private {

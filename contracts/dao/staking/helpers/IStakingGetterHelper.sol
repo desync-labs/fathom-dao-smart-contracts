@@ -31,4 +31,5 @@ interface IStakingGetterHelper {
     function getFeesForEarlyUnlock(uint256 lockId, address account) external view returns (uint256);
 
     function getLocksLength(address account) external view returns (uint256);
+    function getWeight() external view  returns (Weight memory);
 }

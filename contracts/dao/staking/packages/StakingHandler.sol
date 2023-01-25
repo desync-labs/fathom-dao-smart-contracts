@@ -76,6 +76,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
                 rps: 0
             })
         );
+        //TODO Remove:
         _adminPause(0);
         mainStreamInitialized =true;
         _transfer(scheduleRewards[0],mainToken);

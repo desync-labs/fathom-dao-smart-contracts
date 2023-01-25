@@ -11,4 +11,5 @@ struct ProposalCore {
     Timers.BlockNumber voteEnd;
     bool executed;
     bool canceled;
+    uint256 expireTimestamp;
 }

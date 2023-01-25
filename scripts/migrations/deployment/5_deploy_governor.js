@@ -9,6 +9,8 @@ const MultiSigWallet_address = MultiSigWallet.address;
 const initialVotingDelay = 1;
 const votingPeriod = 20;
 const initialProposalThreshold = 1000;
+const proposalTimeDelay = 2;
+const proposalLifetime = 86400;
 
 
 module.exports =  async function(deployer) {
@@ -21,6 +23,8 @@ module.exports =  async function(deployer) {
             initialVotingDelay,
             votingPeriod,
             initialProposalThreshold,
+            proposalTimeDelay,
+            proposalLifetime,
             { gas: 12000000 }),
     ];
 
