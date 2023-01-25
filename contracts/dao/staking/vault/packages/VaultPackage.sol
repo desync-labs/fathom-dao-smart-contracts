@@ -117,4 +117,6 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         }
         listOfSupportedTokens.pop();
     }
+
+    
 }

@@ -104,8 +104,6 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
         return IStakingHelper(stakingContract).getAllLocks(account);
     }
-
-    
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
         uint256 maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
@@ -130,18 +128,18 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         assembly {
             let value := weight
             maxWeightShares := and(0xffffffff, value)
-            //shift right by 32 and do and by 32 bytes to get the value
-            let shifted_2 := shr(32,value)
-            minWeightShares := and(0xffffffff, shifted_2)
-            //shift right by 64 and do and by 32 bytes to get the value
-            let shifted_3 := shr(64,value)
-            maxWeightPenalty := and(0xffffffff, shifted_3)
-            //shift right by 96 and do and by 32 bytes to get the value
-            let shifted_4 := shr(96,value)
-            minWeightPenalty := and(0xffffffff, shifted_4)
-            //shift right by 128 and do and by 32 bytes to get the value
-            let shifted_5 := shr(128,value)
-            penaltyWeightMultiplier := and(0xffffffff, shifted_5)
+            //shift right by 32 then, do and by 32 bytes to get the value
+            let  minWeightShares_shifted:= shr(32,value)
+            minWeightShares := and(0xffffffff, minWeightShares_shifted)
+            //shift right by 64 then, do and by 32 bytes to get the value
+            let maxWeightPenalty_shifted := shr(64,value)
+            maxWeightPenalty := and(0xffffffff, maxWeightPenalty_shifted)
+            //shift right by 96 then, do and by 32 bytes to get the value
+            let minWeightPenalty_shifted := shr(96,value)
+            minWeightPenalty := and(0xffffffff, minWeightPenalty_shifted)
+            //shift right by 128 then, do and by 32 bytes to get the value
+            let penaltyWeightMultiplier_shifted := shr(128,value)
+            penaltyWeightMultiplier := and(0xffffffff, penaltyWeightMultiplier_shifted)
         }
 
         return Weight(

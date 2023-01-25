@@ -1135,11 +1135,6 @@ describe("Staking Test", () => {
 
             const sumToDeposit = web3.utils.toWei('20000', 'ether');
             let result1 = await stakingService.createLock(sumToDeposit,unlockTime, {from: accounts[9], gas: maxGasForTxn});
-            
-            let eventArgs = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
-            const actualNVFTHM = web3.utils.toBN(eventArgs[1])
-            console.log("Are 20000 VOTE TOKENS released?: ", _convertToEtherBalance(actualNVFTHM.toString()))    
-
         })
 
         it("Should get correct user total votes from staking getter service", async() => {

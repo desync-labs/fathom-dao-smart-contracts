@@ -36,6 +36,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
         return locks[account];
     }
+    //TODO: Somehow squeeze to get status or use assembly
     // function getStream(uint256 streamId)
     //     external
     //     view

@@ -466,6 +466,8 @@ The [recommendation](https://github.com/Into-the-Fathom/fathom-dao-smart-contrac
 Despite checking that the `vault` is migrated, there is no validation that `_vault` is a compatible `VaultPackage`, which is the contract where the migration took place.
 We recommend adding new statement that `_vault` is `VaultPackage` for migration.
 
+[accept this, as Admin will be sure to do it correctly]
+
 #### [FIXED] There is no emergency suspension of the rewards payment in the `VaultPackage` contract
 ##### Description
 In the `VaultPackage` contract there is no possibility to suspend the function [`payRewards`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L31). This causes the attacker to continue taking tokens from the contract if the address with `REWARDS_OPERATOR_ROLE`, such as `StakingHandlers` contract, is compromised.

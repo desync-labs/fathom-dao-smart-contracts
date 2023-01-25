@@ -20,7 +20,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     constructor() {
         _disableInitializers();
     }
-
     /**
      * @dev initialize the contract and deploys the first stream of rewards
      * @dev initializable only once due to stakingInitialised flag
@@ -56,7 +55,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau
-    ) external override onlyRole(STREAM_MANAGER_ROLE) {
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(!mainStreamInitialized,"init done");
         _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
@@ -81,7 +80,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         mainStreamInitialized =true;
         _transfer(scheduleRewards[0],mainToken);
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
-        emit StreamCreated(streamId, _owner, mainToken, scheduleRewards,scheduleTimes);
+        emit StreamCreated(streamId, _owner, mainToken, tau, scheduleRewards,scheduleTimes);
     }
 
     /**
@@ -149,7 +148,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start");
 
-        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.schedule.time, stream.schedule.reward);
+        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.tau,stream.schedule.time, stream.schedule.reward);
         _transfer(rewardTokenAmount,stream.rewardToken);
     }
 
@@ -269,8 +268,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
         require(paused != 0, "require pause");
-        require(_vault != address(0), "zero addr");
-        require(IVault(vault).migrated(), "nt migrated");
+        require(_vault != address(0), "0 addr");
+        require(IVault(vault).migrated(), "!migrated");
         vault = _vault;
     }
 
