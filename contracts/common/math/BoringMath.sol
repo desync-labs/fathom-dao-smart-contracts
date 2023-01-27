@@ -28,9 +28,10 @@ library BoringMath {
         c = uint224(a);
     }
 
-    function to208(uint256 a) internal pure returns (uint208 c) {
-        require(a <= type(uint208).max, "BoringMath: uint128 Overflow");
-        c = uint208(a);
+    
+    function to160(uint256 a) internal pure returns (uint208 c) {
+        require(a <= type(uint160).max, "BoringMath: uint128 Overflow");
+        c = uint160(a);
     }
 
     function to128(uint256 a) internal pure returns (uint128 c) {

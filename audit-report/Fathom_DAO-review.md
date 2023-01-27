@@ -917,7 +917,7 @@ We recommend adding a check that `newProposalThreshold` is not zero.
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE: Keep an array of proposals and loop? Ask MAXJI -ASK AUDITOR]
+#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation
@@ -1005,6 +1005,26 @@ We also recommend to update `voteLockCoef` [initialization](https://github.com/I
 Done where feasible for contract size
 ###### Oxorio's response
 We recommend fixing these issues completely, if there is already a problem with the size of the contract, then the code needs to be refactored.
+
+Here: 
+ [`StakingInternals.sol#L45`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingInternals.sol#L45)
+
+ Our total Supply is 1 billion. Even if we have 100 billion total supply, the above line will not overflow as,
+
+    nVoteToken = (amount * lockPeriod * POINT_MULTIPLIER) / voteLockCoef / POINT_MULTIPLIER
+    
+    nVoteToken = 100 * 1e9(amount) * 1e9(lock period) * 1e18(Point Multiplier) / 500 (VoteLockCoef)/ 1e18 (Point Multiplier)
+               ~= appr.1 e38,
+    But since nVoteToken in appr.1e77, it will not overflow
+
+
+ - [`StakingInternals.sol#L47`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingInternals.sol#L47)
+
+ I converted uint128 to uint256 for voteTokenBalance
+
+  -[`StakingInternals.sol#L227-L230`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingInternals.sol#L227-L230)
+
+  This will not overflow as maxWeightShares, minWeightShares are always less than 1e6 at max.
 
 #### [NO_ISSUE] Multiple `streams` can be active at the same time with the same parameters in `StakingHandler.sol `
 ##### Description
@@ -1337,7 +1357,7 @@ We recommend changing it to:
 ```
 
 
-#### [NEW] Redundant check for `maxDepositAmount > 0` in `RewardsCalculator`
+#### [NEW] Redundant check for `maxDepositAmount > 0` in `RewardsCalculator`[DONE]
 
 ##### Description
 

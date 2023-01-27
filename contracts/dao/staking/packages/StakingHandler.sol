@@ -75,7 +75,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
                 rps: 0
             })
         );
-        //TODO Remove:
+        //TODO Remove and make deployment for unpause
         _adminPause(0);
         mainStreamInitialized =true;
         _transfer(scheduleRewards[0],mainToken);

@@ -10,6 +10,8 @@ import "../vault/interfaces/IVault.sol";
 import "../../tokens/ERC20/IERC20.sol";
 import "../../tokens/IVMainToken.sol";
 import "../../../common/math/BoringMath.sol";
+import "../../../common/math/FullMath.sol";
+
 
 contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
@@ -48,7 +50,7 @@ contract StakingInternals is RewardsInternals {
         User storage userAccount = users[account];
         if (lockPeriod > 0) {
             nVoteToken = (amount * lockPeriod * POINT_MULTIPLIER) / voteLockCoef / POINT_MULTIPLIER; //maxVoteTokens;
-            userAccount.voteTokenBalance += BoringMath.to128(nVoteToken);
+            userAccount.voteTokenBalance += nVoteToken;
             totalAmountOfVoteToken += nVoteToken;
         }
         LockedBalance memory _newLock = LockedBalance({
@@ -98,7 +100,7 @@ contract StakingInternals is RewardsInternals {
         if (userAccount.voteTokenBalance > nVoteToken) {
             remainingVoteTokenBalance = userAccount.voteTokenBalance - nVoteToken;
         }
-        userAccount.voteTokenBalance = BoringMath.to128(remainingVoteTokenBalance);
+        userAccount.voteTokenBalance = remainingVoteTokenBalance;
         _unstake(amount, stakeValue, lockId, account);
         // This is for dust mitigation, so that even if the
         // user does not have enough voteToken, it is still able to burn and unlock

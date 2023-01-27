@@ -88,7 +88,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         multiSig = multiSig_;
         maxTargets = maxTargets_;
         proposalTimeDelay = proposalTimeDelay_;
-        //TODO Updateable
         proposalLifetime = proposalLifetime_;
     }
 

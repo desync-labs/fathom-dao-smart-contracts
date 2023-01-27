@@ -42,8 +42,11 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(isSupportedToken[_token], "Unsupported token");
         require(_amount != 0, "amount zero");
         require(deposited[_token] >= _amount, "payRewards: not enough deposit");
-        deposited[_token] -= _amount;
+        uint256 previousBalance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_user, _amount);
+        uint256 newBalance = IERC20(_token).balanceOf(address(this));
+        uint256 trueDeposit = previousBalance - newBalance;
+        deposited[_token] -= trueDeposit;
     }
 
     function deposit(
@@ -52,11 +55,14 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     ) external override pausable(1) {
         require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "deposit: No role");
         require(isSupportedToken[_token], "Unsupported token");
-        deposited[_token] += _amount;
+        uint256 previousBalance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 newBalance = IERC20(_token).balanceOf(address(this));
+        uint256 trueDeposit = newBalance - previousBalance;
+        deposited[_token] += trueDeposit;
     }
 
-    /// @notice adds token as a supproted rewards token by Vault
+    /// @notice adds token as a supported rewards token by Vault
     /// supported tokens means any future stream token should be
     /// whitelisted here
     /// @param _token stream ERC20 token address
@@ -64,7 +70,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         _addSupportedToken(_token);
     }
 
-    /// @notice removed token as a supproted rewards token by Treasury
+    /// @notice removed token as a supported rewards token by Treasury
     /// @param _token stream ERC20 token address
     function removeSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(isSupportedToken[_token], "Token does not exist");
@@ -74,18 +80,28 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
-    function withdrawExtraTokens(address _token, address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 balanceToWithdraw;
+    function withdrawExtraSupportedTokens(address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for(uint i = 0; i < listOfSupportedTokens.length;i++){
+            uint256 balanceToWithdraw;
+            address _token = listOfSupportedTokens[i];
+            uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
+            if(balanceInContract > deposited[_token]){
+                balanceToWithdraw =  balanceInContract - deposited[_token];
+            }
+            if(balanceToWithdraw > 0){
+                IERC20(_token).transfer(_withdrawTo, balanceToWithdraw);
+            }  
+        }  
+    }
+
+    function withdrawExtraUnsupportedToken(address _token,address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!isSupportedToken[_token],"token is supported");
         uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
-        if(isSupportedToken[_token] && balanceInContract > deposited[_token]){
-            balanceToWithdraw =  balanceInContract - deposited[_token];
-        }else{
-            balanceToWithdraw = balanceInContract;
-        }
-        if(balanceToWithdraw > 0){
-            IERC20(_token).transfer(_withdrawTo, balanceToWithdraw);
+        if(balanceInContract > 0){
+            IERC20(_token).transfer(_withdrawTo, balanceInContract);
         }
     }
+
 
     /// @notice we believe newVaultPackage is safe
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -118,5 +134,4 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         listOfSupportedTokens.pop();
     }
 
-    
 }

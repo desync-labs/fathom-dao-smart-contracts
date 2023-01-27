@@ -20,7 +20,7 @@ struct Schedule {
 }
 
 struct User {
-    uint128 voteTokenBalance;
+    uint256 voteTokenBalance;
     //streamId => pendings
     mapping(uint256 => uint256) pendings; // The amount of tokens pending release for user per stream
     //streamId => releaseTime

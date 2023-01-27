@@ -23,9 +23,13 @@ interface IVault {
 
     function migrate(address vaultPackageMigrateTo) external;
 
+    function withdrawExtraSupportedTokens(address _withdrawTo) external;
+   
+    function withdrawExtraUnsupportedToken(address _token,address _withdrawTo) external;
+
     function isSupportedToken(address token) external view returns (bool);
 
     function migrated() external view returns (bool);
 
-    function withdrawExtraTokens(address _token, address _withdrawTo) external;
+    
 }
