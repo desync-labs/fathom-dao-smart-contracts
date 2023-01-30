@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./ERC20/ERC20.sol";
 

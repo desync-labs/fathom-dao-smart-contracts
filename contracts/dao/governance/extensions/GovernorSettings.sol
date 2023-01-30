@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts v4.4.1 (governance/extensions/GovernorSettings.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../Governor.sol";
 

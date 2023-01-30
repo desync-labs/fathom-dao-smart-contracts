@@ -3,7 +3,7 @@
 //              (governance/extensions/GovernorVotesQuorumFraction.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./GovernorVotes.sol";
 

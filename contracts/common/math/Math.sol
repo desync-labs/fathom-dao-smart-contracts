@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Original Copyright 2016-2020 zOS Global Limited
 // Copyright Fathom 2022
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 /**
  * @dev Standard math utilities missing in the Solidity language.

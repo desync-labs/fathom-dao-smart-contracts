@@ -2,7 +2,7 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 interface IStakingEvents {
     event Staked(address indexed account, uint256 amount, uint256 streamShares, uint256 nVoteToken, uint256 indexed lockId, uint256 end);

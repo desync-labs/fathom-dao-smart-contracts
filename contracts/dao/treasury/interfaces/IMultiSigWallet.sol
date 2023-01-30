@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 interface IMultiSigWallet {
     event Deposit(address indexed sender, uint256 amount, uint256 balance);

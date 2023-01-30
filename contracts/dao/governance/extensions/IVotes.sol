@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (governance/utils/IVotes.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 interface IVotes {
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);

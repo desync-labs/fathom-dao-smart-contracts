@@ -2,7 +2,7 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 import "../interfaces/IVault.sol";
 import "../interfaces/IVaultEvents.sol";
 import "../../../tokens/ERC20/IERC20.sol";

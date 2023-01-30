@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/extensions/ERC20Votes.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./ERC20Permit.sol";
 import "../../../governance/extensions/IVotes.sol";

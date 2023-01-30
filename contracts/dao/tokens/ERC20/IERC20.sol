@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);

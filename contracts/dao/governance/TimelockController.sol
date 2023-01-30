@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (governance/TimelockController.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../../common/access/AccessControl.sol";
 import "../../common/Address.sol";
