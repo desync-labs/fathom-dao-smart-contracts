@@ -5,7 +5,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IMultiSigWallet.sol";
 import "../../common/Address.sol";
-
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 contract MultiSigWallet is IMultiSigWallet {
     using Address for address;
 
@@ -36,6 +36,7 @@ contract MultiSigWallet is IMultiSigWallet {
     Transaction[] public transactions;
     mapping(address => uint256[]) confirmedTransactions;
 
+
     modifier onlyOwnerOrGov() {
         require(isOwner[msg.sender] || governor == msg.sender, "MultiSig: MultiSigWallet, onlyOwnerOrGov(): Neither owner nor governor");
         _;
@@ -53,11 +54,6 @@ contract MultiSigWallet is IMultiSigWallet {
 
     modifier notConfirmed(uint256 _txIndex) {
         require(!isConfirmed[_txIndex][msg.sender], "MultiSig: tx already confirmed");
-        _;
-    }
-
-    modifier notDisabled(uint256 _txIndex) {
-        require(_txIndex >= lastDisabledTransactionIndex, "MultiSig: old txs has been disabled");
         _;
     }
 
@@ -142,11 +138,12 @@ contract MultiSigWallet is IMultiSigWallet {
 
         uint256 nConfirmedTxnByOwner = confirmedTransactions[owner].length;
         if(nConfirmedTxnByOwner > 0){
-            for(uint i = 0; i < nConfirmedTxnByOwner; i++){
-                uint256 _txIndex = confirmedTransactions[owner][i];
+            for(uint i = nConfirmedTxnByOwner; i >1; i--){
+                uint256 _txIndex = confirmedTransactions[owner][i-1];
                 Transaction storage transaction = transactions[_txIndex];
                 transaction.numConfirmations -= 1;
                 isConfirmed[_txIndex][owner] = false;
+                confirmedTransactions[owner].pop();
                 emit RevokeConfirmation(owner, _txIndex);
             }
         }
@@ -208,7 +205,6 @@ contract MultiSigWallet is IMultiSigWallet {
         txExists(_txIndex)
         notExecuted(_txIndex)
         notConfirmed(_txIndex)
-        notDisabled(_txIndex)
         notExpired(_txIndex)
     {
         Transaction storage transaction = transactions[_txIndex];
@@ -228,7 +224,6 @@ contract MultiSigWallet is IMultiSigWallet {
         onlyOwnerOrGov
         txExists(_txIndex)
         notExecuted(_txIndex)
-        notDisabled(_txIndex)
         notExpired(_txIndex)
     {
         Transaction storage transaction = transactions[_txIndex];
@@ -250,7 +245,6 @@ contract MultiSigWallet is IMultiSigWallet {
         onlyOwnerOrGov
         txExists(_txIndex)
         notExecuted(_txIndex)
-        notDisabled(_txIndex)
         notExpired(_txIndex)
     {
         Transaction storage transaction = transactions[_txIndex];
@@ -259,6 +253,14 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.numConfirmations -= 1;
         isConfirmed[_txIndex][msg.sender] = false;
+        
+        for (uint256 i = 0; i < confirmedTransactions[msg.sender].length - 1; i++)
+            if (confirmedTransactions[msg.sender][i] == _txIndex) {
+                confirmedTransactions[msg.sender][i]
+                     = confirmedTransactions[msg.sender][confirmedTransactions[msg.sender].length - 1];
+                break;
+            }
+        confirmedTransactions[msg.sender].pop();
 
         emit RevokeConfirmation(msg.sender, _txIndex);
     }

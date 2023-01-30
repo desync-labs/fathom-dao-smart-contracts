@@ -4,6 +4,7 @@
 pragma solidity 0.8.13;
 
 import "../StakingStructs.sol";
+import "../../../common/math/FullMath.sol";
 
 library RewardsLibrary {
     // solhint-disable not-rely-on-time
@@ -71,20 +72,23 @@ library RewardsLibrary {
         if (startIndex == endIndex) {
             // start and end are within the same schedule period
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
-            rewardScheduledAmount = (reward * (end - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
+            rewardScheduledAmount = FullMath.mulDiv(reward, (end - start), (schedule.time[startIndex + 1] - schedule.time[startIndex]));
         } else {
             // start and end are not within the same schedule period
             // Reward during the startIndex period
             // Here reward = starting from the actual start time, calculated for the first schedule period
             // that the rewards start.
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
-            rewardScheduledAmount = (reward * (schedule.time[startIndex + 1] - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
-            // Here reward = from end of start schedule till beginning of end schedule
+            rewardScheduledAmount = FullMath.mulDiv(reward,(schedule.time[startIndex + 1] - start),(schedule.time[startIndex + 1] - schedule.time[startIndex]));            // Here reward = from end of start schedule till beginning of end schedule
             // Reward during the period from startIndex + 1  to endIndex
             rewardScheduledAmount += schedule.reward[startIndex + 1] - schedule.reward[endIndex];
             // Reward at the end schedule where schedule.time[endIndex]
             reward = schedule.reward[endIndex] - schedule.reward[endIndex + 1];
-            rewardScheduledAmount += (reward * (end - schedule.time[endIndex])) / (schedule.time[endIndex + 1] - schedule.time[endIndex]);
+            rewardScheduledAmount += FullMath.mulDiv(
+                reward,
+                (end - schedule.time[endIndex]),
+                (schedule.time[endIndex + 1] - schedule.time[endIndex])
+            );
         }
         return rewardScheduledAmount;
     }

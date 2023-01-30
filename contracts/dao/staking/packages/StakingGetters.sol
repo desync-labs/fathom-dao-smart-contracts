@@ -9,7 +9,7 @@ import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
 contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
-    function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
+    function getUsersPendingRewards(address account, uint256 streamId) external override view returns (uint256) {
         return users[account].pendings[streamId];
     }
     function getStreamClaimableAmountPerLock(
@@ -36,32 +36,17 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
         return locks[account];
     }
-    //TODO: Somehow squeeze to get status or use assembly
-    // function getStream(uint256 streamId)
+    //TODO: Do by assembly in staking getter helper. Almost done
+    // function getStreamStatus(uint256 streamId)
     //     external
     //     view
     //     override
     //     returns (
-    //         address streamOwner,
-    //         address rewardToken,
-    //         uint256 rewardDepositAmount,
-    //         uint256 rewardClaimedAmount,
-    //         uint256 maxDepositAmount,
-    //         uint256 rps,
-    //         uint256 tau,
     //         StreamStatus status
     //     )
     // {
-    //     Stream storage stream = streams[streamId];
     //     return (
-    //         stream.owner,
-    //         stream.rewardToken,
-    //         stream.rewardDepositAmount,
-    //         stream.rewardClaimedAmount,
-    //         stream.maxDepositAmount,
-    //         stream.rps,
-    //         stream.tau,
-    //         stream.status
+    //         streams[streamId].status
     //     );
     // }
 

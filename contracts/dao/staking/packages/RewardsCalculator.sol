@@ -72,14 +72,13 @@ contract RewardsCalculator is IRewardsHandler {
             // start and end are within the same schedule period
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
             rewardScheduledAmount = FullMath.mulDiv(reward, (end - start), (schedule.time[startIndex + 1] - schedule.time[startIndex]));
-            rewardScheduledAmount = (reward * (end - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
         } else {
             // start and end are not within the same schedule period
             // Reward during the startIndex period
             // Here reward = starting from the actual start time, calculated for the first schedule period
             // that the rewards start.
             reward = schedule.reward[startIndex] - schedule.reward[startIndex + 1];
-            rewardScheduledAmount = (reward * (schedule.time[startIndex + 1] - start)) / (schedule.time[startIndex + 1] - schedule.time[startIndex]);
+            rewardScheduledAmount = FullMath.mulDiv(reward,(schedule.time[startIndex + 1] - start),(schedule.time[startIndex + 1] - schedule.time[startIndex]));
             // Here reward = from end of start schedule till beginning of end schedule
             // Reward during the period from startIndex + 1  to endIndex
             rewardScheduledAmount += schedule.reward[startIndex + 1] - schedule.reward[endIndex];

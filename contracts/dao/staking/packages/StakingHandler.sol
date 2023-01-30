@@ -75,7 +75,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
                 rps: 0
             })
         );
-        //TODO Remove and make deployment for unpause
         _adminPause(0);
         mainStreamInitialized =true;
         _transfer(scheduleRewards[0],mainToken);
@@ -186,7 +185,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
         }
     }
-
+    
     function createLock(uint256 amount, uint256 lockPeriod) public override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);
     }
@@ -301,6 +300,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function _transfer(uint256 _amount, address _token) internal {
         IERC20(_token).safeTransferFrom(msg.sender,address(this),_amount);
+        IERC20(_token).safeApprove(vault,0);
         IERC20(_token).safeApprove(vault,_amount);
         IVault(vault).deposit(_token, _amount);
     }

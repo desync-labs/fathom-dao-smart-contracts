@@ -346,7 +346,7 @@ We recommend adding a constant with the minimum allowable value of `_quorumNumer
 Implemented Auditors Recommendation.
 
 
-#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update
+#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE]
 ##### Description
 In the [VMainToken](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol) contract, for mint tokens, calling account, in addition to having `MINTER_ROLE` rights, must also be in the `isWhiteListed` list, since the mint function calls `_mint,` which contains [`_beforeTokenTransfer`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L65) call.
 When `_beforeTokenTransfer` is called, it checks that the `msg.sender` address is in the `isWhiteListed` list.
@@ -917,7 +917,7 @@ We recommend adding a check that `newProposalThreshold` is not zero.
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`
+#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, check again]
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation
@@ -980,7 +980,7 @@ We recommend adding a condition that `createStream` can only be called from the 
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 8. [NEW] Possible overflow with calculations[NOTDONE]
+#### 8. [NEW] Possible overflow with calculations[NOTDONE]//TODO
 ##### Description
 In the next lines there is a possible overflow:
 
@@ -988,9 +988,9 @@ In the next lines there is a possible overflow:
 - [`RewardsLibrary.sol#L71`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/library/RewardsLibrary.sol#L71)
 - [`RewardsLibrary.sol#L78`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/library/RewardsLibrary.sol#L78)
 - [`RewardsLibrary.sol#L8`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/library/RewardsLibrary.sol#L84)
-- [`RewardsCalculator.sol#L70`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L70)
-- [`RewardsCalculator.sol#L77`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L77)
-- [`RewardsCalculator.sol#L83`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L83)
+- [`RewardsCalculator.sol#L70`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L70)[DONE]
+- [`RewardsCalculator.sol#L77`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L77)[DONE]
+- [`RewardsCalculator.sol#L83`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsCalculator.sol#L83)[DONE]
 - [`RewardsInternals.sol#L15`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsInternals.sol#L15)
 - [`RewardsInternals.sol#L24-L25`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/RewardsInternals.sol#L24-L25)
 - [`StakingInternals.sol#L47`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingInternals.sol#L47)
@@ -1024,7 +1024,9 @@ Here:
 
   -[`StakingInternals.sol#L227-L230`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingInternals.sol#L227-L230)
 
-  This will not overflow as maxWeightShares, minWeightShares are always less than 1e6 at max.
+  This will not overflow as maxWeightShares, minWeightShares are always less than 1e9 at max.
+
+  Others done
 
 #### [NO_ISSUE] Multiple `streams` can be active at the same time with the same parameters in `StakingHandler.sol `
 ##### Description
