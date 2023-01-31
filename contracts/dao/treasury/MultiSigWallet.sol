@@ -254,7 +254,7 @@ contract MultiSigWallet is IMultiSigWallet {
         transaction.numConfirmations -= 1;
         isConfirmed[_txIndex][msg.sender] = false;
         
-        for (uint256 i = 0; i < confirmedTransactions[msg.sender].length - 1; i++)
+        for (uint256 i = 0; i < confirmedTransactions[msg.sender].length; i++)
             if (confirmedTransactions[msg.sender][i] == _txIndex) {
                 confirmedTransactions[msg.sender][i]
                      = confirmedTransactions[msg.sender][confirmedTransactions[msg.sender].length - 1];
