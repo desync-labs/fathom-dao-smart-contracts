@@ -2,6 +2,7 @@
 // Copyright Fathom 2022
 
 pragma solidity 0.8.16;
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 interface IMultiSigWallet {
     event Deposit(address indexed sender, uint256 amount, uint256 balance);

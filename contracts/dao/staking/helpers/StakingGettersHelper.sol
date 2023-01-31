@@ -100,6 +100,7 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return penalty;
     }
 
+
     
     function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
         return IStakingHelper(stakingContract).getAllLocks(account);

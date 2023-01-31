@@ -6,9 +6,10 @@ pragma solidity 0.8.16;
 import "./interfaces/IMultiSigWallet.sol";
 import "../../common/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 contract MultiSigWallet is IMultiSigWallet {
     using Address for address;
-
+    using EnumerableSet for EnumerableSet.UintSet;
     struct Transaction {
         address to;
         bool executed;
@@ -26,7 +27,6 @@ contract MultiSigWallet is IMultiSigWallet {
     address public governor;
 
     uint256 public numConfirmationsRequired;
-    uint256 public lastDisabledTransactionIndex;
 
     mapping(address => bool) public isOwner;
     mapping(uint256 => mapping(address => bool)) public isConfirmed;
@@ -34,8 +34,7 @@ contract MultiSigWallet is IMultiSigWallet {
     mapping(address => bytes32) internal whitelistedBytesCode;
 
     Transaction[] public transactions;
-    mapping(address => uint256[]) confirmedTransactions;
-
+    mapping(address => EnumerableSet.UintSet) internal confirmedTransactionsByOwner;
 
     modifier onlyOwnerOrGov() {
         require(isOwner[msg.sender] || governor == msg.sender, "MultiSig: MultiSigWallet, onlyOwnerOrGov(): Neither owner nor governor");
@@ -135,21 +134,19 @@ contract MultiSigWallet is IMultiSigWallet {
         owners.pop();
 
         if (numConfirmationsRequired > owners.length) changeRequirement(owners.length);
-
-        uint256 nConfirmedTxnByOwner = confirmedTransactions[owner].length;
-        if(nConfirmedTxnByOwner > 0){
-            for(uint i = nConfirmedTxnByOwner; i >1; i--){
-                uint256 _txIndex = confirmedTransactions[owner][i-1];
-                Transaction storage transaction = transactions[_txIndex];
-                transaction.numConfirmations -= 1;
-                isConfirmed[_txIndex][owner] = false;
-                confirmedTransactions[owner].pop();
-                emit RevokeConfirmation(owner, _txIndex);
-            }
+        
+        uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].values().length;
+        
+        for(uint i = nConfirmedTxnByOwner; i >1; i--){
+            uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i-1);
+            Transaction storage transaction = transactions[_txIndex];
+            transaction.numConfirmations -= 1;
+            isConfirmed[_txIndex][owner] = false;
+            confirmedTransactionsByOwner[owner].remove(_txIndex);
+            emit RevokeConfirmation(owner, _txIndex);
         }
         emit OwnerRemoval(owner);
     }
-
     function addOwners(address[] memory _owners)
         public
         override
@@ -213,7 +210,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.numConfirmations += 1;
         isConfirmed[_txIndex][msg.sender] = true;
-        confirmedTransactions[msg.sender].push(_txIndex);
+        confirmedTransactionsByOwner[msg.sender].add(_txIndex);
 
         emit ConfirmTransaction(msg.sender, _txIndex);
     }
@@ -233,7 +230,13 @@ contract MultiSigWallet is IMultiSigWallet {
         require(transaction.numConfirmations >= numConfirmationsRequired, "cannot execute tx");
 
         transaction.executed = true;
-
+        
+        for(uint i = 0; i < owners.length;i++){
+            if(confirmedTransactionsByOwner[owners[i]].contains(_txIndex)){
+                confirmedTransactionsByOwner[owners[i]].remove(_txIndex);
+            }
+            
+        }
         (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
         
         emit ExecuteTransaction(msg.sender, _txIndex,success, data);
@@ -253,15 +256,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.numConfirmations -= 1;
         isConfirmed[_txIndex][msg.sender] = false;
-        
-        for (uint256 i = 0; i < confirmedTransactions[msg.sender].length; i++)
-            if (confirmedTransactions[msg.sender][i] == _txIndex) {
-                confirmedTransactions[msg.sender][i]
-                     = confirmedTransactions[msg.sender][confirmedTransactions[msg.sender].length - 1];
-                break;
-            }
-        confirmedTransactions[msg.sender].pop();
-
+        confirmedTransactionsByOwner[msg.sender].remove(_txIndex);
         emit RevokeConfirmation(msg.sender, _txIndex);
     }
 

@@ -143,7 +143,7 @@ Implemented Auditors Recommendation. with slight change:
 changeRequirement(numConfirmationsRequired + _owners.length);
 ```
 
-#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK MAXJI - ask auditor, does it require to revoke confirmation in submitTransaction]
+#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK Anton - ask auditor, does it require to revoke confirmation in submitTransaction]
 ##### Description
 In the function [`removeOwner`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L96) the owner is being removed without revocation of transaction signatures, where they've signed. This creates a situation where the signatures of non-existent owners may be used. For example, like in the following scenario:
 
@@ -394,7 +394,7 @@ But it should be noted that `addToWhitelist` and `removeFromWhitelist` can be ca
 
 We recommend refactoring this code and adding  internal functions `_addToWhitelist` and `_removeFromWhitelist` without access control to `grantMinterRole` and `revokeMinterRole`.
 
-#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[NOTDONE-CHECK]
+#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Anton]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -487,7 +487,7 @@ We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppeli
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE-AskAnton]
+#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE]
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
 
@@ -781,7 +781,7 @@ We recommend removing `Governance` from this modifier and give the permission to
 ###### Fathom's response
 Thats the way its designed
 
-#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[NOTDONE -CHECK AGAIN]
+#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE]
 ##### Description
 In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L121) there's no validation of address `_to` to be the contract.
 Based on the logic of the contract, there may be the following cases:
@@ -845,7 +845,7 @@ In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-
 ##### Recommendation
 We recommend adding balance check while adding a transaction with a non-zero value `_value`.
 
-#### [NEW] There is no time limit for executing proposal in `Governor`[Ask MAXJI -DONE]
+#### [NEW] There is no time limit for executing proposal in `Governor`[Ask ANTON -DONE]
 ##### Description
 The [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract has no parameters for the time limit on `proposal` execution. This can result in no longer relevant proposal being executed after a period of time.
 ##### Recommendation
@@ -881,7 +881,7 @@ require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Go
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 17. [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[DONE Check again]
+#### 17. [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[DONE]
 ##### Description
 In the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol#L76) and [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol#L111) contracts the `execute` functions do not check the `msg.value` balance value needed to execute `_targets`, which would result in gas consumption even if the amount of `ETH` is not enough.
 ##### Recommendation
@@ -917,7 +917,7 @@ We recommend adding a check that `newProposalThreshold` is not zero.
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, check again]
+#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, Ask Anton]
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation
@@ -931,6 +931,9 @@ The Proposer can still create an unlimited number of proposals.
 We recommend adding a limit for pending proposals for one user.
 
 Ask Auditors -> This is not desired functionality to limit pending proposals for one user.
+
+Make high enough proposalTimeDelay
+If time, add a block for msg.sender
 
 #### [FIXED] A missing check that tokens are on the balance when calling the `payRewards` function in the `VaultPackage` contract
 ##### Description

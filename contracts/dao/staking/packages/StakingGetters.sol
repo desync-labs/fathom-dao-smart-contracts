@@ -49,5 +49,4 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     //         streams[streamId].status
     //     );
     // }
-
 }
