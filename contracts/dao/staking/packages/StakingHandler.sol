@@ -16,6 +16,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
+    error LockIdLengthExceeded(uint256 _lockId, address _account);
     
     constructor() {
         _disableInitializers();
@@ -179,7 +180,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(!councilsInitialized, "created");
         councilsInitialized = true;
-        for (uint256 i = 0; i < lockParams.length; i++) {
+        for (uint256 i; i < lockParams.length; i++) {
             address account = lockParams[i].account;
             prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
             _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
@@ -220,7 +221,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "bad lockid");
+        if(lockId > locks[msg.sender].length){
+            revert LockIdLengthExceeded(lockId, msg.sender);
+        }
         require(lockId != 0, "lockId 0");
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
@@ -242,7 +245,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function withdrawAllStreams() public override pausable(1) {
         User storage userAccount = users[msg.sender];
-        for (uint256 i = 0; i < streams.length; i++) {
+        for (uint256 i; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i] && streams[i].status == StreamStatus.ACTIVE) {
                 _withdraw(i);
             }
@@ -292,7 +295,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function _verifyUnlock(uint256 lockId) internal view {
         require(lockId > 0, "zero lockid");
-        require(lockId <= locks[msg.sender].length, "bad lockid");
+        if(lockId > locks[msg.sender].length){
+            revert LockIdLengthExceeded(lockId, msg.sender);
+        }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfToken > 0, "no amount");
         require(lock.owner == msg.sender, "bad owner");

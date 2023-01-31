@@ -32,21 +32,19 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
             value := sload(slot)
         }
     }
-    //TODO: Do by assembly in staking getter helper. Almost done
     function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
         return locks[account];
     }
-    //TODO: Do by assembly in staking getter helper. Almost done
-    // function getStreamStatus(uint256 streamId)
-    //     external
-    //     view
-    //     override
-    //     returns (
-    //         StreamStatus status
-    //     )
-    // {
-    //     return (
-    //         streams[streamId].status
-    //     );
-    // }
+    function getStreamStatus(uint256 streamId)
+        external
+        view
+        override
+        returns (
+            StreamStatus status
+        )
+    {
+        return (
+            streams[streamId].status
+        );
+    }
 }

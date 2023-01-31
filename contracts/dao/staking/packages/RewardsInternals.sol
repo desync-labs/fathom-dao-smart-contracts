@@ -12,7 +12,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     // solhint-disable not-rely-on-time
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
-        for (uint256 i = 0; i < streamScheduleRewardLength; i++) {
+        for (uint256 i; i < streamScheduleRewardLength; i++) {
             streams[streamId].schedule.reward[i] = FullMath.mulDiv(streams[streamId].schedule.reward[i], rewardTokenAmount, streams[streamId].maxDepositAmount);
         }
     }
@@ -40,7 +40,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
 
     function _moveAllStreamRewardsToPending(address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
-        for (uint256 i = 0; i < streamsLength; i++) {
+        for (uint256 i; i < streamsLength; i++) {
             if (streams[i].status == StreamStatus.ACTIVE) _moveRewardsToPending(account, i, lockId);
         }
     }
@@ -58,7 +58,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     function _updateStreamRPS() internal {
         if (touchedAt == block.timestamp) return; // Already updated by previous transaction
         if (totalAmountOfStakedToken != 0) {
-            for (uint256 i = 0; i < streams.length; i++) {
+            for (uint256 i; i < streams.length; i++) {
                 if (streams[i].status == StreamStatus.ACTIVE) {
                     streams[i].rps = _getLatestRewardsPerShare(i);
                 }

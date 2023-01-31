@@ -15,6 +15,9 @@ import "../../../common/math/FullMath.sol";
 
 contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
+    error ZeroAddress(address _address);
+    error ZeroTotalAmountOfStakedToken();
+    error ZeroAmountOfLockedToken();
     function _initializeStaking(
         address _mainToken,
         address _voteToken,
@@ -24,9 +27,15 @@ contract StakingInternals is RewardsInternals {
         uint256 _voteShareCoef,
         uint256 _voteLockCoef
     ) internal {
-        require(_mainToken != address(0x00), "main addr zero");
-        require(_voteToken != address(0x00), "vote addr zero");
-        require(_vault != address(0x00), "vault addr zero");
+        if(_mainToken == address(0x00)){
+            revert ZeroAddress(_mainToken);
+        }
+        if(_voteToken == address(0x00)){
+            revert ZeroAddress(_voteToken);
+        }
+        if(_vault == address(0x00)){
+            revert ZeroAddress(_vault);
+        }
 
         require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
@@ -87,8 +96,13 @@ contract StakingInternals is RewardsInternals {
     ) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
-        require(totalAmountOfStakedToken != 0, "Zero tokens");
-        require(updateLock.amountOfToken != 0, "No token");
+        if(totalAmountOfStakedToken == 0){
+            revert ZeroTotalAmountOfStakedToken();
+        }
+
+        if(updateLock.amountOfToken == 0){
+            revert ZeroAmountOfLockedToken();
+        }
         uint256 nVoteToken = updateLock.amountOfVoteToken;
         /// if you unstake, early or partial or complete,
         /// the number of vote tokens for lock position is set to zero
@@ -135,7 +149,7 @@ contract StakingInternals is RewardsInternals {
         lock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
 
         uint256 streamsLength = streams.length;
-        for (uint256 i = 0; i < streamsLength; i++) {
+        for (uint256 i; i < streamsLength; i++) {
             if (streams[i].status == StreamStatus.ACTIVE) {
                 userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
             }
@@ -187,7 +201,7 @@ contract StakingInternals is RewardsInternals {
         updateLock.positionStreamShares += BoringMath.to128(weightedAmountOfSharesPerStream);
         totalStreamShares += weightedAmountOfSharesPerStream;
         uint256 streamsLength = streams.length;
-        for (uint256 i = 0; i < streamsLength; i++) {
+        for (uint256 i; i < streamsLength; i++) {
             // The new shares should not claim old rewards
             if (streams[i].status == StreamStatus.ACTIVE) {
                 userAccount.rpsDuringLastClaimForLock[lockId][i] = streams[i].rps;
@@ -227,11 +241,11 @@ contract StakingInternals is RewardsInternals {
         if (lastLockId != lockId && lastLockId > 1) {
             LockedBalance storage lastIndexLockedBalance = locks[account][lastLockId - 1];
             locks[account][lockId - 1] = lastIndexLockedBalance;
-            for (uint256 i = 0; i < streamsLength; i++) {
+            for (uint256 i; i < streamsLength; i++) {
                 userAccount.rpsDuringLastClaimForLock[lockId][i] = userAccount.rpsDuringLastClaimForLock[lastLockId][i];
             }
         }
-        for (uint256 i = 0; i < streamsLength; i++) {
+        for (uint256 i; i < streamsLength; i++) {
             delete userAccount.rpsDuringLastClaimForLock[lastLockId][i];
         }
         locks[account].pop();
