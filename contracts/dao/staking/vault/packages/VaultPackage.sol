@@ -89,7 +89,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
                 balanceToWithdraw =  balanceInContract - deposited[_token];
             }
             if(balanceToWithdraw > 0){
-                IERC20(_token).transfer(_withdrawTo, balanceToWithdraw);
+                IERC20(_token).safeTransfer(_withdrawTo, balanceToWithdraw);
             }  
         }  
     }
@@ -98,10 +98,9 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         require(!isSupportedToken[_token],"token is supported");
         uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
         if(balanceInContract > 0){
-            IERC20(_token).transfer(_withdrawTo, balanceInContract);
+            IERC20(_token).safeTransfer(_withdrawTo, balanceInContract);
         }
     }
-
 
     /// @notice we believe newVaultPackage is safe
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE) {

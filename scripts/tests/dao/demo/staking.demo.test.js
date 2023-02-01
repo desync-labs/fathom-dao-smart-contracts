@@ -74,6 +74,22 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
     return toRet;
 }
 
+const _encodeGrantRole = (role, account) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'grantRole',
+        type: 'function',
+        inputs: [{
+            type: 'bytes32',
+            name: 'role'
+        },{
+            type: 'address',
+            name: 'account'
+        }]
+    }, [role, account]);
+
+    return toRet;
+}
+
 const _encodeUpgradeFunction = (_proxy, _impl) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'upgrade',
@@ -593,6 +609,33 @@ describe("Staking Test and Upgrade Test", () => {
             await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_2});
         })
+
+        it("Should grant admin role to accounts[0] and withdraw extra supported tokens", async() =>{
+            const _grantRoleMultisig = async (_role, _account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultService.address, 
+                    EMPTY_BYTES, 
+                    _encodeGrantRole(_role, _account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+            }
+
+            await _grantRoleMultisig(
+                EMPTY_BYTES,
+                accounts[0]
+            )
+
+            await vaultService.withdrawExtraSupportedTokens(accounts[0], {"from": accounts[0]});
+        })
+
+        
 
         it('Should not be initalizable twice', async() => {
             const errorMessage = "Initializable: contract is already initialized";

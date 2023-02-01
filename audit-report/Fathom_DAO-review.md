@@ -303,7 +303,7 @@ We recommend adding the `updateMultisig` function, but so that only the old `mul
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 6. [NEW] There is no emergency shutdown mode in `Governor`[DONE -> ASK AUDITOR FOR HELP]
+#### 6. [NEW] There is no emergency shutdown mode in `Governor`[DONE -> ASK AUDITOR FOR HELP, NOTDONE still]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation
@@ -394,7 +394,7 @@ But it should be noted that `addToWhitelist` and `removeFromWhitelist` can be ca
 
 We recommend refactoring this code and adding  internal functions `_addToWhitelist` and `_removeFromWhitelist` without access control to `grantMinterRole` and `revokeMinterRole`.
 
-#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Anton]
+#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Auditor]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -419,7 +419,7 @@ We recommend making two different functions for relaying `ERC20` tokens and nati
 
 
 
-#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE]
+#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor]
 ##### Description
 The [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol) contract lacks the ability to suspend a contract in an emergency and migrate assets to a new compatible `VaultPackage` contract.
 
@@ -487,7 +487,7 @@ We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppeli
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE]
+#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE]
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
 
@@ -565,7 +565,7 @@ bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 5. [NEW] Transaction should be marked as `executed` if the call fails[NOTDONE -> CHECKAGAIN MAXJI!! Makes sense?]
+#### 5. [NEW] Transaction should be marked as `executed` if the call fails[DONE Ask Auditor]
 
 ##### Description
 
@@ -781,7 +781,7 @@ We recommend removing `Governance` from this modifier and give the permission to
 ###### Fathom's response
 Thats the way its designed
 
-#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE]
+#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE - Ask Auditor]
 ##### Description
 In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L121) there's no validation of address `_to` to be the contract.
 Based on the logic of the contract, there may be the following cases:
@@ -917,7 +917,7 @@ We recommend adding a check that `newProposalThreshold` is not zero.
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, Ask Anton]
+#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, Ask Anton - Ask Auditor]
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation
@@ -1078,7 +1078,7 @@ Implemented Auditors Recommendation.
 
 ### INFO
 
-#### 20. [NEW] There's no logging of reverted transactions in `MultiSigWallet`[DONE]
+#### 20. [NEW] There's no logging of reverted transactions in `MultiSigWallet`[DONE, Check Again, Ask Auditor]
 ##### Description
 In the function [`executeConfirmation`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L144) there's no logging of failed transactions.
 ```solidity
