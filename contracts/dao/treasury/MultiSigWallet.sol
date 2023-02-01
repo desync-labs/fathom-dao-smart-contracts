@@ -87,7 +87,7 @@ contract MultiSigWallet is IMultiSigWallet {
         bytes memory _data,
         uint256 _lifetime
     ) {
-        require(_lifetime >= MINIMUM_LIFETIME || _lifetime == 0, "already expired");
+        require(_lifetime >= MINIMUM_LIFETIME || _lifetime == 0, "lifetime minimum not met");
 
         if (!_to.isContract()) {
             require(_data.length == 0 && _value > 0, "calldata for EOA call or 0 value");
