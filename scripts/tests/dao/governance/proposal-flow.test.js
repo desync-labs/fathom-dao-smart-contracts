@@ -939,16 +939,19 @@ describe('Proposal flow', () => {
                     const eightHours = 28800
                     await blockchain.increaseTime(eightHours)
                     encoded_function_ETH_relay = web3.eth.abi.encodeFunctionCall({
-                        name: 'relayETH',
+                        name: 'relayNativeToken',
                         type: 'function',
                         inputs: [{
                             type: 'address',
                             name: 'target'
                         },{
+                            type: 'uint256',
+                            name: 'value'
+                        },{
                             type: 'bytes',
                             name: 'data'
                         }]
-                    }, [accounts[0], _encodeTransferFunction(accounts[0])]);
+                    }, [accounts[0], EMPTY_BYTES, _encodeTransferFunction(accounts[0])]);
                     // create a proposal in MainToken governor
                     result = await mainTokenGovernor.propose(
                         [mainTokenGovernor.address],

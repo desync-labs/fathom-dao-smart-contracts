@@ -233,8 +233,6 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         _revokeRole(role, account);
     }
 
-    
-
     function _execute(
         address target,
         uint256 value,

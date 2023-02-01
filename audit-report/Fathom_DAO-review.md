@@ -256,7 +256,7 @@ modifier validRequirement(uint ownerCount, uint _required) {
 }
 ```
 
-#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[DONE -ASK AUDITOR]
+#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[NOTDONE -ASK AUDITOR]
 ##### Description
 In the structure [`Transaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L9) there's no lifetime parameter `expired`, which is responsible for the period of time during which the transaction must be executed. Since transactions may be executed at random time and are not removed over time, frozen, previously not approved transactions can be executed after a certain time and cause an undesirable effect.
 ##### Recommendation
@@ -303,7 +303,7 @@ We recommend adding the `updateMultisig` function, but so that only the old `mul
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 6. [NEW] There is no emergency shutdown mode in `Governor`[DONE -> ASK AUDITOR FOR HELP, NOTDONE still]
+#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP, NOTDONE still]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation

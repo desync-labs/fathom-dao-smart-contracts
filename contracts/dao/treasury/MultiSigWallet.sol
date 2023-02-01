@@ -94,7 +94,6 @@ contract MultiSigWallet is IMultiSigWallet {
         }
 
         require(address(this).balance >= _value, "not enough balance");
-
         _;
     }
 
@@ -179,7 +178,6 @@ contract MultiSigWallet is IMultiSigWallet {
         bytes memory _data,
         uint256 _lifetime
     ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _lifetime) {
-        require(address(this).balance >= _value, "submitTransaction: not enough balance");
         uint256 txIndex = transactions.length;
         transactions.push(
             Transaction({ 

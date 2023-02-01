@@ -101,7 +101,7 @@ contract MainTokenGovernor is
     function relayERC20(
         address target,
         bytes calldata data
-    ) external payable virtual onlyGovernance {
+    ) external virtual onlyGovernance {
         require(isSupportedToken[target], "relayERC20: token not supported");
         (bool success, bytes memory returndata) = target.call(data);
         Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
@@ -113,13 +113,14 @@ contract MainTokenGovernor is
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relayETH(
+    function relayNativeToken(
         address target,
+        uint256 value,
         bytes calldata data
     ) external payable virtual onlyGovernance {
-        require(!isSupportedToken[target],"relayEth: cant relay to supported token");
-        (bool success, bytes memory returndata) = target.call{ value: address(this).balance }(data);
-        Address.verifyCallResult(success, returndata, "Governor: relayETH reverted without message");
+        require(!isSupportedToken[target],"relayNativeToken: cant relay native token to supported token");
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        Address.verifyCallResult(success, returndata, "Governor: relayNativeToken reverted without message");
     }
 
     function _execute(
