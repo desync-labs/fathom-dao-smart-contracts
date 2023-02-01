@@ -16,7 +16,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-    error LockIdLengthExceeded(uint256 _lockId, address _account);
+    error LockLengthExceeded(uint256 _lockId, address _account);
     
     constructor() {
         _disableInitializers();
@@ -222,7 +222,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         if(lockId > locks[msg.sender].length){
-            revert LockIdLengthExceeded(lockId, msg.sender);
+            revert LockLengthExceeded(lockId, msg.sender);
         }
         require(lockId != 0, "lockId 0");
         _updateStreamRPS();
@@ -296,7 +296,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function _verifyUnlock(uint256 lockId) internal view {
         require(lockId > 0, "zero lockid");
         if(lockId > locks[msg.sender].length){
-            revert LockIdLengthExceeded(lockId, msg.sender);
+            revert LockLengthExceeded(lockId, msg.sender);
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.amountOfToken > 0, "no amount");

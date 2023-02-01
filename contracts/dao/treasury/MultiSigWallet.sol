@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 contract MultiSigWallet is IMultiSigWallet {
     using Address for address;
     using EnumerableSet for EnumerableSet.UintSet;
+
+    uint256 public constant MINIMUM_LIFETIME = 86400;//oneDay
     struct Transaction {
         address to;
         bool executed;
@@ -83,9 +85,9 @@ contract MultiSigWallet is IMultiSigWallet {
         address _to,
         uint256 _value,
         bytes memory _data,
-        uint256 _expireTimestamp
+        uint256 _lifetime
     ) {
-        require(_expireTimestamp >= block.timestamp || _expireTimestamp == 0, "already expired");
+        require(_lifetime >= MINIMUM_LIFETIME || _lifetime == 0, "already expired");
 
         if (!_to.isContract()) {
             require(_data.length == 0 && _value > 0, "calldata for EOA call or 0 value");
@@ -179,7 +181,6 @@ contract MultiSigWallet is IMultiSigWallet {
     ) public override onlyOwnerOrGov validateSubmitTxInputs(_to, _value, _data, _lifetime) {
         require(address(this).balance >= _value, "submitTransaction: not enough balance");
         uint256 txIndex = transactions.length;
-
         transactions.push(
             Transaction({ 
                 to: _to, 
@@ -235,10 +236,8 @@ contract MultiSigWallet is IMultiSigWallet {
             if(confirmedTransactionsByOwner[owners[i]].contains(_txIndex)){
                 confirmedTransactionsByOwner[owners[i]].remove(_txIndex);
             }
-            
         }
         (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
-        
         emit ExecuteTransaction(msg.sender, _txIndex,success, data);
     }
 
