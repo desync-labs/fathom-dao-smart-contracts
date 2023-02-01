@@ -28,7 +28,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     event MultiSigUpdated(address newMultiSig, address oldMultiSig);
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
-    event ExecuteTransaction(address indexed owner, bool success, bytes data);
+    event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
@@ -437,7 +437,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     ) internal virtual {
         for (uint256 i = 0; i < targets.length; ++i) {
             (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(calldatas[i]);
-            emit ExecuteTransaction(msg.sender,success, returndata);
+            emit ExecuteTransaction(msg.sender, success, returndata);
         }
     }
 

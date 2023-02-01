@@ -107,7 +107,7 @@ contract MainTokenGovernor is
         Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
     }
 
-        /**
+    /**
      * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
      * is some contract other than the governor itself, like when using a timelock, this function can be invoked
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
@@ -115,10 +115,10 @@ contract MainTokenGovernor is
      */
     function relayETH(
         address target,
-        uint256 value,
         bytes calldata data
     ) external payable virtual onlyGovernance {
-        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        require(!isSupportedToken[target],"relayEth: cant relay to supported token");
+        (bool success, bytes memory returndata) = target.call{ value: address(this).balance }(data);
         Address.verifyCallResult(success, returndata, "Governor: relayETH reverted without message");
     }
 

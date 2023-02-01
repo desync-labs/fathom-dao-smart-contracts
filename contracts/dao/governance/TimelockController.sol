@@ -33,7 +33,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
 
-    event ExecuteTransaction(address indexed owner, bool success, bytes data);
+    event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
 
     /**
      * @dev Modifier to make a function callable only by a certain role. In

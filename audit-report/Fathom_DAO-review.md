@@ -272,7 +272,7 @@ We meant the `lifetime` parameter, which is passed as a function parameter.
 
 `transactions[_txIndex].expireTimestamp = block.timestamp + lifetime`
 
-#### 5. [NEW] Governance can delete `TimelockAdmin` and the contract will lose its control in `TimelockController`[DONE -ASK AUDITOR]
+#### 5. [NEW] Governance can delete `TimelockAdmin` and the contract will lose its control in `TimelockController`[DONE -ASK AUDITOR - VERIFIED]
 ##### Description
 In the [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol) contract, Governance can take away the `TIMELOCK_ADMIN_ROLE` rights from the address `admin`. In the case of an attack on `Governance` and `Council` this would make it impossible to revoke the role from the captured contracts.
 ##### Recommendation
