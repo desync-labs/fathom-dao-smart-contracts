@@ -14,9 +14,8 @@ import "../../common/Context.sol";
 import "../../common/Strings.sol";
 import "./GovernorStructs.sol";
 import "./interfaces/IGovernor.sol";
-import "../../common/security/Pausable.sol";
 
-abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
+abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using SafeCast for uint256;
     using Strings for *;
@@ -29,6 +28,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
     event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
+    event EmergencyStop();
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH = keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
@@ -36,6 +36,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     uint256 public proposalTimeDelay;
     string private _name;
     uint256[] private proposalIds;
+    uint256 public live;
 
     address private multiSig;
     uint256 public proposalLifetime;
@@ -89,6 +90,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         maxTargets = maxTargets_;
         proposalTimeDelay = proposalTimeDelay_;
         proposalLifetime = proposalLifetime_;
+        live = 1;
     }
 
     receive() external payable virtual {
@@ -100,7 +102,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public payable virtual override whenNotPaused returns (uint256) {
+    ) public payable virtual override  returns (uint256) {
+        require(live == 1,"not live");
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
         requireNotExpired(proposalId);
         requireConfirmed(proposalId);
@@ -127,6 +130,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
     }
 
     function castVote(uint256 proposalId, uint8 support) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, "");
     }
@@ -136,6 +140,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         uint8 support,
         string memory reason
     ) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, reason);
     }
@@ -146,6 +151,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         string memory reason,
         bytes memory params
     ) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         address voter = _msgSender();
         return _castVote(proposalId, voter, support, reason, params);
     }
@@ -157,6 +163,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         bytes32 r,
         bytes32 s
     ) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         address voter = ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support))), v, r, s);
         return _castVote(proposalId, voter, support, "");
     }
@@ -170,6 +177,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         bytes32 r,
         bytes32 s
     ) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         address voter = ECDSA.recover(
             _hashTypedDataV4(keccak256(abi.encode(EXTENDED_BALLOT_TYPEHASH, proposalId, support, keccak256(bytes(reason)), keccak256(params)))),
             v,
@@ -185,7 +193,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public virtual override whenNotPaused returns (uint256) {
+    ) public virtual override returns (uint256) {
+        require(live == 1,"not live");
         require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below proposal threshold");
 
         require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Governor: Can only submit one proposal for a certain interval");
@@ -257,8 +266,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor, Pausable {
         proposalLifetime = newProposalLifetime;
     }
 
-    function emergencyStop() public onlyMultiSig {
-        _pause();
+    function _emergencyStop() internal onlyMultiSig {
+        require(live == 1, "not-live");
+        live = 0;
+        emit EmergencyStop();
     }
 
     function getProposals(uint256 _numIndexes)

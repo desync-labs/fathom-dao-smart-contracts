@@ -22,6 +22,7 @@ contract MainTokenGovernor is
 {
     using SafeERC20 for IERC20;
     mapping(address => bool) public isSupportedToken;
+    address[] public listOfSupportedTokens;
 
     constructor(
         IVotes _token,
@@ -82,15 +83,44 @@ contract MainTokenGovernor is
         return super.state(proposalId);
     }
 
-    function addSupportingToken(address _token) public onlyGovernance {
-        require(!isSupportedToken[_token], "Token already supported");
-        isSupportedToken[_token] = true;
+    function emergencyStop() public onlyMultiSig{
+        _emergencyStop();
+        for(uint i = 0; i < listOfSupportedTokens.length;i++){
+            address _token = listOfSupportedTokens[i];
+            uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
+            if(balanceInContract > 0){
+                IERC20(_token).safeTransfer(msg.sender, balanceInContract);
+            }  
+        }
+        if (address(this).balance > 0){
+            (bool sent,) =   msg.sender.call{ value: (address(this).balance) }("");
+            require(sent, "Failed to send ether");
+        } 
     }
 
-    function removeSupportingToken(address _token) public onlyGovernance {
-        require(isSupportedToken[_token], "Token is not supported");
-        isSupportedToken[_token] = false;
+    function addSupportingToken(address _token) public onlyGovernance {
+        _addSupportedToken(_token);
     }
+    function removeSupportingToken(address _token) public onlyGovernance {
+        _removeSupportingToken(_token);
+    }
+
+    function _addSupportedToken(address _token) internal {
+        require(!isSupportedToken[_token], "Token already exists");
+        isSupportedToken[_token] = true;
+        listOfSupportedTokens.push(_token);
+    }
+
+    function _removeSupportingToken(address _token) internal {
+        for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
+            if (listOfSupportedTokens[i] == _token) {
+                listOfSupportedTokens[i] = listOfSupportedTokens[listOfSupportedTokens.length - 1];
+                break;
+            }
+        }
+        listOfSupportedTokens.pop();
+    }
+    
 
     /**
      * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
