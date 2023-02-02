@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.7.0) (utils/math/SafeCast.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 /**
  * @dev Wrappers over Solidity's uintXX/intXX casting operators with added overflow

@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/utils/TokenTimelock.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../../../common/SafeERC20.sol";
 import "./interfaces/ITokenTimelock.sol";
@@ -26,7 +26,11 @@ contract TokenTimelock is ITokenTimelock {
     // timestamp when token release is enabled
     uint256 private immutable _releaseTime;
 
-    constructor(IERC20 token_, address beneficiary_, uint256 releaseTime_) {
+    constructor(
+        IERC20 token_,
+        address beneficiary_,
+        uint256 releaseTime_
+    ) {
         // solhint-disable-next-line
         require(releaseTime_ > block.timestamp, "TokenTimelock: release time is before current time");
         _token = token_;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 /// @notice A library for performing overflow-/underflow-safe math,
 /// updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math).
@@ -28,9 +28,10 @@ library BoringMath {
         c = uint224(a);
     }
 
-    function to208(uint256 a) internal pure returns (uint208 c) {
-        require(a <= type(uint208).max, "BoringMath: uint128 Overflow");
-        c = uint208(a);
+    
+    function to160(uint256 a) internal pure returns (uint208 c) {
+        require(a <= type(uint160).max, "BoringMath: uint128 Overflow");
+        c = uint160(a);
     }
 
     function to128(uint256 a) internal pure returns (uint128 c) {

@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts v4.4.1 (governance/extensions/GovernorSettings.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../Governor.sol";
 
@@ -15,7 +15,11 @@ abstract contract GovernorSettings is Governor {
     event VotingPeriodSet(uint256 oldVotingPeriod, uint256 newVotingPeriod);
     event ProposalThresholdSet(uint256 oldProposalThreshold, uint256 newProposalThreshold);
 
-    constructor(uint256 initialVotingDelay, uint256 initialVotingPeriod, uint256 initialProposalThreshold) {
+    constructor(
+        uint256 initialVotingDelay,
+        uint256 initialVotingPeriod,
+        uint256 initialProposalThreshold
+    ) {
         _setVotingDelay(initialVotingDelay);
         _setVotingPeriod(initialVotingPeriod);
         _setProposalThreshold(initialProposalThreshold);
@@ -58,6 +62,7 @@ abstract contract GovernorSettings is Governor {
 
     function _setProposalThreshold(uint256 newProposalThreshold) internal virtual {
         emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
+        require(newProposalThreshold > 0, "_setProposalThreshold: Threshold for proposal cant be zero");
         _proposalThreshold = newProposalThreshold;
     }
 }

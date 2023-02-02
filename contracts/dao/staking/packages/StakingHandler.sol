@@ -2,20 +2,25 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./StakingInternals.sol";
 import "../StakingStorage.sol";
 import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
-import "../../../common/security/ReentrancyGuard.sol";
 import "../../../common/security/AdminPausable.sol";
-
+import "../../../common/SafeERC20Staking.sol";
 // solhint-disable not-rely-on-time
-contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, ReentrancyGuard, AdminPausable {
+contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
+    using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-
+    
+    error LockLengthExceeded(uint256 _lockId, address _account);
+    error NotPaused();
+    constructor() {
+        _disableInitializers();
+    }
     /**
      * @dev initialize the contract and deploys the first stream of rewards
      * @dev initializable only once due to stakingInitialised flag
@@ -26,9 +31,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
      * @param _mainToken token contract address
      * @param _weight Weighting coefficient for shares and penalties
      * @param _admin the owner and manager of the main token stream
-     * @param scheduleTimes init schedules times
-     * @param scheduleRewards init schedule rewards
-     * @param tau release time constant per stream
      */
     function initializeStaking(
         address _admin,
@@ -36,37 +38,34 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
-        uint256 tau,
-        VoteCoefficient memory voteCoef,
+        VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
         address _rewardsContract
-    ) external override {
+    ) external override initializer {
         rewardsCalculator = _rewardsContract;
-        _validateStreamParameters(
-            _admin,
-            _mainToken,
-            scheduleRewards[MAIN_STREAM],
-            scheduleRewards[MAIN_STREAM],
-            scheduleTimes,
-            scheduleRewards,
-            tau
-        );
-
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
-        require(IVault(vault).isSupportedToken(_mainToken), "Unsupported token");
-        pausableInit(0, _admin);
-
+        require(IVault(vault).isSupportedToken(_mainToken), "!token");
+        pausableInit(1, _admin);
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
+        maxLockPeriod = ONE_YEAR;
+    }
 
+    function initializeMainStream(
+        address _owner,
+        uint256[] memory scheduleTimes,
+        uint256[] memory scheduleRewards,
+        uint256 tau
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE){
+        require(!mainStreamInitialized,"init done");
+        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),scheduleRewards[0]);
+        _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         streams.push(
             Stream({
-                owner: _admin,
-                manager: _admin,
+                owner: _owner,
+                manager: _owner,
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
@@ -78,9 +77,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
                 rps: 0
             })
         );
-        maxLockPeriod = ONE_YEAR;
-        emit StreamProposed(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
-        emit StreamCreated(streamId, _admin, mainToken, scheduleRewards[MAIN_STREAM]);
+        _adminPause(0);
+        mainStreamInitialized =true;
+        _transfer(scheduleRewards[0],mainToken);
+        emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
+        emit StreamCreated(streamId, _owner, mainToken, tau, scheduleRewards,scheduleTimes);
     }
 
     /**
@@ -110,7 +111,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         uint256 tau
     ) public override onlyRole(STREAM_MANAGER_ROLE) {
         _validateStreamParameters(streamOwner, rewardToken, maxDepositAmount, minDepositAmount, scheduleTimes, scheduleRewards, tau);
-        require(IVault(vault).isSupportedToken(rewardToken), "Unsupport Token");
+        require(IVault(vault).isSupportedToken(rewardToken), "!Token");
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         uint256 streamId = streams.length;
         streams.push(
@@ -131,13 +132,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         emit StreamProposed(streamId, streamOwner, rewardToken, maxDepositAmount);
     }
 
-    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1) {
+    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1){
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "not proposed");
+        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
         require(stream.schedule.time[0] >= block.timestamp, "prop expire");
+        require(stream.owner == msg.sender, "bad owner");
 
         require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
         require(rewardTokenAmount >= stream.minDepositAmount, "rwrds low");
+        IERC20(stream.rewardToken).safeTransferFrom(msg.sender,address(this), rewardTokenAmount);
 
         stream.status = StreamStatus.ACTIVE;
 
@@ -145,16 +148,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         if (rewardTokenAmount < stream.maxDepositAmount) {
             _updateStreamsRewardsSchedules(streamId, rewardTokenAmount);
         }
-        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start point");
+        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start");
 
-        emit StreamCreated(streamId, stream.owner, stream.rewardToken, rewardTokenAmount);
-
-        IERC20(stream.rewardToken).transferFrom(msg.sender, address(vault), rewardTokenAmount);
+        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.tau,stream.schedule.time, stream.schedule.reward);
+        _transfer(rewardTokenAmount,stream.rewardToken);
     }
 
     function cancelStreamProposal(uint256 streamId) public override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "not proposed");
+        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
         stream.status = StreamStatus.INACTIVE;
 
         emit StreamProposalCancelled(streamId, stream.owner, stream.rewardToken);
@@ -162,6 +164,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
 
     function removeStream(uint256 streamId, address streamFundReceiver) public override onlyRole(STREAM_MANAGER_ROLE) {
         require(streamId != 0, "Stream 0");
+        require(streamTotalUserPendings[streamId] == 0, "nt withdrawn");
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
         stream.status = StreamStatus.INACTIVE;
@@ -173,56 +176,57 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
             stream.rewardToken,
             releaseRewardAmount <= rewardTreasury ? releaseRewardAmount : rewardTreasury // should not happen
         );
-
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
-        prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-        _createLock(amount, lockPeriod, account);
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!councilsInitialized, "created");
+        councilsInitialized = true;
+        for (uint256 i; i < lockParams.length; i++) {
+            address account = lockParams[i].account;
+            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
+        }
     }
-
-    function createLock(uint256 amount, uint256 lockPeriod, address account) public override pausable(1) {
-        _createLock(amount, lockPeriod, account);
+    
+    function createLock(uint256 amount, uint256 lockPeriod) public override pausable(1) {
+        _createLock(amount, lockPeriod, msg.sender);
     }
 
     function unlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end <= block.timestamp, "lock not open");
+        require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
+        prohibitedEarlyWithdraw[msg.sender][lockId] = false;
     }
 
     function unlockPartially(uint256 lockId, uint256 amount) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end <= block.timestamp, "lock not open");
+        require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
         _unlock(stakeValue, amount, lockId, msg.sender);
+        prohibitedEarlyWithdraw[msg.sender][lockId] = false;
     }
 
     function earlyUnlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         require(prohibitedEarlyWithdraw[msg.sender][lockId] == false, "early infeasible");
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end > block.timestamp, "lock opened");
+        require(lock.end > block.timestamp, "lock open");
         _updateStreamRPS();
         _earlyUnlock(lockId, msg.sender);
     }
 
-    function claimRewards(uint256 streamId, uint256 lockId) public override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "bad lockid");
-        require(lockId != 0, "lockId cant be zero");
-        _updateStreamRPS();
-        _moveRewardsToPending(msg.sender, streamId, lockId);
-    }
-
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
-        require(lockId <= locks[msg.sender].length, "bad lockid");
-        require(lockId != 0, "lockId cant be zero");
+        if(lockId > locks[msg.sender].length){
+            revert LockLengthExceeded(lockId, msg.sender);
+        }
+        require(lockId != 0, "lockId 0");
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
@@ -237,41 +241,46 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         User storage userAccount = users[msg.sender];
         require(userAccount.pendings[streamId] != 0, "no pendings");
         require(block.timestamp > userAccount.releaseTime[streamId], "not released");
+        require(streams[streamId].status == StreamStatus.ACTIVE, "stream inactive");
         _withdraw(streamId);
     }
 
     function withdrawAllStreams() public override pausable(1) {
         User storage userAccount = users[msg.sender];
-        for (uint256 i = 0; i < streams.length; i++) {
-            if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i]) {
+        for (uint256 i; i < streams.length; i++) {
+            if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i] && streams[i].status == StreamStatus.ACTIVE) {
                 _withdraw(i);
             }
         }
     }
 
-    function updateConfig(
-        Weight memory _weight,
-        address _voteToken,
-        address _rewardsCalculator,
-        VoteCoefficient memory _voteCoef,
-        uint256 _maxLockPeriod,
-        uint256 _maxLockPositions
-    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        weight = _weight;
-        voteToken = _voteToken;
-        rewardsCalculator = _rewardsCalculator;
-        voteShareCoef = _voteCoef.voteShareCoef;
-        voteLockCoef = _voteCoef.voteLockCoef;
-        maxLockPeriod = _maxLockPeriod;
-        maxLockPositions = _maxLockPositions;
+    /**
+     * @dev Disregard rewards for emergency unlock and withdraw
+     */
+    function emergencyUnlockAndWithdraw() public override {
+        if (paused == 0){
+            revert NotPaused();
+        }
+        require(paused != 0, "nt emergency");
+        uint256 numberOfLocks = locks[msg.sender].length;
+        for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
+            LockedBalance storage lock = locks[msg.sender][lockId];
+            uint256 stakeValue = lock.amountOfToken;
+            _unlock(stakeValue, stakeValue, lockId, msg.sender);
+        }
+        _withdraw(MAIN_STREAM);
     }
 
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
-        require(paused != 0, "required pause");
-        require(_vault != address(0), "zero addr");
-        require(_vault != vault, "same addr");
+        if (paused == 0){
+            revert NotPaused();
+        }
+        if(_vault == address(0)){
+            revert ZeroAddress();
+        }
+        require(IVault(vault).migrated(), "!migrated");
         vault = _vault;
     }
 
@@ -280,20 +289,33 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, R
         _withdrawPenalty(penaltyReceiver);
     }
 
-    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
+    function _createLock(
+        uint256 amount,
+        uint256 lockPeriod,
+        address account
+    ) internal{
         require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
-        require(lockPeriod <= maxLockPeriod, "max lock period");
+        require(lockPeriod <= maxLockPeriod, "max time");
+        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),amount);
         _updateStreamRPS();
         _lock(account, amount, lockPeriod);
-        IERC20(mainToken).transferFrom(msg.sender, address(vault), amount);
+        _transfer(amount,mainToken);
     }
 
     function _verifyUnlock(uint256 lockId) internal view {
         require(lockId > 0, "zero lockid");
-        require(lockId <= locks[msg.sender].length, "bad lockid");
+        if(lockId > locks[msg.sender].length){
+            revert LockLengthExceeded(lockId, msg.sender);
+        }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfToken > 0, "no lock amount");
+        require(lock.amountOfToken > 0, "no amount");
         require(lock.owner == msg.sender, "bad owner");
+    }
+
+    function _transfer(uint256 _amount, address _token) internal{
+        IERC20(_token).safeApprove(vault,0);
+        IERC20(_token).safeApprove(vault,_amount);
+        IVault(vault).deposit(_token, _amount);
     }
 }

@@ -1,6 +1,6 @@
 // Copyright SECURRENCY INC.
 // SPDX-License-Identifier: AGPL 3.0
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./IStakingHelper.sol";
 import "./IStakingGetterHelper.sol";
@@ -10,10 +10,7 @@ import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
-    uint256 internal constant ONE_MONTH = 2629746;
-    uint256 internal constant ONE_YEAR = 31536000;
-    uint256 internal constant WEEK = 604800;
-
+    uint256 public constant WEIGHT_SLOT = 14; // the storage slot in staking contract where WEIGHT resides
     constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -30,8 +27,22 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         LockedBalance[] memory locks = _getAllLocks(account);
         return locks.length;
     }
+    function getWeight() public view override returns (Weight memory) {
+        return _getWeight();
+    }
 
-    function getLock(address account, uint lockId) public view override returns (uint128, uint128, uint128, uint64, address) {
+    function getLock(address account, uint256 lockId)
+        public
+        view
+        override
+        returns (
+            uint128,
+            uint128,
+            uint128,
+            uint64,
+            address
+        )
+    {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
@@ -44,8 +55,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalDeposit = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalDeposit = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalDeposit += locks[lockId - 1].amountOfToken;
         }
         return totalDeposit;
@@ -56,8 +67,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalRewards = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalRewards = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalRewards += IStakingHelper(stakingContract).getStreamClaimableAmountPerLock(streamId, account, lockId);
         }
         return totalRewards;
@@ -68,8 +79,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         if (locks.length == 0) {
             return 0;
         }
-        uint totalVotes = 0;
-        for (uint lockId = 1; lockId <= locks.length; lockId++) {
+        uint256 totalVotes = 0;
+        for (uint256 lockId = 1; lockId <= locks.length; lockId++) {
             totalVotes += locks[lockId - 1].amountOfVoteToken;
         }
         return totalVotes;
@@ -89,14 +100,14 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return penalty;
     }
 
-    function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
-        LockedBalance[] memory locks = IStakingHelper(stakingContract).getAllLocks(account);
-        return locks;
-    }
 
+    
+    function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
+        return IStakingHelper(stakingContract).getAllLocks(account);
+    }
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
-        uint maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
+        uint256 maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
         uint256 slopeStart = lockEnd;
         if (timestamp >= slopeStart) return 0;
         uint256 remainingTime = slopeStart - timestamp;
@@ -108,8 +119,35 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
             (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
             maxLockPeriod);
     }
-
     function _getWeight() internal view returns (Weight memory) {
-        return IStakingHelper(stakingContract).getWeight();
+        bytes32 weight = IStakingHelper(stakingContract).readBySlot(WEIGHT_SLOT);
+        uint32 penaltyWeightMultiplier;
+        uint32 minWeightPenalty;
+        uint32 maxWeightPenalty;
+        uint32 minWeightShares;
+        uint32 maxWeightShares; 
+        assembly {
+            let value := weight
+            maxWeightShares := and(0xffffffff, value)
+            //shift right by 32 then, do and by 32 bits to get the value
+            let  minWeightShares_shifted:= shr(32,value)
+            minWeightShares := and(0xffffffff, minWeightShares_shifted)
+            //shift right by 64 then, do and by 32 bits to get the value
+            let maxWeightPenalty_shifted := shr(64,value)
+            maxWeightPenalty := and(0xffffffff, maxWeightPenalty_shifted)
+            //shift right by 96 then, do and by 32 bits to get the value
+            let minWeightPenalty_shifted := shr(96,value)
+            minWeightPenalty := and(0xffffffff, minWeightPenalty_shifted)
+            //shift right by 128 then, do and by 32 bits to get the value
+            let penaltyWeightMultiplier_shifted := shr(128,value)
+            penaltyWeightMultiplier := and(0xffffffff, penaltyWeightMultiplier_shifted)
+        }
+        return Weight(
+            maxWeightShares,
+            minWeightShares,
+            maxWeightPenalty,
+            minWeightPenalty,
+            penaltyWeightMultiplier
+        );
     }
 }
