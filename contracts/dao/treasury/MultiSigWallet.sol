@@ -32,7 +32,6 @@ contract MultiSigWallet is IMultiSigWallet {
     uint256 public numConfirmationsRequired;
 
     mapping(address => bool) public isOwner;
-    mapping(uint256 => mapping(address => bool)) public isConfirmed;
 
     mapping(address => bytes32) internal whitelistedBytesCode;
 
@@ -55,7 +54,7 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     modifier notConfirmed(uint256 _txIndex) {
-        require(!isConfirmed[_txIndex][msg.sender], "MultiSig: tx already confirmed");
+        require(!confirmedTransactionsByOwner[msg.sender].contains(_txIndex), "MultiSig: tx already confirmed");
         _;
     }
 
@@ -93,7 +92,6 @@ contract MultiSigWallet is IMultiSigWallet {
         if (!_to.isContract()) {
             require(_data.length == 0 && _value > 0, "calldata for EOA call or 0 value");
         }
-
         require(address(this).balance >= _value, "not enough balance");
         _;
     }
@@ -138,7 +136,6 @@ contract MultiSigWallet is IMultiSigWallet {
             uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i-1);
             Transaction storage transaction = transactions[_txIndex];
             transaction.numConfirmations -= 1;
-            isConfirmed[_txIndex][owner] = false;
             confirmedTransactionsByOwner[owner].remove(_txIndex);
             emit RevokeConfirmation(owner, _txIndex);
         }
@@ -167,7 +164,6 @@ contract MultiSigWallet is IMultiSigWallet {
         numConfirmationsRequired = _required;
         emit RequirementChange(_required);
     }
-
     function submitTransaction(
         address _to,
         uint256 _value,
@@ -204,7 +200,6 @@ contract MultiSigWallet is IMultiSigWallet {
         _requireTargetCodeNotChanged(transaction.to);
 
         transaction.numConfirmations += 1;
-        isConfirmed[_txIndex][msg.sender] = true;
         confirmedTransactionsByOwner[msg.sender].add(_txIndex);
 
         emit ConfirmTransaction(msg.sender, _txIndex);
@@ -246,10 +241,9 @@ contract MultiSigWallet is IMultiSigWallet {
     {
         Transaction storage transaction = transactions[_txIndex];
 
-        require(isConfirmed[_txIndex][msg.sender], "tx not confirmed");
+        require(confirmedTransactionsByOwner[msg.sender].contains(_txIndex), "tx not confirmed");
 
         transaction.numConfirmations -= 1;
-        isConfirmed[_txIndex][msg.sender] = false;
         confirmedTransactionsByOwner[msg.sender].remove(_txIndex);
         emit RevokeConfirmation(msg.sender, _txIndex);
     }
