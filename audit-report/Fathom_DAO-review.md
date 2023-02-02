@@ -143,7 +143,7 @@ Implemented Auditors Recommendation. with slight change:
 changeRequirement(numConfirmationsRequired + _owners.length);
 ```
 
-#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK Anton - ask auditor, does it require to revoke confirmation in submitTransaction]
+#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK Anton - ask auditor, does it require to revoke confirmation in submitTransaction, TODAY]
 ##### Description
 In the function [`removeOwner`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L96) the owner is being removed without revocation of transaction signatures, where they've signed. This creates a situation where the signatures of non-existent owners may be used. For example, like in the following scenario:
 
@@ -256,7 +256,7 @@ modifier validRequirement(uint ownerCount, uint _required) {
 }
 ```
 
-#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[NOTDONE -ASK AUDITOR]
+#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[NOTDONE -ASK AUDITOR -Verified]
 ##### Description
 In the structure [`Transaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L9) there's no lifetime parameter `expired`, which is responsible for the period of time during which the transaction must be executed. Since transactions may be executed at random time and are not removed over time, frozen, previously not approved transactions can be executed after a certain time and cause an undesirable effect.
 ##### Recommendation
@@ -303,7 +303,7 @@ We recommend adding the `updateMultisig` function, but so that only the old `mul
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP, NOTDONE still]
+#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP, NOTDONE still TODAY]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation
@@ -394,7 +394,7 @@ But it should be noted that `addToWhitelist` and `removeFromWhitelist` can be ca
 
 We recommend refactoring this code and adding  internal functions `_addToWhitelist` and `_removeFromWhitelist` without access control to `grantMinterRole` and `revokeMinterRole`.
 
-#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Auditor]
+#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Auditor, Verified]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -438,7 +438,7 @@ We recommend forbidding to use functions after migration.
 We recommend using `deposited` variable instead `balanceOf` `VaultPackage` balance.
 
 
-#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last]
+#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last Ask Auditor TODAY]
 ##### Description
 In the `StakingHandlers` contract, calling the function [`updateVault`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L269) can cause all contract functions that work with balances and `VaultPackage` functions to be blocked.
 ##### Recommendation
@@ -781,7 +781,7 @@ We recommend removing `Governance` from this modifier and give the permission to
 ###### Fathom's response
 Thats the way its designed
 
-#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE - Ask Auditor]
+#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE - Ask Auditor TODAY]
 ##### Description
 In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L121) there's no validation of address `_to` to be the contract.
 Based on the logic of the contract, there may be the following cases:
@@ -845,7 +845,7 @@ In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-
 ##### Recommendation
 We recommend adding balance check while adding a transaction with a non-zero value `_value`.
 
-#### [NEW] There is no time limit for executing proposal in `Governor`[Ask ANTON -DONE]
+#### [NEW] There is no time limit for executing proposal in `Governor`[Ask ANTON -DONE Ask Auditor]
 ##### Description
 The [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract has no parameters for the time limit on `proposal` execution. This can result in no longer relevant proposal being executed after a period of time.
 ##### Recommendation

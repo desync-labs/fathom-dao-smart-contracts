@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 contract MultiSigWallet is IMultiSigWallet {
     using Address for address;
     using EnumerableSet for EnumerableSet.UintSet;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 public constant MINIMUM_LIFETIME = 86400;//oneDay
     struct Transaction {
@@ -25,7 +26,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
     uint256 public constant MAX_OWNER_COUNT = 50;
 
-    address[] public owners;
+    EnumerableSet.AddressSet owners;
     address public governor;
 
     uint256 public numConfirmationsRequired;
@@ -114,7 +115,7 @@ contract MultiSigWallet is IMultiSigWallet {
             require(!isOwner[owner], "owner not unique");
 
             isOwner[owner] = true;
-            owners.push(owner);
+            owners.add(owner);
             emit OwnerAddition(owner);
         }
 
@@ -127,16 +128,11 @@ contract MultiSigWallet is IMultiSigWallet {
 
     function removeOwner(address owner) public override onlyWallet ownerExists(owner) {
         isOwner[owner] = false;
-        for (uint256 i = 0; i < owners.length - 1; i++)
-            if (owners[i] == owner) {
-                owners[i] = owners[owners.length - 1];
-                break;
-            }
-        owners.pop();
+        owners.remove(owner);
 
-        if (numConfirmationsRequired > owners.length) changeRequirement(owners.length);
+        if (numConfirmationsRequired > owners.length()) changeRequirement(owners.length());
         
-        uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].values().length;
+        uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].length();
         
         for(uint i = nConfirmedTxnByOwner; i >1; i--){
             uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i-1);
@@ -152,7 +148,7 @@ contract MultiSigWallet is IMultiSigWallet {
         public
         override
         onlyWallet
-        validRequirement(owners.length + _owners.length, numConfirmationsRequired + _owners.length)
+        validRequirement(owners.length() + _owners.length, numConfirmationsRequired + _owners.length)
     {
         for (uint256 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
@@ -160,14 +156,14 @@ contract MultiSigWallet is IMultiSigWallet {
             _requireNewOwner(owner);
 
             isOwner[owner] = true;
-            owners.push(owner);
+            owners.add(owner);
             emit OwnerAddition(owner);
         }
 
         changeRequirement(numConfirmationsRequired + _owners.length);
     }
 
-    function changeRequirement(uint256 _required) public override onlyWallet validRequirement(owners.length, _required) {
+    function changeRequirement(uint256 _required) public override onlyWallet validRequirement(owners.length(), _required) {
         numConfirmationsRequired = _required;
         emit RequirementChange(_required);
     }
@@ -230,9 +226,10 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.executed = true;
         
-        for(uint i = 0; i < owners.length;i++){
-            if(confirmedTransactionsByOwner[owners[i]].contains(_txIndex)){
-                confirmedTransactionsByOwner[owners[i]].remove(_txIndex);
+        for(uint i = 0; i < owners.length();i++){
+            if(confirmedTransactionsByOwner[owners.at(i)].contains(_txIndex))
+            {
+                confirmedTransactionsByOwner[owners.at(i)].remove(_txIndex);
             }
         }
         (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
@@ -258,7 +255,12 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     function getOwners() public view override returns (address[] memory) {
-        return owners;
+        uint256 lengthOfOwners = owners.length();
+        address[] memory returnOwners = new address[](lengthOfOwners);
+        for(uint256 i; i < lengthOfOwners;i++){
+            returnOwners[i] = owners.at(i);
+        }
+        return returnOwners;
     }
 
     function getTransactionCount() public view override returns (uint256) {
