@@ -10,7 +10,6 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/AdminPausable.sol";
 import "../../../common/SafeERC20Staking.sol";
-
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     using SafeERC20Staking for IERC20;
@@ -56,8 +55,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256[] memory scheduleTimes,
         uint256[] memory scheduleRewards,
         uint256 tau
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE){
         require(!mainStreamInitialized,"init done");
+        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),scheduleRewards[0]);
         _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
@@ -131,7 +131,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamProposed(streamId, streamOwner, rewardToken, maxDepositAmount);
     }
 
-    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1) {
+    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1){
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "nt proposed");
         require(stream.schedule.time[0] >= block.timestamp, "prop expire");
@@ -139,6 +139,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
         require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
         require(rewardTokenAmount >= stream.minDepositAmount, "rwrds low");
+        IERC20(stream.rewardToken).safeTransferFrom(msg.sender,address(this), rewardTokenAmount);
 
         stream.status = StreamStatus.ACTIVE;
 
@@ -284,10 +285,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 amount,
         uint256 lockPeriod,
         address account
-    ) internal {
+    ) internal{
         require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <= maxLockPeriod, "max time");
+        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),amount);
         _updateStreamRPS();
         _lock(account, amount, lockPeriod);
         _transfer(amount,mainToken);
@@ -303,8 +305,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.owner == msg.sender, "bad owner");
     }
 
-    function _transfer(uint256 _amount, address _token) internal {
-        IERC20(_token).safeTransferFrom(msg.sender,address(this),_amount);
+    function _transfer(uint256 _amount, address _token) internal{
         IERC20(_token).safeApprove(vault,0);
         IERC20(_token).safeApprove(vault,_amount);
         IVault(vault).deposit(_token, _amount);
