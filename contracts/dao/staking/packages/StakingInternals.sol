@@ -15,7 +15,7 @@ import "../../../common/math/FullMath.sol";
 
 contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
-    error ZeroAddress(address _address);
+    error ZeroAddress();
     error ZeroTotalAmountOfStakedToken();
     error ZeroAmountOfLockedToken();
     function _initializeStaking(
@@ -28,15 +28,14 @@ contract StakingInternals is RewardsInternals {
         uint256 _voteLockCoef
     ) internal {
         if(_mainToken == address(0x00)){
-            revert ZeroAddress(_mainToken);
+            revert ZeroAddress();
         }
         if(_voteToken == address(0x00)){
-            revert ZeroAddress(_voteToken);
+            revert ZeroAddress();
         }
         if(_vault == address(0x00)){
-            revert ZeroAddress(_vault);
+            revert ZeroAddress();
         }
-
         require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
         require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
         require(_weight.penaltyWeightMultiplier * _weight.maxWeightPenalty <= 100000, "wrong weight");

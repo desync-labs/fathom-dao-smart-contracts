@@ -7,6 +7,7 @@ import "../StakingStructs.sol";
 import "./IStakingGetter.sol";
 
 interface IStakingHandler {
+    
     function initializeStaking(
         address _admin,
         address _vault,

@@ -15,8 +15,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-    error LockLengthExceeded(uint256 _lockId, address _account);
     
+    error LockLengthExceeded(uint256 _lockId, address _account);
+    error NotPaused();
     constructor() {
         _disableInitializers();
     }
@@ -257,6 +258,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Disregard rewards for emergency unlock and withdraw
      */
     function emergencyUnlockAndWithdraw() public override {
+        if (paused == 0){
+            revert NotPaused();
+        }
         require(paused != 0, "nt emergency");
         uint256 numberOfLocks = locks[msg.sender].length;
         for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
@@ -270,8 +274,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
-        require(paused != 0, "require pause");
-        require(_vault != address(0), "0 addr");
+        if (paused == 0){
+            revert NotPaused();
+        }
+        if(_vault == address(0)){
+            revert ZeroAddress();
+        }
         require(IVault(vault).migrated(), "!migrated");
         vault = _vault;
     }
