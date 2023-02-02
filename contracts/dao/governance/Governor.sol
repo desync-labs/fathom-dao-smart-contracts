@@ -236,9 +236,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     function revokeConfirmation(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) {
         requireConfirmed(_proposalId);
-
         isConfirmed[_proposalId] = false;
-
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
@@ -266,7 +264,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         proposalLifetime = newProposalLifetime;
     }
 
-    function _emergencyStop() internal onlyMultiSig {
+    function _emergencyStop() internal  {
         require(live == 1, "not-live");
         live = 0;
         emit EmergencyStop();
