@@ -20,6 +20,7 @@ const AMOUNT_OUT_TREASURY = "1000";
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const EXECUTE_TRANSACTION_EVENT = "ExecuteTransaction(address,bool,bytes)";
+
 const _encodeConfirmation = async (_proposalId) => {
     return web3.eth.abi.encodeFunctionCall({
             name: 'confirmProposal',
@@ -29,6 +30,15 @@ const _encodeConfirmation = async (_proposalId) => {
                 name: '_proposalId'
             }]
         }, [_proposalId.toString()]);
+}
+
+const _encodeEmergencyStop = () => {
+    return web3.eth.abi.encodeFunctionCall(
+        {   
+            name: 'emergencyStop',
+            type: 'function',
+            inputs: []
+        },[]);
 }
 
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
@@ -1081,8 +1091,61 @@ describe('Proposal flow', () => {
         
                     const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
                     expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
-                });
-        
+            });
     });
+
+    describe("Emergency Stop through multisig", async() => {
+        it('Emergency stop the governor', async() =>{
+            
+            const _emergencyStopGovernor = async() => {
+                const result = await multiSigWallet.submitTransaction(
+                    mainTokenGovernor.address,
+                    EMPTY_BYTES,
+                    _encodeEmergencyStop(),
+                    0,
+                    {"from": accounts[0]}
+                )
+    
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _emergencyStopGovernor()
+        })
+
+        it('Should fail to propose on emergency stop', async() =>{
+            let errorMessage = "not live";
+
+            await shouldRevert(
+                mainTokenGovernor.propose(
+                    [box.address],
+                    [0],
+                    [encoded_function],
+                    PROPOSAL_DESCRIPTION,
+                    {"from": accounts[0]}
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+
+        it('Should fail to execute on emergency stop', async() =>{
+            let errorMessage = "not live";
+            await shouldRevert(
+                mainTokenGovernor.execute(      
+                    [mainTokenGovernor.address],
+                    [0],
+                    [encoded_function_ETH_relay],
+                    description_hash,
+                    {"from": accounts[0],
+                    }
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+    })
 });
 
