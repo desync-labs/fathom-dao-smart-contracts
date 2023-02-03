@@ -84,7 +84,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         mainStreamInitialized =true;
         _transfer(scheduleRewards[0],mainToken);
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
-        emit StreamCreated(streamId, _owner, mainToken, tau, scheduleRewards,scheduleTimes);
+        emit StreamCreated(streamId, _owner, mainToken, tau);
     }
 
     /**
@@ -153,7 +153,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start");
 
-        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.tau,stream.schedule.time, stream.schedule.reward);
+        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.tau);
         _transfer(rewardTokenAmount,stream.rewardToken);
     }
 

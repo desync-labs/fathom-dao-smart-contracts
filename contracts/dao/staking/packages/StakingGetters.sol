@@ -35,16 +35,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
         return locks[account];
     }
-    function getStreamStatus(uint256 streamId)
-        external
-        view
-        override
-        returns (
-            StreamStatus status
-        )
-    {
-        return (
-            streams[streamId].status
-        );
+    function getStreamSchedule(uint256 streamId) external override view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {
+        return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
     }
 }

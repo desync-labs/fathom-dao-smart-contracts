@@ -30,13 +30,7 @@ interface IStakingGetter {
           uint256 lockId
       ) external view returns (uint256);
     function readBySlot(uint256 slot) external view returns(bytes32);
-    function getStreamStatus(uint256 streamId)
-        external
-        view
-        returns (
-            StreamStatus status
-        );
-    //function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
+    function getStreamSchedule(uint256 streamId) external view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards);
 
     //  function getStreamsCount() external view returns (uint256);
 

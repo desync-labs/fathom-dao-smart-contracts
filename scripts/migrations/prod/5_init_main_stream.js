@@ -9,6 +9,7 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const STREAM_CREATED_EVENT = "StreamCreated(uint256,address,address,uint256,uint256[],uint256[])"
 
 const T_TO_TRANSFER = web3.utils.toWei('20000', 'ether');
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
@@ -107,5 +108,6 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
+    let resultExeucteTransaction = await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
+    console.log(eventsHelper.getAllIndexedEventArgs(resultExeucteTransaction,STREAM_CREATED_EVENT))
 }
