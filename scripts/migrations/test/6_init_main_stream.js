@@ -7,7 +7,7 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const blockchain = require("../../tests/helpers/blockchain");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
-const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
+const STREAM_CREATED_EVENT = "StreamCreated(uint256,address,address,uint256)"
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp();
     return timestamp;
@@ -101,5 +101,6 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
+    let resultExeucteTransaction =await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
+    console.log(eventsHelper.getAllIndexedEventArgs(resultExeucteTransaction,STREAM_CREATED_EVENT))
 }
