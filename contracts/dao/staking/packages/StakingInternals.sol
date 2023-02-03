@@ -17,7 +17,7 @@ contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
     error ZeroAddress();
     error ZeroTotalAmountOfStakedToken();
-    error ZeroAmountOfLockedToken();
+    error ZeroAmountOfLockedToken(uint256 lockId);
     function _initializeStaking(
         address _mainToken,
         address _voteToken,
@@ -98,9 +98,8 @@ contract StakingInternals is RewardsInternals {
         if(totalAmountOfStakedToken == 0){
             revert ZeroTotalAmountOfStakedToken();
         }
-
         if(updateLock.amountOfToken == 0){
-            revert ZeroAmountOfLockedToken();
+            revert ZeroAmountOfLockedToken(lockId);
         }
         uint256 nVoteToken = updateLock.amountOfVoteToken;
         /// if you unstake, early or partial or complete,

@@ -101,7 +101,7 @@ The reaudited commit identifier with implemented Oxorio's recommendations is [`d
 
 ### CRITICAL
 
-####  [NEW] There's no `owners` array length validation in the constructor of `MultiSigWallet`[DONE]
+####  [NEW] There's no `owners` array length validation in the constructor of `MultiSigWallet`[DONE - VERIFIED]
 ##### Description
 In the [MultiSigWallet\`s constructor](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L76) there's no checking that the number of `owners` is less than or equal `MAX_OWNER_COUNT`. If the contract is created with `owners` with length more than `MAX_OWNER_COUNT` then that makes calls to `addOwner`, `changeRequirement` and `removeOwner` (which uses call `changeRequirement`) functions impossible because they use modifier `validRequirement` with this `require` statement:
 ```solidity
@@ -180,7 +180,7 @@ We recommend adding logic that would allow you to cancel the execution of `propo
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### [NEW] Changing the `timelock` address may cause re-execution of the proposals in `GovernorTimelockControl`[DONE]
+#### [NEW] Changing the `timelock` address may cause re-execution of the proposals in `GovernorTimelockControl`[DONE - ASK AUDITOR]
 ##### Description
 A change of the `timelock` parameter in the [`GovernorTimelockControl`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/extensions/GovernorTimelockControl.sol#L22) contract can lead to already executed `proposals` being able to be executed again. This is connected to the fact that the execution status of the transaction is saved only in the [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol) contract, and the `GovernorTimelockControl` contract makes calls to the `TimelockController` functions to get the `proposals` status in the [`state`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/extensions/GovernorTimelockControl.sol#L50) function.
 ##### Recommendation
@@ -303,7 +303,7 @@ We recommend adding the `updateMultisig` function, but so that only the old `mul
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP, NOTDONE still TODAY]
+#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP,  TODAY ASK AUDITOR-Verified]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation
@@ -346,7 +346,7 @@ We recommend adding a constant with the minimum allowable value of `_quorumNumer
 Implemented Auditors Recommendation.
 
 
-#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE]
+#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE - Ask Auditor]
 ##### Description
 In the [VMainToken](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol) contract, for mint tokens, calling account, in addition to having `MINTER_ROLE` rights, must also be in the `isWhiteListed` list, since the mint function calls `_mint,` which contains [`_beforeTokenTransfer`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L65) call.
 When `_beforeTokenTransfer` is called, it checks that the `msg.sender` address is in the `isWhiteListed` list.
@@ -419,7 +419,7 @@ We recommend making two different functions for relaying `ERC20` tokens and nati
 
 
 
-#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor]
+#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> Do we need to have not migrated check in withdraw Extra supported tokens?]
 ##### Description
 The [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol) contract lacks the ability to suspend a contract in an emergency and migrate assets to a new compatible `VaultPackage` contract.
 
@@ -487,7 +487,7 @@ We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppeli
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE]
+#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , Ask Auditor]
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
 
@@ -506,7 +506,7 @@ Recommendation has not been fully implemented. In the current version there is s
 We recommend adding a separate withdraw function, that would allow the `DEFAULT_ADMIN_ROLE`
 address to take excess tokens away (both `supportedTokens` and tokens that are not on the list).
 
-####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE]
+####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor]
 ##### Description
 In the `StakingHandlers` contract the [`initializeStaking`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L33) function does not allocate tokens for rewards `MAIN_STREAM`, as it happens when [`createStream`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L152) is called. This may result in the block of the `withdrawStream` function call from the `MAIN_STREAM` of tokens and rewards for some users, if the amount in `VaultPackage` is less than the amount stated in `scheduleRewards`.
 ##### Recommendation
@@ -917,7 +917,7 @@ We recommend adding a check that `newProposalThreshold` is not zero.
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, Ask Anton - Ask Auditor]
+#### 7. [NEW] There is no limit on the number of proposals for one proposer in `Governor`[NOTDONE, Ask Anton - Ask Auditor -TODAY!]
 ##### Description
 In the `Governor` contract in the [`propose`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol#L36) function there is no limit on the number of proposals for one proposer. Thus, a proposer can perform a DDoS attack and create an unlimited number of requests, even in one single block.
 ##### Recommendation
@@ -1078,7 +1078,7 @@ Implemented Auditors Recommendation.
 
 ### INFO
 
-#### 20. [NEW] There's no logging of reverted transactions in `MultiSigWallet`[DONE, Check Again, Ask Auditor]
+#### 20. [NEW] There's no logging of reverted transactions in `MultiSigWallet`[DONE, Check Again, Ask Auditor -TODAY]
 ##### Description
 In the function [`executeConfirmation`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L144) there's no logging of failed transactions.
 ```solidity

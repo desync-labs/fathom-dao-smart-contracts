@@ -18,6 +18,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     
     error LockLengthExceeded(uint256 _lockId, address _account);
     error NotPaused();
+    error VaultNotSupported(address _vault);
+    error VaultNotMigrated(address _vault);
+    error ZeroLockId();
     constructor() {
         _disableInitializers();
     }
@@ -253,16 +256,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             }
         }
     }
-
     /**
      * @dev Disregard rewards for emergency unlock and withdraw
      */
     function emergencyUnlockAndWithdraw() public override {
-        if (paused == 0){
+        if(paused == 0){
             revert NotPaused();
         }
-        require(paused != 0, "nt emergency");
         uint256 numberOfLocks = locks[msg.sender].length;
+        require(numberOfLocks > 0,"no locks");
         for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
             LockedBalance storage lock = locks[msg.sender][lockId];
             uint256 stakeValue = lock.amountOfToken;
@@ -280,7 +282,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if(_vault == address(0)){
             revert ZeroAddress();
         }
-        require(IVault(vault).migrated(), "!migrated");
+        if(!IERC165Upgradeable(_vault).supportsInterface(type(IVault).interfaceId)){
+            revert VaultNotSupported(_vault);
+        }
+        if(!IVault(vault).migrated()){
+            revert VaultNotMigrated(vault);
+        }
         vault = _vault;
     }
 
@@ -304,12 +311,16 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function _verifyUnlock(uint256 lockId) internal view {
-        require(lockId > 0, "zero lockid");
+        if(lockId == 0){
+            revert ZeroLockId();
+        }
         if(lockId > locks[msg.sender].length){
             revert LockLengthExceeded(lockId, msg.sender);
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfToken > 0, "no amount");
+        if(lock.amountOfToken == 0){
+            revert ZeroAmountOfLockedToken(lockId);
+        }
         require(lock.owner == msg.sender, "bad owner");
     }
 
