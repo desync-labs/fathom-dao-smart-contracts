@@ -438,7 +438,7 @@ We recommend forbidding to use functions after migration.
 We recommend using `deposited` variable instead `balanceOf` `VaultPackage` balance.
 
 
-#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last Ask Auditor TODAY]
+#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last Ask Auditor VERIFIED]
 ##### Description
 In the `StakingHandlers` contract, calling the function [`updateVault`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L269) can cause all contract functions that work with balances and `VaultPackage` functions to be blocked.
 ##### Recommendation
@@ -565,7 +565,7 @@ bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 5. [NEW] Transaction should be marked as `executed` if the call fails[DONE Ask Auditor]
+#### 5. [NEW] Transaction should be marked as `executed` if the call fails[DONE Ask Auditor -NOTDONE, check again]
 
 ##### Description
 
@@ -1536,3 +1536,8 @@ The following table contains the total number of issues that were found during a
 [FINDINGS]
 
 Current audit revealed 75 issues of varying degrees of importance. For each founded issue the Contractor's team made recommendations on effective solving.
+
+
+To Ask:
+
+Can you verify MultiSigWallet?

@@ -220,15 +220,12 @@ contract MultiSigWallet is IMultiSigWallet {
         require(transaction.numConfirmations >= numConfirmationsRequired, "cannot execute tx");
 
         transaction.executed = true;
+    
+        (bool success, ) = transaction.to.call{ value: transaction.value }(transaction.data);
         
-        for(uint i = 0; i < owners.length();i++){
-            if(confirmedTransactionsByOwner[owners.at(i)].contains(_txIndex))
-            {
-                confirmedTransactionsByOwner[owners.at(i)].remove(_txIndex);
-            }
-        }
-        (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
-        emit ExecuteTransaction(msg.sender, _txIndex,success, data);
+        require(success, "tx failed");
+
+        emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
     function revokeConfirmation(uint256 _txIndex)
