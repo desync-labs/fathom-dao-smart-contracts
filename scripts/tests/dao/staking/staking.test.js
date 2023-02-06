@@ -994,6 +994,8 @@ describe("Staking Test", () => {
         })
 
         
+
+        
         it("Should unlock all lock positions: ", async() =>{
             
             const lockingPeriod = 370* 24 * 60 * 60
@@ -1178,6 +1180,13 @@ describe("Staking Test", () => {
             assert(totalPenaltyBalance.toString(),"0")
         })
 
+        it('Should should  make lock position with 0 lock period', async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
         it('Paused contract should not make lock position', async() => {
             const toPauseFlag = 1
 
@@ -1212,7 +1221,7 @@ describe("Staking Test", () => {
                 errorMessage
             );
         })
-
+        
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0
             const _unpauseStakingContract = async(
@@ -1243,12 +1252,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
-        it('Should should  make lock position with 0 lock period', async() => {
-            const unlockTime =  0;
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-        })
+        
 
 
         it('Should not be initalizable twice - Vault', async() => {

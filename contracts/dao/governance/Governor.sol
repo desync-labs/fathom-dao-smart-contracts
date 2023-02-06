@@ -28,6 +28,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
     event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
+    event ProposalLifetimeUpdated(uint256 newProposalLifetime, uint256 oldProposalLifetime);
     event EmergencyStop();
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
@@ -260,7 +261,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     function updateProposalLifetime(uint256 newProposalLifetime) public onlyMultiSig {
         require(newProposalLifetime>= MINIMUM_LIFETIME, "updateProposalLifetime: updateProposalLifetime less than minimum");
-        emit ProposalTimeDelayUpdated(newProposalLifetime, newProposalLifetime);
+        emit ProposalLifetimeUpdated(newProposalLifetime, newProposalLifetime);
         proposalLifetime = newProposalLifetime;
     }
 

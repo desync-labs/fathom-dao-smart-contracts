@@ -264,10 +264,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert NotPaused();
         }
         uint256 numberOfLocks = locks[msg.sender].length;
-        require(numberOfLocks > 0,"no locks");
         for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
-            LockedBalance storage lock = locks[msg.sender][lockId];
-            uint256 stakeValue = lock.amountOfToken;
+            uint256 stakeValue = locks[msg.sender][lockId].amountOfToken;
             _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
         _withdraw(MAIN_STREAM);
@@ -318,9 +316,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert LockLengthExceeded(lockId, msg.sender);
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        if(lock.amountOfToken == 0){
-            revert ZeroAmountOfLockedToken(lockId);
-        }
+        require(lock.amountOfToken != 0,"zeroLocked");
         require(lock.owner == msg.sender, "bad owner");
     }
 
