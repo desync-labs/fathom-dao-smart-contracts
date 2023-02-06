@@ -27,7 +27,7 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/save-address/1_save_address_deployment.js'],
     ['execute', '--path', 'scripts/migrations/setup'],
     ['execute', '--path', 'scripts/migrations/save-address/2_save_address_setup.js'],
-    ['execute', '--path', 'scripts/migrations/test'],
+    ['execute', '--path', 'scripts/migrations/prod'],
     ['execute', '--path', 'scripts/migrations/save-address/3_save_address_prod.js'],
     ['execute', '--path', 'scripts/migrations/upgrades'],
   ],

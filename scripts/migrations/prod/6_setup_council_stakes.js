@@ -11,7 +11,7 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-const LOCK_PERIOD = 365 * 24 * 60 * 60;
+const LOCK_PERIOD = 4 * 24 * 60 * 60;
 
 const T_TO_TRANSFER = web3.utils.toWei('150000', 'ether');
 const T_TO_STAKE = web3.utils.toWei('50000', 'ether');
@@ -19,7 +19,6 @@ const T_TO_STAKE = web3.utils.toWei('50000', 'ether');
 const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 const COUNCIL_2 = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
-const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 
 const _createLockParamObject = (
     _amount,
@@ -73,7 +72,7 @@ module.exports = async function(deployer) {
     let resultApprove = await multiSigWallet.submitTransaction(
         MainToken.address,
         EMPTY_BYTES,
-        _encodeApproveFunction(VaultProxy.address,T_TO_TRANSFER),
+        _encodeApproveFunction(StakingProxy.address,T_TO_TRANSFER),
         0,
         {gas: 8000000}
     )

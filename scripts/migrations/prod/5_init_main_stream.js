@@ -1,25 +1,13 @@
 const eventsHelper = require("../../tests/helpers/eventsHelper");
 
-const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
-const IERC20 = artifacts.require("./dao/tokens/ERC20/IERC20.sol");
-const blockchain = require("../../tests/helpers/blockchain");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const STREAM_CREATED_EVENT = "StreamCreated(uint256,address,address,uint256,uint256[],uint256[])"
 
-const T_TO_TRANSFER = web3.utils.toWei('20000', 'ether');
-const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
-
-
-const _getTimeStamp = async () => {
-    const timestamp = await blockchain.getLatestBlockTimestamp();
-    return timestamp;
-}
 
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
@@ -65,22 +53,34 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
 const tau = 2;
 
 module.exports = async function(deployer) {
-    const startTime =  await _getTimeStamp() + 3 * 24 * 60 * 60;
-    const oneYear = 31556926;
+    const startTime =  1675526400 //EIGHT_PM_UAE_TIME_FEB_FOUR_Timestamp
+    const oneDay = 86400;
     const scheduleTimes = [
         startTime,
-        startTime + oneYear,
-        startTime + 2 * oneYear,
-        startTime + 3 * oneYear,
-        startTime + 4 * oneYear,
+        startTime + 1 * oneDay,
+        startTime + 2 * oneDay,
+        startTime + 3 * oneDay,
+        startTime + 4 * oneDay,
+        startTime + 5 * oneDay,
+        startTime + 6 * oneDay,
+        startTime + 7 * oneDay,
+        startTime + 8 * oneDay,
+        startTime + 9 * oneDay,
+        startTime + 10 * oneDay
     ];
 
     const scheduleRewards = [
-        web3.utils.toWei('20000', 'ether'),
-        web3.utils.toWei('10000', 'ether'),
-        web3.utils.toWei('5000', 'ether'),
-        web3.utils.toWei('2500', 'ether'),
-        web3.utils.toWei("0", 'ether')
+        web3.utils.toWei('150000000', 'ether'),
+        web3.utils.toWei('135000000', 'ether'),
+        web3.utils.toWei('120000000', 'ether'),
+        web3.utils.toWei('105000000', 'ether'),
+        web3.utils.toWei('90000000', 'ether'),
+        web3.utils.toWei('75000000', 'ether'),
+        web3.utils.toWei('60000000', 'ether'),
+        web3.utils.toWei('45000000', 'ether'),
+        web3.utils.toWei('30000000', 'ether'),
+        web3.utils.toWei('15000000', 'ether'),
+        web3.utils.toWei('0', 'ether')
     ];
     
     
@@ -89,7 +89,7 @@ module.exports = async function(deployer) {
     let resultApprove = await multiSigWallet.submitTransaction(
         MainToken.address,
         EMPTY_BYTES,
-        _encodeApproveFunction(VaultProxy.address,scheduleRewards[0]),
+        _encodeApproveFunction(StakingProxy.address,scheduleRewards[0]),
         0,
         {gas: 8000000}
     )
@@ -108,6 +108,6 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    let resultExeucteTransaction = await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
-    console.log(eventsHelper.getAllIndexedEventArgs(resultExeucteTransaction,STREAM_CREATED_EVENT))
+    const resultOfInitMainStream = await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
+    //const successStatusInitMainStream = eventsHelper.getIndexedEventArgs(resultOfInitMainStream, ExecuteTransactionSuccess);
 }

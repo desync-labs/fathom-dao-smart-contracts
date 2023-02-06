@@ -1,9 +1,7 @@
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
 
-const blockchain = require("../../tests/helpers/blockchain");
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
-const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 const StakingPackage = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
@@ -40,8 +38,6 @@ const _createVoteWeights = (
 
 const vMainTokenCoefficient = 500;
 
-const oneYear = 31556926;
-const oneDay = 86400;
 
 const maxWeightShares = 1024;
 const minWeightShares = 768;
@@ -49,8 +45,6 @@ const maxWeightPenalty = 3000;
 const minWeightPenalty = 100;
 const weightMultiplier = 10;
 const maxNumberOfLocks = 10;
-
-const tau = 60;
 
 const lockingVoteWeight = 31556926;
 
@@ -68,36 +62,6 @@ module.exports = async function(deployer) {
         
        // const thirteenDecemberTimestampMidNight = 1670889600
         const JanuaryFiveEIGHTPMUAE = 1672934400;
-
-        const startTime =  JanuaryFiveEIGHTPMUAE;
-
-        const scheduleTimes = [
-            startTime,
-            startTime + 1 * oneDay,
-            startTime + 2 * oneDay,
-            startTime + 3 * oneDay,
-            startTime + 4 * oneDay,
-            startTime + 5 * oneDay,
-            startTime + 6 * oneDay,
-            startTime + 7 * oneDay,
-            startTime + 8 * oneDay,
-            startTime + 9 * oneDay,
-            startTime + 10 * oneDay
-        ];
-
-        const scheduleRewards = [
-            web3.utils.toWei('150000000', 'ether'),
-            web3.utils.toWei('135000000', 'ether'),
-            web3.utils.toWei('120000000', 'ether'),
-            web3.utils.toWei('105000000', 'ether'),
-            web3.utils.toWei('90000000', 'ether'),
-            web3.utils.toWei('75000000', 'ether'),
-            web3.utils.toWei('60000000', 'ether'),
-            web3.utils.toWei('45000000', 'ether'),
-            web3.utils.toWei('30000000', 'ether'),
-            web3.utils.toWei('15000000', 'ether'),
-            web3.utils.toWei('0', 'ether')
-        ];
 
         const voteObject = _createVoteWeights(
             vMainTokenCoefficient,

@@ -9,7 +9,7 @@ const MultiSigWallet_address = MultiSigWallet.address;
 const initialVotingDelay = 30; 
 const votingPeriod = 450; 
 const initialProposalThreshold = 1000;
-const proposalTimeDelay = 2;
+const proposalTimeDelay = 5;
 const proposalLifetime = 86400;
 
 

@@ -14,7 +14,7 @@ module.exports = {
       gasPrice: '0x3b9aca00',
     },
     apothem: {
-      host: "https://rpc.apothem.network",
+      host: "https://arpc.apothem.network",
       private_key: fs.readFileSync("./privateKey").toString(),
       gasPrice: '0x3b9aca00',
     },

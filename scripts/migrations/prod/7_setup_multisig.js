@@ -9,7 +9,6 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 const COUNCIL_2 = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";
 
-const NEW_MULTISIG_REQUIREMENT = 3;
 
 const _encodeAddOwnersFunction = (_accounts) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
