@@ -50,10 +50,11 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
         return toInitializeMainStream
 }
 
-const tau = 2;
+const tau = 60;
 
 module.exports = async function(deployer) {
-    const startTime =  1675526400 //EIGHT_PM_UAE_TIME_FEB_FOUR_Timestamp
+   // const startTime =  1675526400 //EIGHT_PM_UAE_TIME_FEB_FOUR_Timestamp
+    const startTime =  1675756800 //TWELVE_PM_UAE_TIME_FEB_SEVEN_Timestamp
     const oneDay = 86400;
     const scheduleTimes = [
         startTime,

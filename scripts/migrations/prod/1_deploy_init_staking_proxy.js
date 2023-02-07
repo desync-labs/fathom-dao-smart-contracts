@@ -60,8 +60,6 @@ module.exports = async function(deployer) {
             weightMultiplier
         );
         
-       // const thirteenDecemberTimestampMidNight = 1670889600
-        const JanuaryFiveEIGHTPMUAE = 1672934400;
 
         const voteObject = _createVoteWeights(
             vMainTokenCoefficient,

@@ -13,8 +13,8 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 
 const LOCK_PERIOD = 4 * 24 * 60 * 60;
 
-const T_TO_TRANSFER = web3.utils.toWei('150000', 'ether');
-const T_TO_STAKE = web3.utils.toWei('50000', 'ether');
+const T_TO_TRANSFER = web3.utils.toWei('150000000', 'ether');
+const T_TO_STAKE = web3.utils.toWei('50000000', 'ether');
 
 const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 const COUNCIL_2 = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";

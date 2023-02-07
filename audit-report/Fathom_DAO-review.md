@@ -419,7 +419,7 @@ We recommend making two different functions for relaying `ERC20` tokens and nati
 
 
 
-#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> Do we need to have not migrated check in withdraw Extra supported tokens?]
+#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> Do we need to have not migrated check in withdraw Extra supported tokens Verified?]
 ##### Description
 The [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol) contract lacks the ability to suspend a contract in an emergency and migrate assets to a new compatible `VaultPackage` contract.
 
@@ -487,7 +487,7 @@ We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppeli
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , Ask Auditor]
+#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , Ask Auditor -Verified]
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
 
@@ -506,7 +506,7 @@ Recommendation has not been fully implemented. In the current version there is s
 We recommend adding a separate withdraw function, that would allow the `DEFAULT_ADMIN_ROLE`
 address to take excess tokens away (both `supportedTokens` and tokens that are not on the list).
 
-####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor]
+####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor -VEFIRIED]
 ##### Description
 In the `StakingHandlers` contract the [`initializeStaking`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L33) function does not allocate tokens for rewards `MAIN_STREAM`, as it happens when [`createStream`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L152) is called. This may result in the block of the `withdrawStream` function call from the `MAIN_STREAM` of tokens and rewards for some users, if the amount in `VaultPackage` is less than the amount stated in `scheduleRewards`.
 ##### Recommendation
@@ -794,7 +794,7 @@ We recommend adding parameter checking when adding a transaction according to po
 ##### Update
 ###### Fathom's response
 Implemented Auditors Recommendation.
-###### Oxorio's response
+###### Oxorio's responsea
 The [recommendation](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/daa757804b549f91904ec18af91259f7fe434883/contracts/dao/treasury/MultiSigWallet.sol#L94) is not implemented correctly.
 
 
