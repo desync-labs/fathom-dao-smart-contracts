@@ -61,7 +61,7 @@ contract StakingInternals is RewardsInternals {
         }
         LockedBalance memory _newLock = LockedBalance({
             amountOfToken: BoringMath.to128(amount),
-            amountOfVoteToken: BoringMath.to128(nVoteToken),
+            amountOfVoteToken: nVoteToken,
             positionStreamShares: 0,
             end: BoringMath.to64(lockPeriod + block.timestamp),
             owner: account

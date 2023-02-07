@@ -17,9 +17,9 @@ interface IStakingGetterHelper {
         returns (
             uint128,
             uint128,
-            uint128,
             uint64,
-            address
+            address,
+            uint256
         );
 
     function getUserTotalDeposit(address account) external view returns (uint256);

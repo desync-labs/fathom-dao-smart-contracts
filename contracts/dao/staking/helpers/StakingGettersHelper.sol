@@ -38,16 +38,16 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         returns (
             uint128,
             uint128,
-            uint128,
             uint64,
-            address
+            address,
+            uint256
         )
     {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
         require(lockId > 0, "lockId cant be 0");
-        return (lock.amountOfToken, lock.amountOfVoteToken, lock.positionStreamShares, lock.end, lock.owner);
+        return (lock.amountOfToken, lock.positionStreamShares, lock.end, lock.owner,lock.amountOfVoteToken);
     }
 
     function getUserTotalDeposit(address account) public view override returns (uint256) {

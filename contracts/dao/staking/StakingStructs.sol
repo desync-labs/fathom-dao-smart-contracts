@@ -46,10 +46,10 @@ struct VoteCoefficient {
 
 struct LockedBalance {
     uint128 amountOfToken;
-    uint128 amountOfVoteToken;
     uint128 positionStreamShares;
     uint64 end;
     address owner;
+    uint256 amountOfVoteToken;
 }
 struct Stream {
     address owner; // stream owned by the ERC-20 reward token owner
