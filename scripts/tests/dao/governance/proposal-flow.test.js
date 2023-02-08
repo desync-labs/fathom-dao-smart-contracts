@@ -41,6 +41,24 @@ const _encodeEmergencyStop = () => {
         },[]);
 }
 
+const _encodeBlacklistProposer = (_account,_blacklistStatus) =>{
+    return web3.eth.abi.encodeFunctionCall(
+        {   
+            name: 'setBlacklistStatusForProposer',
+            type: 'function',
+            inputs: [
+                {
+                    type: 'address',
+                    name: 'account'
+                },
+                {
+                    type: 'bool',
+                    name: 'blacklistStatus'
+                }
+            ]
+        },[_account,_blacklistStatus]);
+}
+
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 let streamReward1;
@@ -1092,6 +1110,41 @@ describe('Proposal flow', () => {
                     const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
                     expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
             });
+
+            it('Should blacklist a proposer', async() =>{
+                const _blacklistAProposer = async(account, blacklistStatus) => {
+                    const result = await multiSigWallet.submitTransaction(
+                        mainTokenGovernor.address,
+                        EMPTY_BYTES,
+                        _encodeBlacklistProposer(account, blacklistStatus),
+                        0,
+                        {"from": accounts[0]}
+                    )
+        
+                    const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                    await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                    await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                    await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+                }
+    
+                await _blacklistAProposer(accounts[5], true)
+            })
+    
+            it('Should revert on propose by blacklisted msg.sender', async() =>{
+                let errorMessage = "Proposer is blacklisted";
+    
+                await shouldRevert(
+                    mainTokenGovernor.propose(
+                        [box.address],
+                        [0],
+                        [encoded_function],
+                        PROPOSAL_DESCRIPTION,
+                        {"from": accounts[5]}
+                    ),
+                    errTypes.revert,
+                    errorMessage
+                );
+            })
     });
 
     describe("Emergency Stop through multisig", async() => {

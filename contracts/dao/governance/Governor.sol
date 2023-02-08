@@ -41,6 +41,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     address private multiSig;
     uint256 public proposalLifetime;
+    mapping(address => bool) isBlacklisted;
 
     mapping(uint256 => ProposalCore) internal _proposals;
     mapping(uint256 => string) internal _descriptions;
@@ -197,7 +198,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     ) public virtual override returns (uint256) {
         require(live == 1,"not live");
         require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below proposal threshold");
-
+        
+        require(!isBlacklisted[msg.sender],"Proposer is blacklisted");
         require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Governor: Can only submit one proposal for a certain interval");
 
         nextAcceptableProposalTimestamp[msg.sender] = block.timestamp + proposalTimeDelay;
@@ -263,6 +265,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         require(newProposalLifetime>= MINIMUM_LIFETIME, "updateProposalLifetime: updateProposalLifetime less than minimum");
         emit ProposalLifetimeUpdated(newProposalLifetime, newProposalLifetime);
         proposalLifetime = newProposalLifetime;
+    }
+
+    function setBlacklistStatusForProposer(address account, bool blacklistStatus) public onlyMultiSig {
+        isBlacklisted[account] = blacklistStatus;
     }
 
     function _emergencyStop() internal  {
@@ -420,6 +426,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     function proposalThreshold() public view virtual returns (uint256) {
         return 0;
     }
+
+    
 
     function hashProposal(
         address[] memory targets,
