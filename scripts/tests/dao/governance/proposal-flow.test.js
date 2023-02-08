@@ -284,7 +284,7 @@ describe('Proposal flow', () => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
 
-            let errorMessage = "Governor: proposer votes below proposal threshold";
+            let errorMessage = "Governor: proposer votes below threshold";
 
             await shouldRevert(
                 mainTokenGovernor.propose(
@@ -565,7 +565,7 @@ describe('Proposal flow', () => {
 
 
         it("Should not accept votes outside of the voting period", async () => {
-            const errorMessage = "Governor: vote not currently active";
+            const errorMessage = "Governor: vote inactive";
               
             await shouldRevert(
                 mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
