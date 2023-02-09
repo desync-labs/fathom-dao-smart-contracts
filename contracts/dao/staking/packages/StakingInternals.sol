@@ -16,6 +16,8 @@ import "../../../common/math/FullMath.sol";
 contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
     error ZeroAddress();
+    error ZeroLocked(uint256 lockId);
+    error ZeroTotalToken();
     function _initializeStaking(
         address _mainToken,
         address _voteToken,
@@ -93,8 +95,13 @@ contract StakingInternals is RewardsInternals {
     ) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
-        require(totalAmountOfStakedToken !=0, "zeroTotal");
-        require(updateLock.amountOfToken !=0,"zeroLocked");
+        if(updateLock.amountOfToken == 0){
+            revert ZeroLocked(lockId);
+        }
+        if(totalAmountOfStakedToken == 0){
+            revert ZeroTotalToken();
+        }
+        
         uint256 nVoteToken = updateLock.amountOfVoteToken;
         /// if you unstake, early or partial or complete,
         /// the number of vote tokens for lock position is set to zero
