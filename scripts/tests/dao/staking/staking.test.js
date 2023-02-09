@@ -1187,6 +1187,68 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  1;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  2;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  3;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  4;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  1;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  2;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  3;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  4;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
         it('Paused contract should not make lock position', async() => {
             const toPauseFlag = 1
 
@@ -1220,6 +1282,21 @@ describe("Staking Test", () => {
                 errTypes.revert,  
                 errorMessage
             );
+        })
+
+
+        it('Should emergency Unlock and Withdraw', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const result = await stakingService.emergencyUnlockAndWithdraw({"from": staker_4, gas: 30000000});
+            console.log(result.gasUsed.toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should emergency Unlock and Withdraw', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const result = await stakingService.emergencyUnlockAndWithdraw({"from": staker_3, gas: 30000000});
+            console.log(result.gasUsed.toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
         
         it('Unpaused contract should  make lock position', async() => {

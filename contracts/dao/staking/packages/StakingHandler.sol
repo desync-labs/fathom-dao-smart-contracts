@@ -275,9 +275,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert NotPaused();
         }
         uint256 numberOfLocks = locks[msg.sender].length;
-        for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
-            uint256 stakeValue = locks[msg.sender][lockId].amountOfToken;
-            _unlock(stakeValue, stakeValue, lockId, msg.sender);
+        uint256 lockIdToUnlockAlways = 1;
+        for (uint256 i = 0; i < numberOfLocks; i++) {
+            uint256 stakeValue = locks[msg.sender][0].amountOfToken;
+            _unlock(stakeValue, stakeValue, lockIdToUnlockAlways, msg.sender);
         }
         _withdraw(MAIN_STREAM);
     }

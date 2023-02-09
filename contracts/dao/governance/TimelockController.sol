@@ -239,7 +239,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes memory data
     ) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
-        require(success, "TimelockController: underlying transaction reverted");
+        emit ExecuteTransaction(msg.sender,success, data);
     }
 
     function _afterCall(bytes32 id) private {
