@@ -1298,6 +1298,15 @@ describe("Staking Test", () => {
             console.log(result.gasUsed.toString())
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
+
+        it('Should have no locks', async() => {
+            const result1 = await stakingService.getAllLocks(staker_4)
+            const result2 = await stakingService.getAllLocks(staker_3)
+            console.log(result1)
+            console.log(result2)
+            assert.equal(result1.toString().length,0)
+            assert.equal(result2.toString().length,0)
+        })
         
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0
