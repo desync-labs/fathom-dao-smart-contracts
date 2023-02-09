@@ -8,7 +8,7 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
-
+const ExecuteTransactionSuccess = "ExecuteTransaction(address,uint256)"
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -54,7 +54,7 @@ const tau = 60;
 
 module.exports = async function(deployer) {
    // const startTime =  1675526400 //EIGHT_PM_UAE_TIME_FEB_FOUR_Timestamp
-    const startTime =  1675756800 //TWELVE_PM_UAE_TIME_FEB_SEVEN_Timestamp
+    const startTime =  1678328872 //TWELVE_PM_UAE_TIME_FEB_SEVEN_Timestamp
     const oneDay = 86400;
     const scheduleTimes = [
         startTime,
@@ -110,5 +110,6 @@ module.exports = async function(deployer) {
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
     const resultOfInitMainStream = await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
-    //const successStatusInitMainStream = eventsHelper.getIndexedEventArgs(resultOfInitMainStream, ExecuteTransactionSuccess);
+    const successStatusInitMainStream = eventsHelper.getIndexedEventArgs(resultOfInitMainStream, ExecuteTransactionSuccess);
+    console.log(successStatusInitMainStream)
 }
