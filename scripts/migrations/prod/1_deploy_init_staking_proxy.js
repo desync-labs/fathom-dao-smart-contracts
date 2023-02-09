@@ -48,6 +48,7 @@ const maxWeightPenalty = 3000;
 const minWeightPenalty = 100;
 const weightMultiplier = 10;
 const maxNumberOfLocks = 10;
+const minimumLockingPeriod = 4 * 86400;
 
 const lockingVoteWeight = 365 * 24 * 60 * 60;
 
@@ -115,9 +116,13 @@ module.exports = async function(deployer) {
             {
                 type: 'address',
                 name: '_rewardsContract'
+            },
+            {
+                type: 'uint256',
+                name: '_minLockPeriod'
             }]
             },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
-                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address]);
+                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address, minimumLockingPeriod]);
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});
         await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});

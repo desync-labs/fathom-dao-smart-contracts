@@ -17,6 +17,7 @@ interface IStakingHandler {
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
         address _rewardsContract,
+        uint256 _minLockPeriod
     ) external;
 
     function initializeMainStream(

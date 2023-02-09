@@ -19,6 +19,9 @@ contract StakingStorage {
 
     uint256 public maxLockPeriod;
     ///@notice Checks if the staking is initialized
+
+    uint256 public minLockPeriod;
+
     uint256 public maxLockPositions;
     mapping(address => mapping(uint256 => bool)) internal prohibitedEarlyWithdraw;
 

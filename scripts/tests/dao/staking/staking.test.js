@@ -428,7 +428,6 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_4});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-
             let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             let eventArgs2 = eventsHelper.getIndexedEventArgs(result2, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             let eventArgs3 = eventsHelper.getIndexedEventArgs(result3, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
@@ -953,6 +952,8 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
         })
 
+
+
         it("Should get all unlocked main token for staker - 3", async() => {
             //  When we unlock, the main token should be sent to stream 0, with users stream id.  
             // Once unlocked, the token is available for withdrawl from stream 0 to staker - 3.
@@ -1130,13 +1131,13 @@ describe("Staking Test", () => {
         it('Setup lock position for accounts[9] for govn to use', async() => {
             
             const sumToApprove = web3.utils.toWei('20000','ether');
-
+            
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
-            const lockingPeriod = 365 * 24 * 60 * 60
-            const unlockTime =  lockingPeriod;
-
-            const sumToDeposit = web3.utils.toWei('20000', 'ether');
-            let result1 = await stakingService.createLock(sumToDeposit,unlockTime, {from: accounts[9], gas: maxGasForTxn});
+            const lockingPeriod = 364 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const sumToDeposit = web3.utils.toWei('200', 'ether');
+            let result1 = await stakingService.createLock(sumToDeposit,lockingPeriod, {from: accounts[9], gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
         it("Should get correct user total votes from staking getter service", async() => {
@@ -1180,10 +1181,15 @@ describe("Staking Test", () => {
             assert(totalPenaltyBalance.toString(),"0")
         })
 
-        it('Should should  make lock position with 0 lock period', async() => {
+        it('Should not make lock position with 0 lock period', async() => {
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            const errorMessage = "min lock" 
+            await shouldRevert(
+                stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn}),
+                errTypes.revert,
+                errorMessage
+            );
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
@@ -1221,6 +1227,7 @@ describe("Staking Test", () => {
                 errorMessage
             );
         })
+    
         
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0

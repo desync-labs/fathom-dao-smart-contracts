@@ -20,6 +20,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
     error ZeroLockId();
+    error MaxLockPeriodExceeded();
     error MaxLockIdExceeded(uint256 _lockId, address _account);
     error ZeroPenalty();
     error AlreadyInitialized();
@@ -47,6 +48,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
         address _rewardsContract,
+        uint256 _minLockPeriod
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
@@ -55,6 +57,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
         maxLockPeriod = ONE_YEAR;
+        minLockPeriod = _minLockPeriod;
     }
 
     function initializeMainStream(
@@ -312,6 +315,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 lockPeriod,
         address account
     ) internal{
+        require(lockPeriod >= minLockPeriod, "min lock");
         require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <= maxLockPeriod, "max time");
@@ -336,5 +340,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IERC20(_token).safeApprove(vault,0);
         IERC20(_token).safeApprove(vault,_amount);
         IVault(vault).deposit(_token, _amount);
+    }
+
+    function setMinimumLockPeriod(uint256 _minLockPeriod) public onlyRole(DEFAULT_ADMIN_ROLE){
+        if(_minLockPeriod > maxLockPeriod){
+            revert MaxLockPeriodExceeded();
+        }
+        minLockPeriod = _minLockPeriod;
     }
 }
