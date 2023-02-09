@@ -221,11 +221,13 @@ contract MultiSigWallet is IMultiSigWallet {
 
         transaction.executed = true;
     
-        (bool success, ) = transaction.to.call{ value: transaction.value }(transaction.data);
+        (bool success, bytes memory data) = transaction.to.call{ value: transaction.value }(transaction.data);
         
-        require(success, "tx failed");
-
-        emit ExecuteTransaction(msg.sender, _txIndex);
+        if (success) {
+            emit ExecuteTransaction(msg.sender, _txIndex);
+        } else {
+            revert TransactionRevered(data);
+        }
     }
 
     function revokeConfirmation(uint256 _txIndex)
