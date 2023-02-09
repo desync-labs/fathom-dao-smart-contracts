@@ -131,7 +131,6 @@ abstract contract IGovernor is IERC165 {
     ) public view virtual returns (uint256);
 
     function hasVoted(uint256 proposalId, address account) public view virtual returns (bool);
-
     /**
      * @dev A description of the possible `support` values for {castVote} and the way these votes are counted, meant to
      * be consumed by UIs to show correct vote options and interpret the results. The string is a URL-encoded

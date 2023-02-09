@@ -59,7 +59,6 @@ interface IStakingHandler {
     function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-
     function updateVault(address _vault) external;
 
     function emergencyUnlockAndWithdraw() external;
