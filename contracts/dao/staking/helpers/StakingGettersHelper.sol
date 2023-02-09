@@ -10,7 +10,7 @@ import "../../../common/access/AccessControl.sol";
 
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
-    uint256 public constant WEIGHT_SLOT = 14; // the storage slot in staking contract where WEIGHT resides
+    //uint256 public constant WEIGHT_SLOT = 14; // the storage slot in staking contract where WEIGHT resides
     constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -38,16 +38,16 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         returns (
             uint128,
             uint128,
-            uint128,
             uint64,
-            address
+            address,
+            uint256
         )
     {
         LockedBalance[] memory locks = _getAllLocks(account);
         LockedBalance memory lock = locks[lockId - 1];
         require(lockId <= locks.length, "out of index");
         require(lockId > 0, "lockId cant be 0");
-        return (lock.amountOfToken, lock.amountOfVoteToken, lock.positionStreamShares, lock.end, lock.owner);
+        return (lock.amountOfToken, lock.positionStreamShares, lock.end, lock.owner,lock.amountOfVoteToken);
     }
 
     function getUserTotalDeposit(address account) public view override returns (uint256) {
@@ -120,34 +120,29 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
             maxLockPeriod);
     }
     function _getWeight() internal view returns (Weight memory) {
-        bytes32 weight = IStakingHelper(stakingContract).readBySlot(WEIGHT_SLOT);
-        uint32 penaltyWeightMultiplier;
-        uint32 minWeightPenalty;
-        uint32 maxWeightPenalty;
-        uint32 minWeightShares;
-        uint32 maxWeightShares; 
-        assembly {
-            let value := weight
-            maxWeightShares := and(0xffffffff, value)
-            //shift right by 32 then, do and by 32 bits to get the value
-            let  minWeightShares_shifted:= shr(32,value)
-            minWeightShares := and(0xffffffff, minWeightShares_shifted)
-            //shift right by 64 then, do and by 32 bits to get the value
-            let maxWeightPenalty_shifted := shr(64,value)
-            maxWeightPenalty := and(0xffffffff, maxWeightPenalty_shifted)
-            //shift right by 96 then, do and by 32 bits to get the value
-            let minWeightPenalty_shifted := shr(96,value)
-            minWeightPenalty := and(0xffffffff, minWeightPenalty_shifted)
-            //shift right by 128 then, do and by 32 bits to get the value
-            let penaltyWeightMultiplier_shifted := shr(128,value)
-            penaltyWeightMultiplier := and(0xffffffff, penaltyWeightMultiplier_shifted)
-        }
-        return Weight(
-            maxWeightShares,
-            minWeightShares,
-            maxWeightPenalty,
-            minWeightPenalty,
-            penaltyWeightMultiplier
-        );
+        //bytes32 weight = IStakingHelper(stakingContract).readBySlot(WEIGHT_SLOT);
+        // uint32 penaltyWeightMultiplier;
+        // uint32 minWeightPenalty;
+        // uint32 maxWeightPenalty;
+        // uint32 minWeightShares;
+        // uint32 maxWeightShares; 
+        // assembly {
+        //     let value := weight
+        //     maxWeightShares := and(0xffffffff, value)
+        //     //shift right by 32 then, do and by 32 bits to get the value
+        //     let  minWeightShares_shifted:= shr(32,value)
+        //     minWeightShares := and(0xffffffff, minWeightShares_shifted)
+        //     //shift right by 64 then, do and by 32 bits to get the value
+        //     let maxWeightPenalty_shifted := shr(64,value)
+        //     maxWeightPenalty := and(0xffffffff, maxWeightPenalty_shifted)
+        //     //shift right by 96 then, do and by 32 bits to get the value
+        //     let minWeightPenalty_shifted := shr(96,value)
+        //     minWeightPenalty := and(0xffffffff, minWeightPenalty_shifted)
+        //     //shift right by 128 then, do and by 32 bits to get the value
+        //     let penaltyWeightMultiplier_shifted := shr(128,value)
+        //     penaltyWeightMultiplier := and(0xffffffff, penaltyWeightMultiplier_shifted)
+        // }
+        
+           return IStakingStorage(stakingContract).weight();
     }
 }

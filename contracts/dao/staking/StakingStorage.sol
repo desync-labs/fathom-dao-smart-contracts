@@ -9,18 +9,18 @@ import "./library/StakingLibrary.sol";
 
 contract StakingStorage {
     uint256 internal constant MAIN_STREAM = 0;
-    //Set according to Tokenomics: 1e50 -> 1e50/1e18. So Max Supply is 1 * 1e32;
-    uint256 internal constant RPS_MULTIPLIER = 1e50;
+    //Set according to Tokenomics: Max Supply: 1e9 * 1e18, weight = 1e3, tolerance for changes = 6, so 1e36
+    uint256 internal constant RPS_MULTIPLIER = 1e36;
     uint128 internal constant POINT_MULTIPLIER = 1e18;
-    uint64 internal constant ONE_MONTH = 2629746;
-    uint64 internal constant ONE_YEAR = 31536000;
+    uint32 internal constant ONE_MONTH = 2629746;
+    uint32 internal constant ONE_YEAR = 31536000;
+    uint32 internal constant ONE_DAY = 86400;
     //MAX_LOCK: It is a constant. One WEEK Added as a tolerance.
 
     uint256 public maxLockPeriod;
     ///@notice Checks if the staking is initialized
-
     uint256 public maxLockPositions;
-    mapping(address => mapping(uint256 => bool)) public prohibitedEarlyWithdraw;
+    mapping(address => mapping(uint256 => bool)) internal prohibitedEarlyWithdraw;
 
     uint256 internal touchedAt;
 
@@ -41,11 +41,11 @@ contract StakingStorage {
     address public voteToken;
     address public vault;
     address public rewardsCalculator;
-    bool public councilsInitialized;
-    bool public mainStreamInitialized;
+    bool internal councilsInitialized;
+    bool internal mainStreamInitialized;
 
     ///Weighting coefficient for shares and penalties
-    Weight internal weight;
+    Weight public weight;
 
     mapping(address => User) public users;
 

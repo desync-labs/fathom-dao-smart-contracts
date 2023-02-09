@@ -209,7 +209,7 @@ describe('Token Creation Through Governance', () => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
 
-            let errorMessage = "Governor: proposer votes below proposal threshold";
+            let errorMessage = "Governor: proposer votes below threshold";
 
             await shouldRevert(
                 mainTokenGovernor.propose(

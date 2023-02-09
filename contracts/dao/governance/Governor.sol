@@ -41,6 +41,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     address private multiSig;
     uint256 public proposalLifetime;
+    mapping(address => bool) isBlacklisted;
 
     mapping(uint256 => ProposalCore) internal _proposals;
     mapping(uint256 => string) internal _descriptions;
@@ -51,7 +52,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     uint256 public constant MINIMUM_LIFETIME = 86400;//oneDay
     
     modifier onlyGovernance() {
-        require(_msgSender() == _executor(), "Governor: onlyGovernance");
+        require(_msgSender() == _executor(), "onlyGovernance");
         if (_executor() != address(this)) {
             bytes32 msgDataHash = keccak256(_msgData());
             // loop until popping the expected operation - throw if deque is empty (operation not authorized)
@@ -82,7 +83,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         uint256 proposalTimeDelay_,
         uint256 proposalLifetime_
     ) EIP712(name_, version()) {
-        require(multiSig_ != address(0), "multiSig address cant be zero address");
+        require(multiSig_ != address(0), "multiSig zero address");
         require(maxTargets_ != 0, "maxTarget cant be zero");
         require(proposalTimeDelay_ != 0, "proposalTimeDelay cant be zero");
         require(proposalLifetime_ >= MINIMUM_LIFETIME,"lifetime less than minimum");
@@ -115,7 +116,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         for (uint256 i = 0; i < values.length; i++) {
             totalValue += values[i];
         }
-        require(msg.value >= totalValue, "execute: msg.value not sufficient");
+        require(msg.value >= totalValue, "msg.value not sufficient");
         _proposals[proposalId].executed = true;
 
         emit ProposalExecuted(proposalId);
@@ -196,9 +197,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         string memory description
     ) public virtual override returns (uint256) {
         require(live == 1,"not live");
-        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below proposal threshold");
-
-        require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Governor: Can only submit one proposal for a certain interval");
+        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below threshold");
+        
+        require(!isBlacklisted[msg.sender],"Proposer is blacklisted");
+        require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Can submit in interval");
 
         nextAcceptableProposalTimestamp[msg.sender] = block.timestamp + proposalTimeDelay;
 
@@ -231,7 +233,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         requireNotExpired(_proposalId);
         isConfirmed[_proposalId] = true;
         ProposalState status = state(_proposalId);
-        require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Governor: proposal not successful");
+        require(status == ProposalState.Succeeded || status == ProposalState.Queued, "proposal not successful");
         emit ConfirmProposal(msg.sender, _proposalId);
     }
 
@@ -242,27 +244,31 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function updateMultiSig(address newMultiSig) public onlyMultiSig {
-        require(newMultiSig != address(0), "updateMultiSig: newMultiSig cant be set to zero address");
+        require(newMultiSig != address(0), "zero address");
         emit MultiSigUpdated(newMultiSig, multiSig);
         multiSig = newMultiSig;
     }
 
     function updateMaxTargets(uint256 newMaxTargets) public onlyMultiSig {
-        require(newMaxTargets != 0, "updateMaxTargets: newMaxTargets cant be zero");
+        require(newMaxTargets != 0, "zero value");
         emit MaxTargetUpdated(newMaxTargets, maxTargets);
         maxTargets = newMaxTargets;
     }
 
     function updateProposalTimeDelay(uint256 newProposalTimeDelay) public onlyMultiSig {
-        require(newProposalTimeDelay != 0, "updateProposalTimeDelay: newProposalTimeDelay cant be zero");
+        require(newProposalTimeDelay != 0, "zero value");
         emit ProposalTimeDelayUpdated(newProposalTimeDelay, proposalTimeDelay);
         proposalTimeDelay = newProposalTimeDelay;
     }
 
     function updateProposalLifetime(uint256 newProposalLifetime) public onlyMultiSig {
-        require(newProposalLifetime>= MINIMUM_LIFETIME, "updateProposalLifetime: updateProposalLifetime less than minimum");
+        require(newProposalLifetime>= MINIMUM_LIFETIME, "less than minimum");
         emit ProposalLifetimeUpdated(newProposalLifetime, newProposalLifetime);
         proposalLifetime = newProposalLifetime;
+    }
+
+    function setBlacklistStatusForProposer(address account, bool blacklistStatus) public onlyMultiSig {
+        isBlacklisted[account] = blacklistStatus;
     }
 
     function _emergencyStop() internal  {
@@ -421,6 +427,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return 0;
     }
 
+    
+
     function hashProposal(
         address[] memory targets,
         uint256[] memory values,
@@ -446,8 +454,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes32 /*descriptionHash*/
     ) internal virtual {
         for (uint256 i = 0; i < targets.length; ++i) {
+            string memory errorMessage = "Governor: call reverted without message";
             (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(calldatas[i]);
-            emit ExecuteTransaction(msg.sender, success, returndata);
+            //emit ExecuteTransaction(msg.sender, success, returndata);
+            Address.verifyCallResult(success, returndata, errorMessage);
         }
     }
 
@@ -518,7 +528,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         bytes memory params
     ) internal virtual returns (uint256) {
         ProposalCore storage proposal = _proposals[proposalId];
-        require(state(proposalId) == ProposalState.Active, "Governor: vote not currently active");
+        require(state(proposalId) == ProposalState.Active, "Governor: vote inactive");
 
         uint256 weight = _getVotes(account, proposal.voteStart.getDeadline(), params);
         _countVote(proposalId, account, support, weight, params);

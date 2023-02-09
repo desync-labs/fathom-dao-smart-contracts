@@ -16,11 +16,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
     
-    error LockLengthExceeded(uint256 _lockId, address _account);
     error NotPaused();
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
     error ZeroLockId();
+    error MaxLockIdExceeded(uint256 _lockId, address _account);
+    error ZeroPenalty();
+    error AlreadyInitialized();
+    error StreamIdZero();
     constructor() {
         _disableInitializers();
     }
@@ -60,7 +63,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256[] memory scheduleRewards,
         uint256 tau
     ) external override onlyRole(DEFAULT_ADMIN_ROLE){
-        require(!mainStreamInitialized,"init done");
+        if(mainStreamInitialized == true){
+            revert AlreadyInitialized();
+        }
         IERC20(mainToken).safeTransferFrom(msg.sender,address(this),scheduleRewards[0]);
         _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
@@ -166,7 +171,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function removeStream(uint256 streamId, address streamFundReceiver) public override onlyRole(STREAM_MANAGER_ROLE) {
-        require(streamId != 0, "Stream 0");
+        if(streamId == 0){
+            revert StreamIdZero();
+        }
         require(streamTotalUserPendings[streamId] == 0, "nt withdrawn");
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
@@ -183,7 +190,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!councilsInitialized, "created");
+        if(councilsInitialized == true){
+            revert AlreadyInitialized();
+        }
         councilsInitialized = true;
         for (uint256 i; i < lockParams.length; i++) {
             address account = lockParams[i].account;
@@ -227,9 +236,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
         if(lockId > locks[msg.sender].length){
-            revert LockLengthExceeded(lockId, msg.sender);
+            revert MaxLockIdExceeded(lockId, msg.sender);
         }
-        require(lockId != 0, "lockId 0");
+        if(lockId == 0){
+            revert ZeroLockId();
+        }
         _updateStreamRPS();
         // Claim all streams while skipping inactive streams.
         _moveAllStreamRewardsToPending(msg.sender, lockId);
@@ -290,7 +301,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE) {
-        require(totalPenaltyBalance > 0, "no penalty");
+        if(totalPenaltyBalance == 0){
+            revert ZeroPenalty();
+        }
         _withdrawPenalty(penaltyReceiver);
     }
 
@@ -313,10 +326,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert ZeroLockId();
         }
         if(lockId > locks[msg.sender].length){
-            revert LockLengthExceeded(lockId, msg.sender);
+            revert MaxLockIdExceeded(lockId, msg.sender);
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.amountOfToken != 0,"zeroLocked");
         require(lock.owner == msg.sender, "bad owner");
     }
 

@@ -27,15 +27,32 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
 
-    function readBySlot(uint256 slot) external view override returns(bytes32 value) {
-        assembly {
-            value := sload(slot)
-        }
-    }
+    
     function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
         return locks[account];
     }
     function getStreamSchedule(uint256 streamId) external override view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {
         return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
+    }
+
+    function getStream(
+        uint256 streamId
+    )
+        external
+        view
+        returns (
+            uint256 rewardDepositAmount,
+            uint256 rewardClaimedAmount,
+            uint256 rps,
+            StreamStatus status
+        )
+    {
+        Stream storage stream = streams[streamId];
+        return (
+            stream.rewardDepositAmount,
+            stream.rewardClaimedAmount,
+            stream.rps,
+            stream.status
+        );
     }
 }

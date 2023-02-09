@@ -6,14 +6,14 @@ pragma solidity 0.8.16;
 import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
 import "../interfaces/IRewardsHandler.sol";
-import "../../../common/math/FullMath.sol";
+//import "../../../common/math/FullMath.sol";
 
 contract RewardsInternals is StakingStorage, IStakingEvents {
     // solhint-disable not-rely-on-time
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
         for (uint256 i; i < streamScheduleRewardLength; i++) {
-            streams[streamId].schedule.reward[i] = FullMath.mulDiv(streams[streamId].schedule.reward[i], rewardTokenAmount, streams[streamId].maxDepositAmount);
+            streams[streamId].schedule.reward[i] = (streams[streamId].schedule.reward[i] * rewardTokenAmount) / streams[streamId].maxDepositAmount;
         }
     }
 
@@ -26,7 +26,8 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
         User storage userAccount = users[account];
         require(lock.amountOfToken != 0, "No Stake");
-        uint256 reward = FullMath.mulDiv((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]), lock.positionStreamShares, RPS_MULTIPLIER);
+        uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) * lock.positionStreamShares) /
+            RPS_MULTIPLIER;
         if (reward == 0) return; // All rewards claimed or stream schedule didn't start
         userAccount.pendings[streamId] += reward;
         streamTotalUserPendings[streamId] += reward;
