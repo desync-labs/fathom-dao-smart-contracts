@@ -334,6 +334,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.owner == msg.sender, "bad owner");
+        if(lock.amountOfToken == 0){
+            revert ZeroLocked(lockId);
+        }
     }
 
     function _transfer(uint256 _amount, address _token) internal{
