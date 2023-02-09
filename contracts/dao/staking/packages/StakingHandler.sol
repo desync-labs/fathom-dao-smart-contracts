@@ -46,7 +46,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         Weight calldata _weight,
         VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract,
+        address _rewardsContract
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
