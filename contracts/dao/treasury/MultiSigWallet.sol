@@ -248,12 +248,7 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     function getOwners() public view override returns (address[] memory) {
-        uint256 lengthOfOwners = owners.length();
-        address[] memory returnOwners = new address[](lengthOfOwners);
-        for(uint256 i; i < lengthOfOwners;i++){
-            returnOwners[i] = owners.at(i);
-        }
-        return returnOwners;
+        return owners.values();
     }
 
     function getTransactionCount() public view override returns (uint256) {
