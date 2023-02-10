@@ -211,8 +211,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
-        _unlock(stakeValue, stakeValue, lockId, msg.sender);
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
+        _unlock(stakeValue, stakeValue, lockId, msg.sender);
+        
     }
 
     function unlockPartially(uint256 lockId, uint256 amount) public override pausable(1) {
@@ -221,8 +222,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
-        _unlock(stakeValue, amount, lockId, msg.sender);
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
+        _unlock(stakeValue, amount, lockId, msg.sender);
     }
 
     function earlyUnlock(uint256 lockId) public override pausable(1) {
@@ -275,10 +276,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert NotPaused();
         }
         uint256 numberOfLocks = locks[msg.sender].length;
-        uint256 lockIdToUnlockAlways = 1;
-        for (uint256 i = 0; i < numberOfLocks; i++) {
-            uint256 stakeValue = locks[msg.sender][0].amountOfToken;
-            _unlock(stakeValue, stakeValue, lockIdToUnlockAlways, msg.sender);
+        for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
+            uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
+            _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
         _withdraw(MAIN_STREAM);
     }
@@ -331,6 +331,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.owner == msg.sender, "bad owner");
+        
     }
 
     function _transfer(uint256 _amount, address _token) internal{

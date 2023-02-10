@@ -112,6 +112,8 @@ contract MainTokenGovernor is
     }
 
     function _removeSupportingToken(address _token) internal {
+        require(isSupportedToken[_token], "Token already doesnt exist");
+        isSupportedToken[_token] = false;
         for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             if (listOfSupportedTokens[i] == _token) {
                 listOfSupportedTokens[i] = listOfSupportedTokens[listOfSupportedTokens.length - 1];
