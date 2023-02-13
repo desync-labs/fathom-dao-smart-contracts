@@ -65,4 +65,5 @@ interface IStakingHandler {
     function emergencyUnlockAndWithdraw() external;
 
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
+    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
 }

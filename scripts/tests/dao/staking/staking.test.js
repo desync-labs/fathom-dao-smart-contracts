@@ -1136,7 +1136,7 @@ describe("Staking Test", () => {
             const lockingPeriod = 364 * 24 * 60 * 60
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             const sumToDeposit = web3.utils.toWei('200', 'ether');
-            let result1 = await stakingService.createLock(sumToDeposit,lockingPeriod, {from: accounts[9], gas: maxGasForTxn});
+            let result1 = await stakingService.createLock(sumToDeposit,lockingPeriod, {from: accounts[9]});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
