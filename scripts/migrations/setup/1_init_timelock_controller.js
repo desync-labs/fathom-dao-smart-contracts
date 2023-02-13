@@ -5,8 +5,10 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 
 // interfaces
 const ITimelockController = artifacts.require('./dao/governance/interfaces/ITimelockController.sol');
-
-const minDelay = 30;
+// A Scheduled operation is an operation that becomes valid after a given delay. 
+// Once the delay time has passed, the operation can be performed. Each schedules delay must be at least minDelay.  
+// minDelay is set in the initialize function call, and can be updated using function updateDelay.
+const minDelay = 30; //?? What should be initialized?
 const proposers = [MainTokenGovernor.address];
 const executors = [MainTokenGovernor.address];
 

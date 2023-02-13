@@ -267,6 +267,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(streams[streamId].status == StreamStatus.ACTIVE, "stream inactive");
         _withdraw(streamId);
     }
+    
 
     function withdrawAllStreams() public override pausable(1) {
         User storage userAccount = users[msg.sender];
@@ -357,6 +358,4 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         minLockPeriod = _minLockPeriod;
     }
-
-    
 }

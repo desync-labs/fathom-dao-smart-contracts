@@ -4,7 +4,7 @@ const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 const mainToken = {
     name: "Fathom Protocol Token",
     symbol: "FTHM",
-    totalSupply: web3.utils.toWei("1000000000000000000000000000", "wei"),
+    totalSupply: web3.utils.toWei("1000000000", 'ether'),
     issuer: MultiSigWallet.address
 };
 

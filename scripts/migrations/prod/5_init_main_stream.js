@@ -50,37 +50,18 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
         return toInitializeMainStream
 }
 
-const tau = 60;
 
 module.exports = async function(deployer) {
-   // const startTime =  1675526400 //EIGHT_PM_UAE_TIME_FEB_FOUR_Timestamp
-    const startTime =  1678328872 //TWELVE_PM_UAE_TIME_FEB_SEVEN_Timestamp
-    const oneDay = 86400;
+    const startTime =  1676577600 //ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP
+    const oneMonth = 2628288
     const scheduleTimes = [
         startTime,
-        startTime + 1 * oneDay,
-        startTime + 2 * oneDay,
-        startTime + 3 * oneDay,
-        startTime + 4 * oneDay,
-        startTime + 5 * oneDay,
-        startTime + 6 * oneDay,
-        startTime + 7 * oneDay,
-        startTime + 8 * oneDay,
-        startTime + 9 * oneDay,
-        startTime + 10 * oneDay
+        startTime + 36 * oneMonth
     ];
+    const tau = 432000;//FIVE DAYS
 
     const scheduleRewards = [
-        web3.utils.toWei('150000000', 'ether'),
-        web3.utils.toWei('135000000', 'ether'),
-        web3.utils.toWei('120000000', 'ether'),
-        web3.utils.toWei('105000000', 'ether'),
-        web3.utils.toWei('90000000', 'ether'),
-        web3.utils.toWei('75000000', 'ether'),
-        web3.utils.toWei('60000000', 'ether'),
-        web3.utils.toWei('45000000', 'ether'),
-        web3.utils.toWei('30000000', 'ether'),
-        web3.utils.toWei('15000000', 'ether'),
+        web3.utils.toWei('400000000', 'ether'),
         web3.utils.toWei('0', 'ether')
     ];
     
@@ -109,7 +90,5 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    const resultOfInitMainStream = await multiSigWallet.executeTransaction(txIndexInit, {gas: 8000000});
-    const successStatusInitMainStream = eventsHelper.getIndexedEventArgs(resultOfInitMainStream, ExecuteTransactionSuccess);
-    console.log(successStatusInitMainStream)
+    const resultOfInitMainStream = await multiSigWallet.executeTransaction(txIndexInit, {gas: 10000000});
 }
