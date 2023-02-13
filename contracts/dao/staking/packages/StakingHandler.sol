@@ -208,6 +208,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _createLock(amount, lockPeriod, msg.sender);
     }
 
+    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) public override pausable(1){
+        prohibitedEarlyWithdraw[msg.sender][locks[msg.sender].length + 1] = true;
+        _createLock(amount, lockPeriod, msg.sender);
+    }
+
     function unlock(uint256 lockId) public override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
@@ -352,4 +357,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         minLockPeriod = _minLockPeriod;
     }
+
+    
 }
