@@ -101,7 +101,7 @@ The reaudited commit identifier with implemented Oxorio's recommendations is [`d
 
 ### CRITICAL
 
-####  [NEW] There's no `owners` array length validation in the constructor of `MultiSigWallet`[DONE - VERIFIED]
+####  [NEW] There's no `owners` array length validation in the constructor of `MultiSigWallet`[DONE - VERIFIED -CHECKED]
 ##### Description
 In the [MultiSigWallet\`s constructor](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L76) there's no checking that the number of `owners` is less than or equal `MAX_OWNER_COUNT`. If the contract is created with `owners` with length more than `MAX_OWNER_COUNT` then that makes calls to `addOwner`, `changeRequirement` and `removeOwner` (which uses call `changeRequirement`) functions impossible because they use modifier `validRequirement` with this `require` statement:
 ```solidity
@@ -143,7 +143,7 @@ Implemented Auditors Recommendation. with slight change:
 changeRequirement(numConfirmationsRequired + _owners.length);
 ```
 
-#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK Anton - ask auditor, does it require to revoke confirmation in executeTransaction, TODAY]
+#### 1. [NEW] Removing owner without `revokeConfirmation` transaction in `MultiSigWallet`[NOTDONE -ASK Anton - ask auditor, does it require to revoke confirmation in executeTransaction, TODAY - CHECKAGAIN]
 ##### Description
 In the function [`removeOwner`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L96) the owner is being removed without revocation of transaction signatures, where they've signed. This creates a situation where the signatures of non-existent owners may be used. For example, like in the following scenario:
 
@@ -180,7 +180,7 @@ We recommend adding logic that would allow you to cancel the execution of `propo
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### [NEW] Changing the `timelock` address may cause re-execution of the proposals in `GovernorTimelockControl`[DONE - ASK AUDITOR-Verified]
+#### [NEW] Changing the `timelock` address may cause re-execution of the proposals in `GovernorTimelockControl`[DONE - ASK AUDITOR-Verified -CHECKED]
 ##### Description
 A change of the `timelock` parameter in the [`GovernorTimelockControl`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/extensions/GovernorTimelockControl.sol#L22) contract can lead to already executed `proposals` being able to be executed again. This is connected to the fact that the execution status of the transaction is saved only in the [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol) contract, and the `GovernorTimelockControl` contract makes calls to the `TimelockController` functions to get the `proposals` status in the [`state`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/extensions/GovernorTimelockControl.sol#L50) function.
 ##### Recommendation
@@ -256,7 +256,7 @@ modifier validRequirement(uint ownerCount, uint _required) {
 }
 ```
 
-#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[NOTDONE -ASK AUDITOR -Verified]
+#### [NEW] Transaction does not have a lifetime parameter in `MultiSigWallet`[NOTDONE -ASK AUDITOR -Verified -CHECKAGAIN]
 ##### Description
 In the structure [`Transaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L9) there's no lifetime parameter `expired`, which is responsible for the period of time during which the transaction must be executed. Since transactions may be executed at random time and are not removed over time, frozen, previously not approved transactions can be executed after a certain time and cause an undesirable effect.
 ##### Recommendation
@@ -303,7 +303,7 @@ We recommend adding the `updateMultisig` function, but so that only the old `mul
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP,  TODAY ASK AUDITOR-Verified]
+#### 6. [NEW] There is no emergency shutdown mode in `Governor`[NOTDONE -> ASK AUDITOR FOR HELP,  TODAY ASK AUDITOR-Verified. AGAINVERIFY -CHECKED]
 ##### Description
 There is no possibility in the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract to put it into an emergency shutdown status. If one of the `TimelockController`, `MultiSigWallet` contracts is compromised, Governance will not be able to perform an emergency shut-down of proposals execution and stop contracts.
 ##### Recommendation
@@ -346,7 +346,7 @@ We recommend adding a constant with the minimum allowable value of `_quorumNumer
 Implemented Auditors Recommendation.
 
 
-#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE - Ask Auditor- VERIFIEd]
+#### 7. [NEW] When `MINTER_ROLE` is added to `VMainToken`, the `isWhiteListed` list does not update[DONE - Ask Auditor- VERIFIEd -CHECKED]
 ##### Description
 In the [VMainToken](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol) contract, for mint tokens, calling account, in addition to having `MINTER_ROLE` rights, must also be in the `isWhiteListed` list, since the mint function calls `_mint,` which contains [`_beforeTokenTransfer`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/tokens/VMainToken.sol#L65) call.
 When `_beforeTokenTransfer` is called, it checks that the `msg.sender` address is in the `isWhiteListed` list.
@@ -394,7 +394,7 @@ But it should be noted that `addToWhitelist` and `removeFromWhitelist` can be ca
 
 We recommend refactoring this code and adding  internal functions `_addToWhitelist` and `_removeFromWhitelist` without access control to `grantMinterRole` and `revokeMinterRole`.
 
-#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Auditor, Verified]
+#### 3. [NEW] There is no possibility to transfer standard `ERC20` tokens from the Governance balance in `MainTokenGovernor`[DONE, Ask Auditor, Verified - CHECKED]
 ##### Description
 In the [`MainTokenGovernor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/MainTokenGovernor.sol) contract there is no possibility to transfer tokens of the `ERC20` standard from the balance of Governance, because execution of the transaction is actually passed to the `TimelockController`.
 ##### Recommendation
@@ -420,9 +420,13 @@ We recommend making two different functions for relaying `ERC20` tokens and nati
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> Do we need to have not migrated check in withdraw Extra supported tokens Verified?]
 =======
 #### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> VERIFIED]
+>>>>>>> reaudit-fixes-final
+=======
+#### . [NEW] There is no option to migrate to another contract in the `VaultPackage` contract[DONE, Ask Auditor -> VERIFIED - CHECKED]
 >>>>>>> reaudit-fixes-final
 ##### Description
 The [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol) contract lacks the ability to suspend a contract in an emergency and migrate assets to a new compatible `VaultPackage` contract.
@@ -442,7 +446,7 @@ We recommend forbidding to use functions after migration.
 We recommend using `deposited` variable instead `balanceOf` `VaultPackage` balance.
 
 
-#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last Ask Auditor VERIFIED]
+#### 4. [NEW] There is a DoS possibility when calling `updateVault` in the `StakingHandlers` contract[NOTDONE-> Do at last Ask Auditor VERIFIED - CHECKED]
 ##### Description
 In the `StakingHandlers` contract, calling the function [`updateVault`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L269) can cause all contract functions that work with balances and `VaultPackage` functions to be blocked.
 ##### Recommendation
@@ -470,7 +474,6 @@ The [recommendation](https://github.com/Into-the-Fathom/fathom-dao-smart-contrac
 Despite checking that the `vault` is migrated, there is no validation that `_vault` is a compatible `VaultPackage`, which is the contract where the migration took place.
 We recommend adding new statement that `_vault` is `VaultPackage` for migration.
 
-[accept this, as Admin will be sure to do it correctly]
 
 #### [FIXED] There is no emergency suspension of the rewards payment in the `VaultPackage` contract
 ##### Description
@@ -492,9 +495,13 @@ We recommend using the [`SafeERC20`](https://github.com/OpenZeppelin/openzeppeli
 Implemented Auditors Recommendation.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , Ask Auditor -Verified]
 =======
 #### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , VERIFIED]
+>>>>>>> reaudit-fixes-final
+=======
+#### 11. [NEW] Tokens that get into the `VaultPackage` balance can be used to withdraw rewards in the contract `VaultPackage`[DONE, Add safeTransfer DONE , VERIFIED - CHECKED]
 >>>>>>> reaudit-fixes-final
 ##### Description
 In the [`VaultPackage`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/vault/packages/VaultPackage.sol#L12) contract tokens that get into the balance of the contract can be used for rewards payment from streams in [StakingHandlers](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol). This results in tokens, that get on the balance by mistake and/or intentionally, not being able to be withdrawn from the contract.
@@ -515,9 +522,13 @@ We recommend adding a separate withdraw function, that would allow the `DEFAULT_
 address to take excess tokens away (both `supportedTokens` and tokens that are not on the list).
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor -VEFIRIED]
 =======
 ####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor -VERFIED]
+>>>>>>> reaudit-fixes-final
+=======
+####  12. [NEW] Calling `initializeStaking` in the `StakingHandlers` contract does not allocate rewards for `MAIN_STREAM` in `VaultPackage`[DONE - Ask Auditor -VERFIED - CHECKED]
 >>>>>>> reaudit-fixes-final
 ##### Description
 In the `StakingHandlers` contract the [`initializeStaking`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L33) function does not allocate tokens for rewards `MAIN_STREAM`, as it happens when [`createStream`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L152) is called. This may result in the block of the `withdrawStream` function call from the `MAIN_STREAM` of tokens and rewards for some users, if the amount in `VaultPackage` is less than the amount stated in `scheduleRewards`.
@@ -577,7 +588,7 @@ bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 5. [NEW] Transaction should be marked as `executed` if the call fails[DONE Ask Auditor -NOTDONE, check again ---!!!!!! TODO]
+#### 5. [NEW] Transaction should be marked as `executed` if the call fails[DONE Ask Auditor -NOTDONE, check again ---!!!!!! TODO - CHECKED But CHECKAGAIN]
 
 ##### Description
 
@@ -636,7 +647,7 @@ We recommend:
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 14 .[NEW] `prohibitedEarlyWithdraw` is not set to `false` for `lockid` after unlocking in `StakingHandlers`[DONE -VERIFIED]
+#### 14 .[NEW] `prohibitedEarlyWithdraw` is not set to `false` for `lockid` after unlocking in `StakingHandlers`[DONE -VERIFIED - CHECKeD]
 ##### Description
 In the function [`createLockWithoutEarlyWithdraw`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L181) in the `StakingHandlers` contract parameter `prohibitedEarlyWithdraw` for given `lockid` is set to `true`, but it does not update to `false` after unlocking later in the [`unlock`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L189) and [`unlockPartially`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/staking/packages/StakingHandler.sol#L198) functions. Since the value in the `locks` array is deleted after the unlock, all new values will be assigned the value of `prohibitedEarlyWithdraw`, regardless of whether the `createLockWithoutEarlyWithdraw` or `createLock` function is called.
 
@@ -793,7 +804,7 @@ We recommend removing `Governance` from this modifier and give the permission to
 ###### Fathom's response
 Thats the way its designed
 
-#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE - Ask Auditor VERIFIED]
+#### 6. [NEW] No parameter check when adding transaction in `MultiSigWallet`[DONE - Ask Auditor VERIFIED- CHECKED]
 ##### Description
 In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/treasury/MultiSigWallet.sol#L121) there's no validation of address `_to` to be the contract.
 Based on the logic of the contract, there may be the following cases:
@@ -857,7 +868,7 @@ In the function [`submitTransaction`](https://github.com/Into-the-Fathom/fathom-
 ##### Recommendation
 We recommend adding balance check while adding a transaction with a non-zero value `_value`.
 
-#### [NEW] There is no time limit for executing proposal in `Governor`[Ask ANTON -DONE Ask VERFIED]
+#### [NEW] There is no time limit for executing proposal in `Governor`[Ask ANTON -DONE Ask VERFIED - CHECKED]
 ##### Description
 The [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol) contract has no parameters for the time limit on `proposal` execution. This can result in no longer relevant proposal being executed after a period of time.
 ##### Recommendation
@@ -893,7 +904,7 @@ require(status == ProposalState.Succeeded || status == ProposalState.Queued, "Go
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 17. [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[DONE - ASK AUDITOR TODAY -VERIFIED]
+#### 17. [NEW] There is no check for the `msg.value` value available for execution in `Governor` and `TimelockController`[DONE - ASK AUDITOR TODAY -VERIFIED - CHECKED]
 ##### Description
 In the [`Governor`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/Governor.sol#L76) and [`TimelockController`](https://github.com/Into-the-Fathom/fathom-dao-smart-contracts/blob/5e9f3a23bd2b6deb9babe1a3ad984fd84cf51b7a/contracts/dao/governance/TimelockController.sol#L111) contracts the `execute` functions do not check the `msg.value` balance value needed to execute `_targets`, which would result in gas consumption even if the amount of `ETH` is not enough.
 ##### Recommendation
@@ -995,7 +1006,7 @@ We recommend adding a condition that `createStream` can only be called from the 
 ###### Fathom's response
 Implemented Auditors Recommendation.
 
-#### 8. [NEW] Possible overflow with calculations[NOTDONE]//TODO
+#### 8. [NEW] Possible overflow with calculations[NOTDONE]//TODO [CHECKAGAIN]
 ##### Description
 In the next lines there is a possible overflow:
 

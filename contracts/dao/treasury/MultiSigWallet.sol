@@ -132,8 +132,8 @@ contract MultiSigWallet is IMultiSigWallet {
         
         uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].length();
         
-        for(uint i = nConfirmedTxnByOwner; i >1; i--){
-            uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i-1);
+        for(uint i = 0; i < nConfirmedTxnByOwner; i++){
+            uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i);
             Transaction storage transaction = transactions[_txIndex];
             transaction.numConfirmations -= 1;
             confirmedTransactionsByOwner[owner].remove(_txIndex);
@@ -248,12 +248,7 @@ contract MultiSigWallet is IMultiSigWallet {
     }
 
     function getOwners() public view override returns (address[] memory) {
-        uint256 lengthOfOwners = owners.length();
-        address[] memory returnOwners = new address[](lengthOfOwners);
-        for(uint256 i; i < lengthOfOwners;i++){
-            returnOwners[i] = owners.at(i);
-        }
-        return returnOwners;
+        return owners.values();
     }
 
     function getTransactionCount() public view override returns (uint256) {

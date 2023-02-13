@@ -13,7 +13,7 @@ const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
 const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.sol');
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
-
+const minimumLockingPeriod = 5;
 const _createWeightObject = (
     maxWeightShares,
     minWeightShares,
@@ -120,9 +120,13 @@ module.exports = async function(deployer) {
             {
                 type: 'address',
                 name: '_rewardsContract'
+            },
+            {
+                type: 'uint256',
+                name: '_minLockPeriod'
             }]
             },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
-                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address]);
+                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address,minimumLockingPeriod]);
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});
         await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});

@@ -20,6 +20,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
     error ZeroLockId();
+    error MaxLockPeriodExceeded();
     error MaxLockIdExceeded(uint256 _lockId, address _account);
     error ZeroPenalty();
     error AlreadyInitialized();
@@ -46,7 +47,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         Weight calldata _weight,
         VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract
+        address _rewardsContract,
+        uint256 _minLockPeriod
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
@@ -55,6 +57,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
         maxLockPeriod = ONE_YEAR;
+        minLockPeriod = _minLockPeriod;
     }
 
     function initializeMainStream(
@@ -211,8 +214,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
-        _unlock(stakeValue, stakeValue, lockId, msg.sender);
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
+        _unlock(stakeValue, stakeValue, lockId, msg.sender);
+        
     }
 
     function unlockPartially(uint256 lockId, uint256 amount) public override pausable(1) {
@@ -221,8 +225,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         require(lock.end <= block.timestamp, "lock close");
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
-        _unlock(stakeValue, amount, lockId, msg.sender);
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
+        _unlock(stakeValue, amount, lockId, msg.sender);
     }
 
     function earlyUnlock(uint256 lockId) public override pausable(1) {
@@ -275,8 +279,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert NotPaused();
         }
         uint256 numberOfLocks = locks[msg.sender].length;
-        for (uint256 lockId = 1; lockId <= numberOfLocks; lockId++) {
-            uint256 stakeValue = locks[msg.sender][lockId].amountOfToken;
+        for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
+            uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
             _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
         _withdraw(MAIN_STREAM);
@@ -312,6 +316,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 lockPeriod,
         address account
     ) internal{
+        require(lockPeriod >= minLockPeriod, "min lock");
         require(locks[account].length <= maxLockPositions, "max locks");
         require(amount > 0, "amount 0");
         require(lockPeriod <= maxLockPeriod, "max time");
@@ -330,11 +335,21 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
         require(lock.owner == msg.sender, "bad owner");
+        if(lock.amountOfToken == 0){
+            revert ZeroLocked(lockId);
+        }
     }
 
     function _transfer(uint256 _amount, address _token) internal{
         IERC20(_token).safeApprove(vault,0);
         IERC20(_token).safeApprove(vault,_amount);
         IVault(vault).deposit(_token, _amount);
+    }
+
+    function setMinimumLockPeriod(uint256 _minLockPeriod) public onlyRole(DEFAULT_ADMIN_ROLE){
+        if(_minLockPeriod > maxLockPeriod){
+            revert MaxLockPeriodExceeded();
+        }
+        minLockPeriod = _minLockPeriod;
     }
 }

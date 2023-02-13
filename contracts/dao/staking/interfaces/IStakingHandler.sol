@@ -16,7 +16,8 @@ interface IStakingHandler {
         Weight calldata _weight,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address _rewardsContract
+        address _rewardsContract,
+        uint256 _minLockPeriod
     ) external;
 
     function initializeMainStream(
@@ -59,7 +60,6 @@ interface IStakingHandler {
     function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-
     function updateVault(address _vault) external;
 
     function emergencyUnlockAndWithdraw() external;

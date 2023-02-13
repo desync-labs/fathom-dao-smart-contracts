@@ -148,7 +148,7 @@ module.exports = async function(deployer) {
     let timestamp = block.timestamp;
     
     var nextBlock = 1;    
-    while (nextBlock <= 2) {   
+    while (nextBlock <= 30) {   
         await blockchain.mineBlock(timestamp + nextBlock);    
         nextBlock++;              
     }
@@ -170,7 +170,7 @@ module.exports = async function(deployer) {
     timestamp = block.timestamp;
     
     nextBlock = 1;
-    while (nextBlock <= 2) {   
+    while (nextBlock <= 30) {   
         await blockchain.mineBlock(timestamp + nextBlock);    
         nextBlock++;              
     }
@@ -185,7 +185,7 @@ module.exports = async function(deployer) {
     timestamp = block.timestamp;
     
     nextBlock = 1;
-    while (nextBlock <= 40) {   
+    while (nextBlock <= 450) {   
         await blockchain.mineBlock(timestamp + nextBlock);
         nextBlock++;              
     }
@@ -226,7 +226,7 @@ module.exports = async function(deployer) {
     timestamp = block.timestamp;
     
     nextBlock = 1;
-    while (nextBlock <= 40) { 
+    while (nextBlock <= 450) { 
         await blockchain.mineBlock(timestamp + nextBlock);
         nextBlock++;
     }

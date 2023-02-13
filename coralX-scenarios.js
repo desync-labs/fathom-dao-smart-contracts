@@ -23,7 +23,7 @@ module.exports = {
   ],
   migrateAndConfigureForTests: [
     ['compile'],
-    ['execute', '--path', 'scripts/migrations/deployment'],
+    ['execute', '--path', 'scripts/migrations/test-deployment'],
     ['execute', '--path', 'scripts/migrations/save-address/1_save_address_deployment.js'],
     ['execute', '--path', 'scripts/migrations/setup'],
     ['execute', '--path', 'scripts/migrations/save-address/2_save_address_setup.js'],
