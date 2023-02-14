@@ -8,7 +8,6 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
-const ExecuteTransactionSuccess = "ExecuteTransaction(address,uint256)"
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -90,5 +89,5 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    const resultOfInitMainStream = await multiSigWallet.executeTransaction(txIndexInit, {gas: 10000000});
+    await multiSigWallet.executeTransaction(txIndexInit, {gas: 10000000});
 }

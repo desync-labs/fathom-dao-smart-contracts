@@ -2,7 +2,7 @@ const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.so
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const StakingGettersHelper = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 const fs = require('fs')
-const rawdata = fs.readFileSync('../../../build/build_system_addresses.json');
+const rawdata = fs.readFileSync('../../../addresses.json');
 let daoAddress = JSON.parse(rawdata)
 module.exports = async function(deployer) {
     let addresses = {
@@ -18,7 +18,7 @@ module.exports = async function(deployer) {
 
     
     let data = JSON.stringify(newAddresses);
-    fs.writeFileSync('./build/build_system_addresses.json',data, function(err){
+    fs.writeFileSync('./addresses.json',data, function(err){
         if(err){
             console.log(err)
         }

@@ -20,7 +20,7 @@ module.exports = async function(deployer) {
     }
     
     let data = JSON.stringify(addresses);
-    fs.writeFileSync('./build/build_system_addresses.json',data, function(err){
+    fs.writeFileSync('./addresses.json',data, function(err){
         if(err){
             console.log(err)
         }
