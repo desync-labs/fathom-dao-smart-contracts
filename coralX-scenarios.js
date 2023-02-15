@@ -31,6 +31,11 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/units/setup-multisig-owners.js', '--network', 'apothem'],
   ],
+
+  addCouncilStakesApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/setup_council_stakes.js', '--network', 'apothem'],
+  ],
   
   migrateAndConfigureForTests: [
     ['compile'],
