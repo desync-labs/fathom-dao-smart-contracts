@@ -86,11 +86,10 @@ module.exports = async function(deployer) {
     let txIndexApprove = eventsHelper.getIndexedEventArgs(resultApprove, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexApprove, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexApprove, {gas: 8000000});
-    console.log("....Tokens Approved");
     const LockParamObjectForAllCouncils = [
-        _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_3),
         _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_1),
-        _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_2)
+        _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_2),
+        _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_3)
     ]
 
     let resultCreateLock = await multiSigWallet.submitTransaction(
@@ -105,5 +104,4 @@ module.exports = async function(deployer) {
     let txIndexCreateLock = eventsHelper.getIndexedEventArgs(resultCreateLock, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexCreateLock, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexCreateLock, {gas: 8000000});
-    console.log("....Council Lock Positions Created");
 }

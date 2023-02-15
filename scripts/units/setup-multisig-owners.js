@@ -1,4 +1,4 @@
-//NOTE: Do this at the very end as other scripts wont execute after this is done
+//NOTE: Do this at the very end as other scripts wont execute after this is done due to owners signatures requirement
 const fs = require('fs');
 
 const eventsHelper = require("../tests/helpers/eventsHelper");

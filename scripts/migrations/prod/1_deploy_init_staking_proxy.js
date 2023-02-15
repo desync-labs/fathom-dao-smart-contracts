@@ -47,7 +47,7 @@ const weightMultiplier = 10;
 const maxNumberOfLocks = 10;
 const minimumLockingPeriod = 14 * 86400;
 
-const lockingVoteWeight = 31556926;
+const lockingVoteWeight = 365 * 24 * 60 * 60;
 
 module.exports = async function(deployer) {
     try{
