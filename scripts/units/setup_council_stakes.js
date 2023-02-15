@@ -5,8 +5,6 @@ const eventsHelper = require("../tests/helpers/eventsHelper");
 
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
-const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
-
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -74,9 +72,9 @@ const _encodeCreateLocksForCouncils = (_createLockParam) => {
 module.exports = async function(deployer) {
     const stakingService = await IStaking.at(addresses.staking);
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-
+    
     let resultApprove = await multiSigWallet.submitTransaction(
-        MainToken.address,
+        addresses.fthmToken,
         EMPTY_BYTES,
         _encodeApproveFunction(stakingService.address,T_TOTAL_TO_APPROVE),
         0,
