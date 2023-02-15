@@ -8,7 +8,7 @@ const ITimelockController = artifacts.require('./dao/governance/interfaces/ITime
 // A Scheduled operation is an operation that becomes valid after a given delay. 
 // Once the delay time has passed, the operation can be performed. Each schedules delay must be at least minDelay.  
 // minDelay is set in the initialize function call, and can be updated using function updateDelay.
-const minDelay = 86400
+const minDelay = 7 * 86400 // 14 days, with 2s blocks
 const proposers = [MainTokenGovernor.address];
 const executors = [MainTokenGovernor.address];
 
