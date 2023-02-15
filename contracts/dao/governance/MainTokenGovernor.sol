@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.16;
 
 import "./Governor.sol";
 import "./extensions/GovernorSettings.sol";
@@ -9,6 +9,8 @@ import "./extensions/GovernorCountingSimple.sol";
 import "./extensions/GovernorVotes.sol";
 import "./extensions/GovernorVotesQuorumFraction.sol";
 import "./extensions/GovernorTimelockControl.sol";
+import "../tokens/ERC20/IERC20.sol";
+import "../../common/SafeERC20.sol";
 
 contract MainTokenGovernor is
     Governor,
@@ -18,24 +20,26 @@ contract MainTokenGovernor is
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
+    using SafeERC20 for IERC20;
+    mapping(address => bool) public isSupportedToken;
+    address[] public listOfSupportedTokens;
+
     constructor(
         IVotes _token,
         TimelockController _timelock,
-        address[] memory _signers,
-        uint _numConfirmationsRequired
+        address _multiSig,
+        uint256 _initialVotingDelay,
+        uint256 _votingPeriod,
+        uint256 _initialProposalThreshold,
+        uint256 _proposalTimeDelay,
+        uint256 _proposalLifetime
     )
-        Governor("MainTokenGovernor", _signers, _numConfirmationsRequired)
-        GovernorSettings(
-            1, /* 1 block */
-            20, /* Should be 1 week */
-            1000
-        )
+        Governor("MainTokenGovernor", _multiSig, 20, _proposalTimeDelay,_proposalLifetime)
+        GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {}
-
-    // The following functions are overrides required by Solidity.
 
     function propose(
         address[] memory targets,
@@ -46,16 +50,20 @@ contract MainTokenGovernor is
         return super.propose(targets, values, calldatas, description);
     }
 
+    function cancelProposal(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public override onlyMultiSig returns (uint256) {
+        return _cancel(targets, values, calldatas, descriptionHash);
+    }
+
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
         return super.proposalThreshold();
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(Governor, GovernorTimelockControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view override(Governor, GovernorTimelockControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -67,17 +75,84 @@ contract MainTokenGovernor is
         return super.votingPeriod();
     }
 
-    function quorum(uint256 blockNumber)
-        public
-        view
-        override(IGovernor, GovernorVotesQuorumFraction)
-        returns (uint256)
-    {
+    function quorum(uint256 blockNumber) public view override(IGovernor, GovernorVotesQuorumFraction) returns (uint256) {
         return super.quorum(blockNumber);
     }
 
     function state(uint256 proposalId) public view override(Governor, GovernorTimelockControl) returns (ProposalState) {
         return super.state(proposalId);
+    }
+
+    function emergencyStop() public onlyMultiSig{
+        _emergencyStop();
+        for(uint i = 0; i < listOfSupportedTokens.length;i++){
+            address _token = listOfSupportedTokens[i];
+            uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
+            if(balanceInContract > 0){
+                IERC20(_token).safeTransfer(msg.sender, balanceInContract);
+            }  
+        }
+        if (address(this).balance > 0){
+            (bool sent,) =   msg.sender.call{ value: (address(this).balance) }("");
+            require(sent, "Failed to send ether");
+        } 
+    }
+
+    function addSupportingToken(address _token) public onlyGovernance {
+        _addSupportedToken(_token);
+    }
+    function removeSupportingToken(address _token) public onlyGovernance {
+        _removeSupportingToken(_token);
+    }
+
+    function _addSupportedToken(address _token) internal {
+        require(!isSupportedToken[_token], "Token already exists");
+        isSupportedToken[_token] = true;
+        listOfSupportedTokens.push(_token);
+    }
+
+    function _removeSupportingToken(address _token) internal {
+        require(isSupportedToken[_token], "Token already doesnt exist");
+        isSupportedToken[_token] = false;
+        for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
+            if (listOfSupportedTokens[i] == _token) {
+                listOfSupportedTokens[i] = listOfSupportedTokens[listOfSupportedTokens.length - 1];
+                break;
+            }
+        }
+        listOfSupportedTokens.pop();
+    }
+    
+
+    /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relayERC20(
+        address target,
+        bytes calldata data
+    ) external virtual onlyGovernance {
+        require(isSupportedToken[target], "relayERC20: token not supported");
+        (bool success, bytes memory returndata) = target.call(data);
+        Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
+    }
+
+    /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relayNativeToken(
+        address target,
+        uint256 value,
+        bytes calldata data
+    ) external payable virtual onlyGovernance {
+        require(!isSupportedToken[target],"relayNativeToken: cant relay native token to supported token");
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        Address.verifyCallResult(success, returndata, "Governor: relayNativeToken reverted without message");
     }
 
     function _execute(
@@ -87,7 +162,7 @@ contract MainTokenGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
-        require(numConfirmations[proposalId] >= numConfirmationsRequired, "MainTokenGovernor: Proposal not confirmed");
+        require(isConfirmed[proposalId], "MainTokenGovernor: Proposal not confirmed by council");
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 

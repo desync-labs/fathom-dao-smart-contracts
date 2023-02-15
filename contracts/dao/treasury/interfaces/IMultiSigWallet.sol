@@ -1,95 +1,52 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.16;
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 interface IMultiSigWallet {
-    // events
-    event Deposit(address indexed sender, uint amount, uint balance);
-    event SubmitTransaction(uint indexed txIndex, address indexed owner, address indexed to, uint value, bytes data);
-    event ConfirmTransaction(address indexed owner, uint indexed txIndex);
-    event RevokeConfirmation(address indexed owner, uint indexed txIndex);
-    event ExecuteTransaction(address indexed owner, uint indexed txIndex);
+    event Deposit(address indexed sender, uint256 amount, uint256 balance);
+    event SubmitTransaction(uint256 indexed txIndex, address indexed owner, address indexed to, uint256 value, bytes data);
+    event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
+    event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
+    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
     event OwnerRemoval(address indexed owner);
     event OwnerAddition(address indexed owner);
-    event RequirementChange(uint required);
+    event RequirementChange(uint256 required);
 
-    /**
-     * @dev Function to receive ETH that will be handled by the governor (disabled if executor
-     *        is a third party contract)
-     */
     receive() external payable;
 
-    /**
-     *  @dev Allows to remove an owner. Transaction has to be sent by wallet.
-     *  @param owner Address of owner.
-     */
     function removeOwner(address owner) external;
 
-    /**
-     *  @dev Allows to add a new owner. Transaction has to be sent by wallet.
-     *  @param owner Address of new owner.
-     */
-    function addOwner(address owner) external;
+    function addOwners(address[] calldata _owners) external;
 
-    /**
-     *  @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
-     *  @param _required Number of required confirmations.
-     */
-    function changeRequirement(uint _required) external;
+    function changeRequirement(uint256 _required) external;
 
-    /**
-     * @dev Adds a new transaction to the transaction mapping, if transaction does not exist yet.
-     * @param _to Transaction target address.
-     * @param _value Transaction ether value.
-     * @param _data Transaction data payload.
-     * Emits SubmitTransaction event
-     */
     function submitTransaction(
         address _to,
-        uint _value,
-        bytes memory _data
+        uint256 _value,
+        bytes memory _data,
+        uint256 _expireTimestamp
     ) external;
 
-    /**
-     * @dev Allows multiSig owners to confirm a transaction.
-     * @param _txIndex Transaction Index.
-     */
-    function confirmTransaction(uint _txIndex) external;
+    function confirmTransaction(uint256 _txIndex) external;
 
-    /**
-     * @dev Allows anyone to execute a confirmed transaction.
-     * @param _txIndex Transaction Index.
-     */
-    function executeTransaction(uint _txIndex) external;
+    function executeTransaction(uint256 _txIndex) external;
 
-    /**
-     * @dev Allows multiSig owners to revoke a confimation.
-     * @param _txIndex Transaction Index.
-     */
-    function revokeConfirmation(uint _txIndex) external;
+    function revokeConfirmation(uint256 _txIndex) external;
 
-    /**
-     * @dev Returns the owners of this contract.
-     */
     function getOwners() external returns (address[] memory);
 
-    /**
-     * @dev Returns the number of transactions confirmed and unconfirmed.
-     */
-    function getTransactionCount() external returns (uint);
+    function getTransactionCount() external returns (uint256);
 
-    /**
-     * @dev Returns a transactions details.
-     * @param _txIndex Transaction Index.
-     */
-    function getTransaction(uint _txIndex)
+    function getTransaction(uint256 _txIndex)
         external
         returns (
             address to,
-            uint value,
+            uint256 value,
             bytes memory data,
             bool executed,
-            uint numConfirmations
+            uint256 numConfirmations,
+            uint256 expireTimestamp
         );
 }

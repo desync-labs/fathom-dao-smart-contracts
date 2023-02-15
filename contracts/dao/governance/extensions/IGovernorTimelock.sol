@@ -2,15 +2,10 @@
 // Original Copyright OpenZeppelin Contracts v4.4.1 (governance/extensions/IGovernorTimelock.sol)
 // Copyright Fathom 2022
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
-import "../IGovernor.sol";
+import "../interfaces/IGovernor.sol";
 
-/**
- * @dev Extension of the {IGovernor} for timelock supporting modules.
- *
- * _Available since v4.3._
- */
 abstract contract IGovernorTimelock is IGovernor {
     event ProposalQueued(uint256 proposalId, uint256 eta);
 
