@@ -36,6 +36,11 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/units/setup_council_stakes.js', '--network', 'apothem'],
   ],
+
+  createDexPoolApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
+  ],
   
   migrateAndConfigureForTests: [
     ['compile'],
