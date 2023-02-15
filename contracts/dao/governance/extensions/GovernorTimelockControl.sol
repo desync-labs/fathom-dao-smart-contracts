@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts (last updated v4.6.0) (governance/extensions/GovernorTimelockControl.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./IGovernorTimelock.sol";
 import "../Governor.sol";
@@ -11,10 +11,11 @@ import "../TimelockController.sol";
 abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     TimelockController private _timelock;
     mapping(uint256 => bytes32) private _timelockIds;
-
+    mapping(uint256 => bool) private isProposalExecuted;
     event TimelockChange(address oldTimelock, address newTimelock);
 
     constructor(TimelockController timelockAddress) {
+        require(address(timelockAddress) != address(0), "timelockAddress: zero address");
         _updateTimelock(timelockAddress);
     }
 
@@ -30,7 +31,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes32 descriptionHash
     ) public virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-
+        require(isConfirmed[proposalId], "queue: not confirmed by multisig");
         require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not successful");
 
         uint256 delay = _timelock.getMinDelay();
@@ -57,7 +58,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes32 queueid = _timelockIds[proposalId];
         if (queueid == bytes32(0)) {
             return status;
-        } else if (_timelock.isOperationDone(queueid)) {
+        } else if (isProposalExecuted[proposalId] == true) {
             return ProposalState.Executed;
         } else if (_timelock.isOperationPending(queueid)) {
             return ProposalState.Queued;
@@ -76,13 +77,15 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     }
 
     function _execute(
-        uint256 /* proposalId */,
+        uint256 proposalId,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal virtual override {
+        require(!isProposalExecuted[proposalId], "_execute: already executed");
         _timelock.executeBatch{ value: msg.value }(targets, values, calldatas, 0, descriptionHash);
+        isProposalExecuted[proposalId] = true;
     }
 
     // This function can reenter through the external call to the timelock, but we assume the timelock is trusted and
@@ -109,6 +112,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     }
 
     function _updateTimelock(TimelockController newTimelock) private {
+        require(address(newTimelock) != address(0), "updateTimelock: zero address");
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }

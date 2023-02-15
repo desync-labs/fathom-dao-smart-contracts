@@ -1,24 +1,30 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../StakingStructs.sol";
 import "./IStakingGetter.sol";
 
 interface IStakingHandler {
+    
     function initializeStaking(
         address _admin,
         address _vault,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
-        uint256 tau,
         VoteCoefficient memory voteCoef,
         uint256 _maxLocks,
-        address rewardsCalculator
+        address _rewardsContract,
+        uint256 _minLockPeriod
+    ) external;
+
+    function initializeMainStream(
+        address _owner,
+        uint256[] memory scheduleTimes,
+        uint256[] memory scheduleRewards,
+        uint256 tau
     ) external;
 
     function proposeStream(
@@ -37,17 +43,13 @@ interface IStakingHandler {
 
     function removeStream(uint256 streamId, address streamFundReceiver) external;
 
-    function createLock(uint256 amount, uint256 lockPeriod, address account) external;
-
-    function createLockWithoutEarlyWithdraw(uint256 amount, uint256 lockPeriod, address account) external;
+    function createLock(uint256 amount, uint256 lockPeriod) external;
 
     function unlockPartially(uint256 lockId, uint256 amount) external;
 
     function unlock(uint256 lockId) external;
 
     function earlyUnlock(uint256 lockId) external;
-
-    function claimRewards(uint256 streamId, uint256 lockId) external;
 
     function claimAllStreamRewardsForLock(uint256 lockId) external;
 
@@ -58,15 +60,10 @@ interface IStakingHandler {
     function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
-
     function updateVault(address _vault) external;
 
-    function updateConfig(
-        Weight calldata _weight,
-        address _voteToken,
-        address _rewardsCalculator,
-        VoteCoefficient calldata _voteCoef,
-        uint256 _maxLockPeriod,
-        uint256 _maxLockPositions
-    ) external;
+    function emergencyUnlockAndWithdraw() external;
+
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
+    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
 }

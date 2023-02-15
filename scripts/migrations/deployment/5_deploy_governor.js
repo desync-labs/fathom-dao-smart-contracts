@@ -6,9 +6,16 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const VMainToken_address = VMainToken.address;
 const TimelockController_address = TimelockController.address;
 const MultiSigWallet_address = MultiSigWallet.address;
-const initialVotingDelay = 1;
-const votingPeriod = 20;
-const initialProposalThreshold = 1000;
+const initialVotingDelay = 86400;  //Approx. 2 days with one block every 2s
+const votingPeriod = 216000; //  approx. 5 days with one block every 2s -- (5 * 24 * 60 * 60) / 2,
+const initialProposalThreshold = 1000; 
+// below are in timestamp and not blocks
+// Each user cannot make proposals if they have recently made a proposal, for a given time delay.
+// This given delay is proposalTimeDelay, the time between multiple proposals for each user
+const proposalTimeDelay = 86400; // 1 day
+// After the proposal is created, till what time period the proposal can be executed. 
+// After the lifetime exceeds, the proposal can’t be executed.
+const proposalLifetime = 60 * 86400; // 2months
 
 
 module.exports =  async function(deployer) {
@@ -21,6 +28,8 @@ module.exports =  async function(deployer) {
             initialVotingDelay,
             votingPeriod,
             initialProposalThreshold,
+            proposalTimeDelay,
+            proposalLifetime,
             { gas: 12000000 }),
     ];
 

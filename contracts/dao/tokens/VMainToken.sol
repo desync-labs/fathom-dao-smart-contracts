@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "../../common/security/Pausable.sol";
 import "../../common/access/AccessControl.sol";
@@ -12,8 +12,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC20Votes {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant WHITELISTER_ROLE = keccak256("MINTER_ROLE");
-    bool private initialized;
+    bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
     // Mapping to keep track of who is allowed to transfer voting tokens
     mapping(address => bool) public isWhiteListed;
 
@@ -22,8 +21,7 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
     }
 
     function initToken(address _admin, address _minter) public override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!initialized, "already init");
-        initialized = true;
+        require(_admin != msg.sender, "initToken: Admin should be different than msg.sender");
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
         _grantRole(MINTER_ROLE, _minter);
@@ -35,12 +33,22 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         emit MemberAddedToWhitelist(_minter);
     }
 
-    function addToWhitelist(address _toAdd) public override onlyRole(WHITELISTER_ROLE) {
+    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+        _grantRole(MINTER_ROLE, _minter);
+        _addToWhitelist(_minter);
+    }
+
+    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+        _revokeRole(MINTER_ROLE, _minter);
+        _removeFromWhitelist(_minter);
+    }
+
+    function _addToWhitelist(address _toAdd) internal {
         isWhiteListed[_toAdd] = true;
         emit MemberAddedToWhitelist(_toAdd);
     }
 
-    function removeFromWhitelist(address _toRemove) public override onlyRole(WHITELISTER_ROLE) {
+    function _removeFromWhitelist(address _toRemove) internal {
         isWhiteListed[_toRemove] = false;
         emit MemberRemovedFromWhitelist(_toRemove);
     }
@@ -62,20 +70,20 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         _burn(account, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override whenNotPaused {
         require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal override {
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         super._afterTokenTransfer(from, to, amount);
-    }
-
-    function _mint(address to, uint256 amount) internal override {
-        super._mint(to, amount);
-    }
-
-    function _burn(address account, uint256 amount) internal override {
-        super._burn(account, amount);
     }
 }

@@ -297,7 +297,8 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account, _value), 
+                _encodeTransferFunction(_account, _value),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -326,7 +327,8 @@ describe("Staking Test", () => {
             const result = await multiSigWallet.submitTransaction(
                 vaultService.address, 
                 EMPTY_BYTES, 
-                _encodeAddSupportedTokenFunction(_token), 
+                _encodeAddSupportedTokenFunction(_token),
+                0,
                 {"from": accounts[0]}
             );
             const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -352,7 +354,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 24 * 60 * 60;
 
             const unlockTime = lockingPeriod;
-            let result = await stakingService.createLock(sumToDeposit,unlockTime, staker_1,{from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
             // Since block time stamp can change after locking, we record the timestamp, 
             // later to be used in the expectedNVFTHM calculation.  
             // This mitigates an error created from the slight change in block time.
@@ -382,7 +384,7 @@ describe("Staking Test", () => {
             let lockingPeriod = 24 * 60 * 60;
             
             const unlockTime = lockingPeriod;
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1, gas:maxGasForTxn});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1, gas:maxGasForTxn});
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             const lockInfo = await stakingGetterService.getLockInfo(staker_1,2)
@@ -420,13 +422,12 @@ describe("Staking Test", () => {
             
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             
-            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_2,{from: staker_2});
+            let result1 = await stakingService.createLock(sumToDepositForAll,unlockTime,{from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime, staker_3,{from: staker_3});
+            let result2 = await stakingService.createLock(sumToDepositForAll,unlockTime,{from: staker_3});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime,staker_4, {from: staker_4});
+            let result3 = await stakingService.createLock(sumToDepositForAll,unlockTime, {from: staker_4});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-
             let eventArgs1 = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             let eventArgs2 = eventsHelper.getIndexedEventArgs(result2, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             let eventArgs3 = eventsHelper.getIndexedEventArgs(result3, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
@@ -439,7 +440,7 @@ describe("Staking Test", () => {
 
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
             
-            const errorMessage = "lock not open";
+            const errorMessage = "lock close";
 
             await shouldRevert(
                 stakingService.unlock(1, {from: staker_1}),
@@ -452,7 +453,7 @@ describe("Staking Test", () => {
         it("Setup a third locked position with a 5 second lock period: LockId = 3 - staker_1", async() => {
             const unlockTime =  5;
 
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,staker_1,{from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
         
@@ -552,12 +553,23 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
-
+            const MAIN_STREAM_ID = 0
+            
             assert.equal(totalAmountOfStakedToken.toString(),"0")
             assert.equal(totalAmountOfStreamShares.toString(),"0")
             console.log("----- After all the locks are completely unlocked ------")
             console.log("totalAmountOfStakedToken: ", totalAmountOfStakedToken.toString());
             console.log("totalAmountOfStreamShares: ", totalAmountOfStreamShares.toString());
+            
+
+            await stakingService.withdrawAllStreams({from: staker_1});
+            await stakingService.withdrawAllStreams({from: staker_2});
+            await stakingService.withdrawAllStreams({from: staker_3});
+            await stakingService.withdrawAllStreams({from: staker_4});
+
+            const totalAmountOfStreamTotalUserPendings = await stakingService.streamTotalUserPendings(MAIN_STREAM_ID)
+            assert.equal(totalAmountOfStreamTotalUserPendings.toString(),"0")
+            console.log("totalAmountOfStreamPending: ", totalAmountOfStreamTotalUserPendings.toString());
         });
     });
     
@@ -608,7 +620,8 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -676,7 +689,8 @@ describe("Staking Test", () => {
                         _scheduleTimes,
                         _scheduleRewards,
                         _tau
-                    ), 
+                    ),
+                    0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -709,9 +723,9 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             
-            await stakingService.createLock(sumToDeposit,unlockTime, staker_3,{from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4,gas: maxGasForTxn});
             
         });
 
@@ -722,7 +736,7 @@ describe("Staking Test", () => {
             const unlockTime = lockingPeriod;
             
             let beforeLockTimestamp = await _getTimeStamp();
-            await stakingService.createLock(sumToDeposit,unlockTime, staker_2,{from: staker_2,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_2,gas: maxGasForTxn});
             const mineToTimestamp = 20 * 24 * 60 * 60
             //21days
             await blockchain.mineBlock(beforeLockTimestamp + mineToTimestamp);
@@ -760,7 +774,7 @@ describe("Staking Test", () => {
             const stream = 2;
             let result1 = await stakingService.claimAllLockRewardsForStream(stream,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
 
             let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
@@ -776,9 +790,9 @@ describe("Staking Test", () => {
 
             const lockId = 1
             const stream = 2;
-            await stakingService.claimRewards(stream,lockId,{from:staker_3, gas: maxGasForTxn});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20)
-            await stakingService.claimRewards(stream,lockId,{from:staker_4, gas: maxGasForTxn});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_4, gas: maxGasForTxn});
             let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3, stream)).toString()
             console.log("pending rewards staker_3 - 2nd Claim: lockId -1",_convertToEtherBalance(pendingRewards));
             pendingRewards = (await stakingService.getUsersPendingRewards(staker_4, stream)).toString()
@@ -822,9 +836,9 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             
-            let result1 = await stakingService.createLock(sumToDeposit,unlockTime,staker_2, {from: staker_2, gas: maxGasForTxn});
+            let result1 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_2, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
 
         })
@@ -834,7 +848,7 @@ describe("Staking Test", () => {
            
             const lockingPeriod_staker3 = 12 * 60 * 60
             const unlockTime_staker3 =  lockingPeriod_staker3
-            let result2 = await stakingService.createLock(sumToDeposit,unlockTime_staker3,staker_3, {from: staker_3, gas: maxGasForTxn});
+            let result2 = await stakingService.createLock(sumToDeposit,unlockTime_staker3, {from: staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
@@ -849,9 +863,9 @@ describe("Staking Test", () => {
             const claimableRewards_staker4 = await stakingService.getStreamClaimableAmountPerLock(streamId, staker_4, lockId); 
             console.log("Claimable rewards for staker_3:  ", _convertToEtherBalance(claimableRewards_staker3.toString()))
             console.log("Claimable rewards for staker_4:  ", _convertToEtherBalance(claimableRewards_staker4.toString()))
-            let result1 = await stakingService.claimRewards(streamId,lockId,{from:staker_3, gas: maxGasForTxn});
+            let result1 = await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(streamId,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.withdrawStream(streamId, {from:staker_3})
             await stakingService.withdrawStream(streamId, {from:staker_4})
@@ -870,9 +884,9 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(timestamp + mineToTimestamp);
             const lockId = 2
             
-            let result1 = await stakingService.claimRewards(streamId,lockId,{from:staker_3, gas: maxGasForTxn});
+            let result1 = await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result2 = await stakingService.claimRewards(streamId,lockId,{from:staker_4, gas: maxGasForTxn});
+            let result2 = await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.withdrawStream(streamId, {from:staker_3})
             await stakingService.withdrawStream(streamId, {from:staker_4})
@@ -886,9 +900,9 @@ describe("Staking Test", () => {
         it('Setup 3rd and 4th locks for stakers _3', async() => {
             const lockingPeriod = 12 * 60 * 60
             const unlockTime = lockingPeriod;
-            let result2 = await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
+            let result2 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_3,{from: staker_3, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
 
@@ -903,7 +917,7 @@ describe("Staking Test", () => {
 
             //lockId 3 rewards claimed
             await blockchain.mineBlock(timestamp + mineToTimestamp);
-            await stakingService.claimRewards(streamId,lockId,{from:staker_3});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3});
             
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
             await stakingService.withdrawStream(streamId, {from: staker_3})
@@ -915,7 +929,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(timestamp + mineToTimestamp);
 
             //lockId 3 rewards claimed
-            await stakingService.claimRewards(streamId,lockId,{from:staker_3});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3});
             let pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
             console.log("pending rewards for lock Id 3 at first claim",_convertToEtherBalance(pendingRewards));
 
@@ -932,11 +946,13 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
 
             //so Now, the previous lockId 4 is lockId 3:
-            await stakingService.claimRewards(streamId,lockId,{from:staker_3});
+            await stakingService.claimAllStreamRewardsForLock(lockId,{from:staker_3});
             pendingRewards = (await stakingService.getUsersPendingRewards(staker_3,streamId)).toString()
             console.log("pending rewards for lockId 3 (previously 4) after unlocking:",_convertToEtherBalance(pendingRewards));
             await blockchain.mineBlock(await _getTimeStamp() + mineToTimestamp);
         })
+
+
 
         it("Should get all unlocked main token for staker - 3", async() => {
             //  When we unlock, the main token should be sent to stream 0, with users stream id.  
@@ -963,7 +979,7 @@ describe("Staking Test", () => {
             const streamId = 0
             
             const lockingPeriod = 365 * 24 * 60 * 60;
-            await stakingService.createLock(sumToDeposit,lockingPeriod,staker_3, {from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,lockingPeriod,{from: staker_3,gas: maxGasForTxn});
             
             await blockchain.mineBlock(60 * 60 + await _getTimeStamp())
             const penalty = await stakingGetterService.getFeesForEarlyUnlock(lockId, staker_3);
@@ -977,6 +993,8 @@ describe("Staking Test", () => {
             balanceOfFTHM = await FTHMToken.balanceOf(staker_3)
             console.log("balance after early unlock: (around 29.9 penalty)",_convertToEtherBalance(balanceOfFTHM.toString()))
         })
+
+        
 
         
         it("Should unlock all lock positions: ", async() =>{
@@ -1039,10 +1057,13 @@ describe("Staking Test", () => {
             assert.equal(totalAmountOfStreamShares.toString(),"0")
         })
 
+        
+
         it('Should have balances of unlocked FTHM with rewards after all unlocks', async() => {
-            await stakingService.withdrawStream(0, {from: staker_2})
-            await stakingService.withdrawStream(0, {from: staker_3})
-            await stakingService.withdrawStream(0, {from: staker_4})
+            const MAIN_STREAM_ID = 0;
+            await stakingService.withdrawAllStreams({from: staker_2})
+            await stakingService.withdrawAllStreams({from: staker_3})
+            await stakingService.withdrawAllStreams({from: staker_4})
             let staker_2Balance = await FTHMToken.balanceOf(staker_2);
             let staker_3Balance = await FTHMToken.balanceOf(staker_3);
             let staker_4Balance = await FTHMToken.balanceOf(staker_4);
@@ -1058,6 +1079,19 @@ describe("Staking Test", () => {
             const toBeReleasedInFirstYearRewards = 10000;
             expect(totalRewardsDistributed).to.be.above(toBeReleasedInFirstYearRewards);
             console.log("total rewards released in FTHM Token - after 370 + ~20 days - early unstake penalty", totalRewardsDistributed)
+            
+        })
+
+        it('Should have zero stream pending', async() => {
+            const MAIN_STREAM_ID = 0;
+            const FIRST_STREAM_ID = 1
+            const SECOND_STREAM_ID = 2
+            const totalAmountOfMAINStreamTotalUserPendings = await stakingService.streamTotalUserPendings(MAIN_STREAM_ID)
+            const totalAmountOfFIRSTStreamTotalUserPendings = await stakingService.streamTotalUserPendings(FIRST_STREAM_ID)
+            const totalAmountOfSECONDStreamTotalUserPendings = await stakingService.streamTotalUserPendings(SECOND_STREAM_ID)
+            assert.equal(totalAmountOfMAINStreamTotalUserPendings.toString(),"0")
+            assert.equal(totalAmountOfFIRSTStreamTotalUserPendings.toString(),"0")
+            assert.equal(totalAmountOfSECONDStreamTotalUserPendings.toString(),"0")
         })
 
         // The following tests are just to check individual test cases
@@ -1067,7 +1101,7 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20)
             const lockingPeriod = 60 * 60
             let unlockTime =  lockingPeriod;
-            await stakingService.createLock(sumToDeposit,unlockTime,staker_3, {from: staker_3,gas: maxGasForTxn});
+            await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3,gas: maxGasForTxn});
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.earlyUnlock(lockId, {from: staker_3})
 
@@ -1089,7 +1123,7 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,staker_4, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
 
         })
@@ -1097,18 +1131,13 @@ describe("Staking Test", () => {
         it('Setup lock position for accounts[9] for govn to use', async() => {
             
             const sumToApprove = web3.utils.toWei('20000','ether');
-
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
-            const lockingPeriod = 365 * 24 * 60 * 60
-            const unlockTime =  lockingPeriod;
-
-            const sumToDeposit = web3.utils.toWei('20000', 'ether');
-            let result1 = await stakingService.createLock(sumToDeposit,unlockTime,accounts[9], {from: accounts[9], gas: maxGasForTxn});
             
-            let eventArgs = eventsHelper.getIndexedEventArgs(result1, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
-            const actualNVFTHM = web3.utils.toBN(eventArgs[1])
-            console.log("Are 20000 VOTE TOKENS released?: ", _convertToEtherBalance(actualNVFTHM.toString()))    
-
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: accounts[9]})  
+            const lockingPeriod = 364 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const sumToDeposit = web3.utils.toWei('200', 'ether');
+            let result1 = await stakingService.createLock(sumToDeposit,lockingPeriod, {from: accounts[9]});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
         it("Should get correct user total votes from staking getter service", async() => {
@@ -1127,7 +1156,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeWithdrawPenaltyFunction(
                         _penaltyReceiver
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1150,6 +1181,80 @@ describe("Staking Test", () => {
             assert(totalPenaltyBalance.toString(),"0")
         })
 
+        it('Should not make lock position with 0 lock period', async() => {
+            const unlockTime =  0;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const errorMessage = "min lock" 
+            await shouldRevert(
+                stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn}),
+                errTypes.revert,
+                errorMessage
+            );
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_4', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should should  make lock position staker_3', async() => {
+            const unlockTime =  6;
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
         it('Paused contract should not make lock position', async() => {
             const toPauseFlag = 1
 
@@ -1161,7 +1266,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1177,12 +1284,34 @@ describe("Staking Test", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             const errorMessage = "paused contract"
             await shouldRevert(
-                stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn}),
+                stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn}),
                 errTypes.revert,  
                 errorMessage
             );
         })
 
+
+        it('Should emergency Unlock and Withdraw', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const result = await stakingService.emergencyUnlockAndWithdraw({"from": staker_4, gas: 30000000});
+            console.log(result.gasUsed.toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should emergency Unlock and Withdraw', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const result = await stakingService.emergencyUnlockAndWithdraw({"from": staker_3, gas: 30000000});
+            console.log(result.gasUsed.toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should have no locks', async() => {
+            const result1 = await stakingService.getAllLocks(staker_4)
+            const result2 = await stakingService.getAllLocks(staker_3)
+            assert.equal(result1.toString().length,0)
+            assert.equal(result2.toString().length,0)
+        })
+        
         it('Unpaused contract should  make lock position', async() => {
             const toUnPauseFlag = 0
             const _unpauseStakingContract = async(
@@ -1193,7 +1322,9 @@ describe("Staking Test", () => {
                     EMPTY_BYTES,
                     _encodeAdminPause(
                         _flag
-                    ), {"from": accounts[0]}
+                    ),
+                    0,
+                    {"from": accounts[0]}
                 )
 
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -1207,33 +1338,18 @@ describe("Staking Test", () => {
             const lockingPeriod = 20 * 24 * 60 * 60
             const unlockTime =  lockingPeriod;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,staker_4, {from: staker_4, gas: maxGasForTxn});
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, {from: staker_4, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
-        it('Should should  make lock position with 0 lock period', async() => {
-            const unlockTime =  0;
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-            let result3 = await stakingService.createLock(sumToDeposit,unlockTime, staker_4,{from: staker_4, gas: maxGasForTxn});
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-        })
+        
 
-        it('Should not be initalizable twice', async() => {
 
-            const errorMessage = "Vault: Already Initialized";
-            await shouldRevert(
-                vaultService.initVault([FTHMToken.address], {gas: 8000000}),
-                errTypes.revert,
-                errorMessage
-            ); 
-            
-        })
-
-        it('Should not be initalizable twice vault init owner', async() => {
+        it('Should not be initalizable twice - Vault', async() => {
 
             const errorMessage = "Initializable: contract is already initialized";
             await shouldRevert(
-                vaultService.initAdminAndOperator(multiSigWallet.address,stakingService.address, {gas: 8000000}),
+                vaultService.initVault(multiSigWallet.address,[FTHMToken.address], {gas: 8000000}),
                 errTypes.revert,
                 errorMessage
             ); 

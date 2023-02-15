@@ -152,7 +152,8 @@ describe('Token Creation Through Governance', () => {
             const result = await multiSigWallet.submitTransaction(
                 FTHMToken.address, 
                 EMPTY_BYTES, 
-                _encodeTransferFunction(_account), 
+                _encodeTransferFunction(_account),
+                0,
                 {"from": accounts[0]}
             );
             txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
@@ -171,7 +172,7 @@ describe('Token Creation Through Governance', () => {
 
             let unlockTime = lockingPeriod;
 
-            await stakingService.createLock(T_TO_STAKE, unlockTime, _account,{from: _account, gas: 600000});
+            await stakingService.createLock(T_TO_STAKE, unlockTime,{from: _account, gas: 600000});
         }
 
         it('Stake MainToken and receive vMainToken', async() => {
@@ -208,7 +209,7 @@ describe('Token Creation Through Governance', () => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
 
-            let errorMessage = "Governor: proposer votes below proposal threshold";
+            let errorMessage = "Governor: proposer votes below threshold";
 
             await shouldRevert(
                 mainTokenGovernor.propose(
@@ -292,6 +293,34 @@ describe('Token Creation Through Governance', () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("4");
         });
 
+        
+
+        
+        it('Create multiSig transaction to confirm proposal 1', async() => {
+            encodedConfirmation1 = _encodeConfirmation(proposalId);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation1,
+                0,
+                {"from": accounts[0]}
+            );
+            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
+        });
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+
+            
+            
+        });
+
         it('Queue the proposal', async() => {
 
             // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
@@ -310,29 +339,6 @@ describe('Token Creation Through Governance', () => {
                 description_hash,
                 {"from": accounts[0]}
             );            
-        });
-
-        
-        it('Create multiSig transaction to confirm proposal 1', async() => {
-            encodedConfirmation1 = _encodeConfirmation(proposalId);
-
-            const result = await multiSigWallet.submitTransaction(
-                mainTokenGovernor.address, 
-                EMPTY_BYTES, 
-                encodedConfirmation1, 
-                {"from": accounts[0]}
-            );
-            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-        })
-
-        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-        });
-        
-        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
-            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
-
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;

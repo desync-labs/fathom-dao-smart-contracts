@@ -2,7 +2,7 @@
 // Original Copyright OpenZeppelin Contracts v4.4.1 (utils/introspection/ERC165.sol)
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./IERC165.sol";
 

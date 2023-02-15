@@ -6,11 +6,6 @@ const MainTokenGovernor = artifacts.require('./dao/governance/MainTokenGovernor.
 const PackageStaking = artifacts.require('./dao/staking/packages/StakingPackage.sol');
 const VaultPackage = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
 const RewardsCalculator = artifacts.require('./dao/staking/packages/RewardsCalculator.sol');
-const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.sol');
-const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
-const VaultProxyAdmin = artifacts.require('./common/proxy/VaultProxyAdmin.sol');
-const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
-const StakingGettersHelper = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 const fs = require('fs')
 module.exports = async function(deployer) {
     let addresses = {
@@ -22,18 +17,12 @@ module.exports = async function(deployer) {
         stakingImplementation: PackageStaking.address,
         vaultImplementation: VaultPackage.address,
         rewardsCalculator: RewardsCalculator.address,
-        stakingProxyAdmin: StakingProxyAdmin.address,
-        staking: StakingProxy.address,
-        vaultProxyAdmin: VaultProxyAdmin.address,
-        vault: VaultProxy.address,
-        stakingGetter: StakingGettersHelper.address
     }
     
     let data = JSON.stringify(addresses);
-    fs.writeFileSync('./build/build_system_addresses.json',data, function(err){
+    fs.writeFileSync('./addresses.json',data, function(err){
         if(err){
             console.log(err)
         }
     })
-
 }

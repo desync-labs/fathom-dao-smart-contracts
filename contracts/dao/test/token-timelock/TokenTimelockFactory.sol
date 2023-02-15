@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 import "./TokenTimelock.sol";
 import "./interfaces/ITokenTimelockFactory.sol";
@@ -18,11 +18,13 @@ contract TokenTimelockFactory is ITokenTimelockFactory, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function deployTokenTimelocks(
-        address[] memory beneficiaries,
-        uint256[] memory releaseTimes
-    ) public override onlyRole(DEPLOYER_ROLE) returns (address[] memory) {
-        uint length = beneficiaries.length;
+    function deployTokenTimelocks(address[] memory beneficiaries, uint256[] memory releaseTimes)
+        public
+        override
+        onlyRole(DEPLOYER_ROLE)
+        returns (address[] memory)
+    {
+        uint256 length = beneficiaries.length;
         require(length == releaseTimes.length, "Wrong lengths");
 
         address[] memory result = new address[](length);

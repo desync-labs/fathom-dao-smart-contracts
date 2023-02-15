@@ -2,7 +2,7 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 
-pragma solidity 0.8.13;
+pragma solidity 0.8.16;
 
 enum StreamStatus {
     INACTIVE,
@@ -20,7 +20,7 @@ struct Schedule {
 }
 
 struct User {
-    uint128 voteTokenBalance;
+    uint256 voteTokenBalance;
     //streamId => pendings
     mapping(uint256 => uint256) pendings; // The amount of tokens pending release for user per stream
     //streamId => releaseTime
@@ -46,15 +46,16 @@ struct VoteCoefficient {
 
 struct LockedBalance {
     uint128 amountOfToken;
-    uint128 amountOfVoteToken;
     uint128 positionStreamShares;
     uint64 end;
     address owner;
+    uint256 amountOfVoteToken;
 }
 struct Stream {
     address owner; // stream owned by the ERC-20 reward token owner
     address manager; // stream manager handled by Main stream manager role
     address rewardToken;
+    StreamStatus status;
     uint256 rewardDepositAmount; // the reward amount that has been deposited by third party
     uint256 rewardClaimedAmount; /// how much rewards have been claimed by stakers
     uint256 maxDepositAmount; // maximum amount of deposit
@@ -62,5 +63,10 @@ struct Stream {
     uint256 tau; // pending time prior reward release
     uint256 rps; // Reward per share for a stream j>0
     Schedule schedule;
-    StreamStatus status;
+}
+
+struct CreateLockParams {
+    uint256 amount;
+    uint256 lockPeriod;
+    address account;
 }

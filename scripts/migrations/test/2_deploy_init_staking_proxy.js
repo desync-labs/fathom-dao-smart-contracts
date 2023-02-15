@@ -13,7 +13,7 @@ const IVault = artifacts.require('./dao/staking/vault/interfaces/IVault.sol');
 const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.sol');
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
-
+const minimumLockingPeriod = 5;
 const _createWeightObject = (
     maxWeightShares,
     minWeightShares,
@@ -54,8 +54,6 @@ const minWeightPenalty = 100;
 const weightMultiplier = 10;
 const maxNumberOfLocks = 10;
 
-const tau = 2;
-
 const lockingVoteWeight = 365 * 24 * 60 * 60;
 
 module.exports = async function(deployer) {
@@ -71,24 +69,6 @@ module.exports = async function(deployer) {
         );
         
         
-        const startTime =  await _getTimeStamp() + 3 * 24 * 60 * 60;
-
-        const scheduleTimes = [
-            startTime,
-            startTime + oneYear,
-            startTime + 2 * oneYear,
-            startTime + 3 * oneYear,
-            startTime + 4 * oneYear,
-        ];
-
-        const scheduleRewards = [
-            web3.utils.toWei('20000', 'ether'),
-            web3.utils.toWei('10000', 'ether'),
-            web3.utils.toWei('5000', 'ether'),
-            web3.utils.toWei('2500', 'ether'),
-            web3.utils.toWei("0", 'ether')
-        ];
-
         const voteObject = _createVoteWeights(
             vMainTokenCoefficient,
             lockingVoteWeight
@@ -126,18 +106,6 @@ module.exports = async function(deployer) {
                 ]
             },
             {
-                type: 'uint256[]',
-                name: 'scheduleTimes'
-            },
-            {
-                type: 'uint256[]',
-                name: 'scheduleRewards'
-            },
-            {
-                type: 'uint256',
-                name: 'tau'
-            },
-            {
                 type: 'tuple',
                 name: 'VoteCoefficient',
                 components: [
@@ -152,15 +120,18 @@ module.exports = async function(deployer) {
             {
                 type: 'address',
                 name: '_rewardsContract'
+            },
+            {
+                type: 'uint256',
+                name: '_minLockPeriod'
             }]
             },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
-                weightObject, scheduleTimes, scheduleRewards, tau, 
-                voteObject, maxNumberOfLocks, RewardsCalculator.address]);
+                weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address,minimumLockingPeriod]);
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});
         await deployer.deploy(StakingProxy, StakingPackage.address, StakingProxyAdmin.address, toInitialize, {gas:8000000});
+
         
-        await vaultService.initAdminAndOperator(MultiSigWallet.address,StakingProxy.address)
     } catch(error) {
         console.log(error)
     }
