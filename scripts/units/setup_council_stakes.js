@@ -14,7 +14,8 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED
-// this needs to be sum of all the stakes. Right now 10KK * 3.
+// this needs to be sum of all the stakes. Right now 10KK * 3. 
+// NOT MAX UINT for security as its not good to approve max for Multisig
 const T_TOTAL_TO_APPROVE = web3.utils.toWei('30000000', 'ether');
 // this is how much to stake for one council . Right now 10KK
 const T_TO_STAKE = web3.utils.toWei('10000000', 'ether');

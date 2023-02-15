@@ -1,3 +1,4 @@
+//NOTE: Do this at the very end as other scripts wont execute after this is done
 const fs = require('fs');
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
