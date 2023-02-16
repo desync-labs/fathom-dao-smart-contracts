@@ -37,6 +37,11 @@ module.exports = {
     ['execute', '--path', 'scripts/units/setup_council_stakes.js', '--network', 'apothem'],
   ],
 
+  createDexXDCPoolApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_pool_dex_xdc.js', '--network', 'apothem'],
+  ],
+
   createDexPoolApothem: [
     ['compile'],
     ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
@@ -48,7 +53,5 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/test'],
     ['execute', '--path', 'scripts/migrations/upgrades'],
   ],
-  createStablecoinPool: [
-    ['execute', '--path', 'scripts/stablecoin-integration/create-pool-through-governance.js']
-  ],
+  
 }
