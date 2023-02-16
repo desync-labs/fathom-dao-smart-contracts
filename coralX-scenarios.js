@@ -47,6 +47,15 @@ module.exports = {
     ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
   ],
   
+  createProxyWalletApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_stablecoin_proxy_wallet.js', '--network', 'apothem'],
+  ],
+
+  openPositionApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_stablecoin_open_position.js', '--network', 'apothem'],
+  ],
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],
