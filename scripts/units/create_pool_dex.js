@@ -8,14 +8,16 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
 
-const Token_A_Address = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //Fthm
-const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //Fthm
-const Amount_A_Desired = web3.utils.toWei('100', 'ether')
-const Amount_B_Desired = web3.utils.toWei('100', 'ether')
+
+const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
+const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
+// SET AS Necessary
+const Amount_A_Desired = web3.utils.toWei('5', 'ether')
+const Amount_B_Desired = web3.utils.toWei('5', 'ether')
 const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
 const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
 
-const Token_TO_APPROVE = web3.utils.toWei('10000', 'ether')
+const Token_TO_APPROVE = web3.utils.toWei('1000000000000000000', 'ether')
 const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
@@ -93,6 +95,7 @@ const _encodeAddLiqudityFunction = (
 
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
+    //Will need to change it once it expires
     const deadline =  1676577600 //ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP//NOTE: Please change it
     let resultApprove_A = await multiSigWallet.submitTransaction(
         Token_A_Address,
