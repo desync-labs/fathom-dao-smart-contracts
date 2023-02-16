@@ -111,7 +111,7 @@ module.exports = async function(deployer) {
     )
     let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexAddLiquidity, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 8000000});
+    await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 15000000});
 }
   
 
