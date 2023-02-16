@@ -12,13 +12,13 @@ const addresses = JSON.parse(rawdata);
 const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
 const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
 // SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('5', 'ether')
-const Amount_B_Desired = web3.utils.toWei('5', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
+const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
+const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('200000', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('9000000', 'ether')
 
 const Token_TO_APPROVE = web3.utils.toWei('1000000000000000000', 'ether')
-const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
+const DEX_ROUTER_ADDRESS = "0xF0392b8A2ea9567dFa900dDb0C2E4296bC061A4C" //SET NEW ROUTER
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
