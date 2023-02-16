@@ -14,8 +14,7 @@ const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('5', 'ether')
 const AMOUNT_TOKEN_MIN = web3.utils.toWei('3', 'ether')
 const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
 const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
-
-  
+const TOKEN_ETH = web3.utils.toWei('10', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -49,15 +48,15 @@ const _encodeAddLiqudityFunction = (
             name: 'token'
         },
         {
-            type: 'uint',
+            type: 'uint256',
             name: 'amountTokenDesired'
         },
         {
-            type: 'uint',
+            type: 'uint256',
             name: 'amountTokenMin'
         },
         {
-            type: 'uint',
+            type: 'uint256',
             name: 'amountETHMin'
         },
         {
@@ -65,7 +64,7 @@ const _encodeAddLiqudityFunction = (
             name: 'to'
         },
         {
-            type: 'uint',
+            type: 'uint256',
             name: 'deadline'
         }]
     }, [_token,
@@ -97,7 +96,7 @@ module.exports = async function(deployer) {
     await multiSigWallet.executeTransaction(txIndexApprove, {gas: 8000000});
     let resultAddLiquidity = await multiSigWallet.submitTransaction(
         DEX_ROUTER_ADDRESS,
-        AMOUNT_TOKEN_DESIRED,
+        TOKEN_ETH,
         _encodeAddLiqudityFunction(
             TOKEN_ADDRESS,
             AMOUNT_TOKEN_DESIRED,

@@ -37,6 +37,11 @@ module.exports = {
     ['execute', '--path', 'scripts/units/setup_council_stakes.js', '--network', 'apothem'],
   ],
 
+  createDexXDCPoolApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_pool_dex_xdc.js', '--network', 'apothem'],
+  ],
+
   createDexPoolApothem: [
     ['compile'],
     ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
