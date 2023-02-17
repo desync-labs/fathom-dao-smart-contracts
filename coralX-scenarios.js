@@ -56,6 +56,11 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/units/create_stablecoin_open_position.js', '--network', 'apothem'],
   ],
+
+  deployStakingUpgradeApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/upgrades/1_deploy_staking_upgrade.js', '--network', 'apothem'],
+  ],
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],
