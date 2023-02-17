@@ -9,50 +9,42 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
-//RIGHT NOW SETUP FOR STAKING
-const PROXY_ADMIN = "0x43d97AD756fe2b7E48a2384eD7c400Db37698167"
-const PROXY = "0x06F32926169b922F5e885c8a31CB7e60D554A6E6"
-const IMPLEMENTATION_ADDRESS = "0xe017a18Ad42abAE2e53F9A70EF037Ce52e2Eb484"
-const _encodeUpgradeFunction = (_proxy, _impl) => {
+const STABLE_SWAP_ADDRESS = "" //SET
+const DAILY_LIMIT = web3.utils.toWei('100000','ether') //SET
+
+
+const _encodeUpdateDailySwapLimit = (newdailySwapLimit) =>{
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'upgrade',
+        name: 'setDailySwapLimit',
         type: 'function',
         inputs: [{
-            type: 'address',
-            name: 'proxy'
-        },{
-            type: 'address',
-            name: 'implementation'
+            type: 'uint256',
+            name: 'newdailySwapLimit'
         }]
-    }, [_proxy, _impl]);
+    }, [newdailySwapLimit]);
 
     return toRet;
 }
 
-
-module.exports = async function(deployer) {
+module.exports = async function(deployer)  {
     const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
     const multiSigWallet = await IMultiSigWallet.at(MULTISIG_WALLET_ADDRESS);
 
-    const _upgrade = async(
-        _proxy,
-        _impl
+    const _updateDailySwapLimit = async(
+        newdailySwapLimit
     ) => {
         const result = await multiSigWallet.submitTransaction(
-            PROXY_ADMIN,
+            STABLE_SWAP_ADDRESS,
             EMPTY_BYTES,
-            _encodeUpgradeFunction(
-                _proxy,
-                _impl
+            _encodeUpdateDailySwapLimit(
+                newdailySwapLimit
             ),0,{gas:8000000}
         )
+
         const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
     }
 
-    await _upgrade(
-        PROXY,
-        IMPLEMENTATION_ADDRESS
-    )
+    await _updateDailySwapLimit(DAILY_LIMIT)
 }

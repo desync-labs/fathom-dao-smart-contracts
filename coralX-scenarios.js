@@ -71,6 +71,11 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/upgrades/1_deploy_staking_upgrade.js', '--network', 'apothem'],
   ],
+
+  updateDailySwapLimitApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/stableswap-daily-limit-update.js', '--network', 'apothem'],
+  ],
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],

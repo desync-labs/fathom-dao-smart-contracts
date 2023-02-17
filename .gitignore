@@ -9,3 +9,5 @@ privateKey
 yarn.lock
 package-lock.json
 bin
+addresses.json
+
