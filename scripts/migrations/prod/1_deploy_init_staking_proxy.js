@@ -44,8 +44,8 @@ const minWeightShares = 768;
 const maxWeightPenalty = 3000;
 const minWeightPenalty = 100;
 const weightMultiplier = 10;
-const maxNumberOfLocks = 10;
-const minimumLockingPeriod = 7 * 86400;
+const maxNumberOfLocks = 20;
+const minimumLockingPeriod = 1 * 86400;
 
 const lockingVoteWeight = 365 * 24 * 60 * 60;
 
