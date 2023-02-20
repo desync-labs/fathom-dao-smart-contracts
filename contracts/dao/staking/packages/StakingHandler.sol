@@ -25,6 +25,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error ZeroPenalty();
     error AlreadyInitialized();
     error StreamIdZero();
+    error BadMaxLockPositions();
+    error StreamNotWithdrawn();
     constructor() {
         _disableInitializers();
     }
@@ -177,7 +179,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if(streamId == 0){
             revert StreamIdZero();
         }
-        require(streamTotalUserPendings[streamId] == 0, "nt withdrawn");
+        if(streamTotalUserPendings[streamId]!=0){
+            revert StreamNotWithdrawn();
+        }
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.ACTIVE, "No Stream");
         stream.status = StreamStatus.INACTIVE;
@@ -358,5 +362,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         minLockPeriod = _minLockPeriod;
     }
 
-    
+    function setMaxLockPositions(uint256 newMaxLockPositions) public onlyRole(DEFAULT_ADMIN_ROLE){
+        if(newMaxLockPositions < maxLockPositions){
+            revert BadMaxLockPositions();
+        }
+        maxLockPositions = newMaxLockPositions;
+    }
+        
 }
