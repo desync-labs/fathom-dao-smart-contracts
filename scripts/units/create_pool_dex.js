@@ -8,6 +8,9 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
 
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
+
 
 const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
 const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
@@ -22,7 +25,8 @@ const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
 // const Amount_A_Minimum = web3.utils.toWei('200000', 'ether')
 // const Amount_B_Minimum = web3.utils.toWei('9000000', 'ether')
 //What should
-const DEX_ROUTER_ADDRESS = "0xF0392b8A2ea9567dFa900dDb0C2E4296bC061A4C" //SET NEW ROUTER
+//const DEX_ROUTER_ADDRESS = "0xF0392b8A2ea9567dFa900dDb0C2E4296bC061A4C" //SET NEW ROUTER
+const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -100,7 +104,7 @@ const _encodeAddLiqudityFunction = (
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     //Will need to change it once it expires
-    const deadline =  1676577600 //ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP//NOTE: Please change it
+    const deadline =  1676577600/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
     let resultApprove_A = await multiSigWallet.submitTransaction(
         Token_A_Address,
         EMPTY_BYTES,
@@ -145,6 +149,17 @@ module.exports = async function(deployer) {
     let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexAddLiquidity, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 8000000});
+
+    let addLiquidityTxn = {
+        addLiquidityTxnIdx: txIndexAddLiquidity
+    }
+    let data = JSON.stringify(addLiquidityTxn);
+
+    fs.writeFileSync('./config/newly-generated-transaction-index.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
 }
   
 

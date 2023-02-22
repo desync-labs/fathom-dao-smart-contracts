@@ -9,12 +9,16 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
-
-const STABLE_SWAP_ADDRESS = "";
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
+const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
+const USDAddress = addressesExternal.USD_ADDRESS
+const FXDAddress = addressesExternal.FXD_ADDRESS
+//const STABLE_SWAP_ADDRESS = "";
 const USDDepositAmount = web3.utils.toWei('400000','ether')
 const FXDDepositAmount = web3.utils.toWei('400000','ether')
-const USDAddress = ""
-const FXDAddress = ""
+// const USDAddress = ""
+// const FXDAddress = ""
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',

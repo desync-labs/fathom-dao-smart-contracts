@@ -7,16 +7,26 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
-const rawDataStablecoin = fs.readFileSync('../../stablecoin-addresses.json');
+const rawDataStablecoin = fs.readFileSync('../../config/stablecoin-addresses-proxy-wallet.json');
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
 const XDC_COL = web3.utils.toWei('20','ether')
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
+
 //xdcBe6f6500C3e45a78E17818570b99a7646F8b59F3
 const PROXY_WALLET = addressesStableCoin.proxyWallet
-const positionMananger = "0xe485eDc3D5aba4dbEcD76a78e6c71c8F5E114F3b"
-const stabilityFeeCollector = "0x62889248B6C81D31D7acc450cc0334D0AA58A14A"
-const xdcAdapter = "0xc3c7f26ffD1cd5ec682E23C076471194DE8ce4f1"
-const stablecoinAdapter = "0x07a2C89774a3F3c57980AD7A528Aea6F262d8939"
-const collateralPoolId = '0x5844430000000000000000000000000000000000000000000000000000000000'
+
+const positionMananger = addressesExternal.positionManager
+const stabilityFeeCollector = addressesExternal.stabilityFeeCollector
+const xdcAdapter = addressesExternal.xdcAdapter
+const stablecoinAdapter = addressesExternal.stablecoinAdapter
+const collateralPoolId = addressesExternal.collateralPoolId
+
+// const positionMananger = "0xe485eDc3D5aba4dbEcD76a78e6c71c8F5E114F3b"
+// const stabilityFeeCollector = "0x62889248B6C81D31D7acc450cc0334D0AA58A14A"
+// const xdcAdapter = "0xc3c7f26ffD1cd5ec682E23C076471194DE8ce4f1"
+// const stablecoinAdapter = "0x07a2C89774a3F3c57980AD7A528Aea6F262d8939"
+// const collateralPoolId = '0x5844430000000000000000000000000000000000000000000000000000000000'
 const stablecoinAmount = web3.utils.toWei('5')
 const data  = "0x00"
 
@@ -103,6 +113,17 @@ module.exports = async function(deployer) {
     let txExecute = eventsHelper.getIndexedEventArgs(resultExecute, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txExecute, {gas: 8000000});
     await multiSigWallet.executeTransaction(txExecute, {gas: 8000000});
+
+    let openPositionTxn = {
+        openPositionTxnIdx: txExecute
+    }
+    let data = JSON.stringify(openPositionTxn);
+
+    fs.writeFileSync('./config/newly-generated-transaction-index.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
     
 }
 

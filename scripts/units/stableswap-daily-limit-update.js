@@ -9,7 +9,10 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
-const STABLE_SWAP_ADDRESS = "" //SET
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
+const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
+//const STABLE_SWAP_ADDRESS = "" //SET
 const DAILY_LIMIT = web3.utils.toWei('100000','ether') //SET
 
 

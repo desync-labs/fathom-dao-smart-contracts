@@ -8,12 +8,16 @@ const EMPTY_BYTES = '0x000000000000000000000000000000000000000000000000000000000
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
 
 const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
 const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('5', 'ether')
 const AMOUNT_TOKEN_MIN = web3.utils.toWei('3', 'ether')
 const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
-const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
+
+//const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
+const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
 const TOKEN_ETH = web3.utils.toWei('10', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
@@ -80,8 +84,7 @@ const _encodeAddLiqudityFunction = (
 
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-    const deadline =  1676577600 //ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP//NOTE: Please change it
-    
+    const deadline =  1676577600/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
 
     let resultApprove = await multiSigWallet.submitTransaction(
         TOKEN_ADDRESS,
@@ -110,7 +113,18 @@ module.exports = async function(deployer) {
     )
     let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexAddLiquidity, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 15000000});
+    const execResult = await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 15000000});
+    
+    let addLiquidityTxn = {
+        addLiquidityTxnIdx: txIndexAddLiquidity
+    }
+    let data = JSON.stringify(addLiquidityTxn);
+
+    fs.writeFileSync('./config/newly-generated-transaction-index.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
 }
   
 

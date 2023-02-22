@@ -8,8 +8,10 @@ const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint
 const rawdata = fs.readFileSync('../../addresses.json');
 const addresses = JSON.parse(rawdata);
 const IProxyRegistry = artifacts.require("./dao/test/stablecoin/IProxyRegistry.sol");
-
-const PROXY_WALLET_REGISTRY_ADDRESS = "0xF11994FBAa365070ce4a1505f9Ce5Ea960d0d904"
+const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const addressesExternal = JSON.parse(rawdataExternal);
+const PROXY_WALLET_REGISTRY_ADDRESS = addressesExternal.PROXY_WALLET_REGISTRY_ADDRESS
+//const PROXY_WALLET_REGISTRY_ADDRESS = "0xF11994FBAa365070ce4a1505f9Ce5Ea960d0d904"
 const _encodeBuildFunction = (_account) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'build',
@@ -44,7 +46,18 @@ module.exports = async function(deployer) {
     }
     let data = JSON.stringify(addressesStableCoin);
 
-    fs.writeFileSync('./stablecoin-addresses.json',data, function(err){
+    fs.writeFileSync('./config/stablecoin-addresses-proxy-wallet.json',data, function(err){
+        if(err){
+            console.log(err)
+        }
+    })
+
+    let proxyWalletTxn = {
+        proxyWalletTxnIdx: txIndexBuild
+    }
+    let data2 = JSON.stringify(proxyWalletTxn);
+
+    fs.writeFileSync('./config/newly-generated-transaction-index.json',data2, function(err){
         if(err){
             console.log(err)
         }
