@@ -1111,6 +1111,39 @@ describe('Proposal flow', () => {
                     expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
             });
 
+            it('Should not have enough vote balance to propose', async() => {
+                const eightHours = 28800
+                await blockchain.increaseTime(eightHours)
+                encoded_function_add_supporting_token = web3.eth.abi.encodeFunctionCall({
+                    name: 'addSupportingToken',
+                    type: 'function',
+                    inputs: [{
+                        type: 'address',
+                        name: '_token'
+                    }]
+                }, [streamReward1.address]);
+                // create a proposal in MainToken governor
+
+                let errorMessage = "Governor: proposer votes below threshold";
+    
+                await shouldRevert(
+                    mainTokenGovernor.propose(
+                        [box.address],
+                        [0],
+                        [encoded_function],
+                        PROPOSAL_DESCRIPTION,
+                        {"from": NOT_STAKER}
+                    ),
+                    errTypes.revert,
+                    errorMessage
+                );
+                
+        
+                // retrieve the proposal id
+                proposalIdForAddingSupportedToken = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
+            });
+    
+
             it('Should blacklist a proposer', async() =>{
                 const _blacklistAProposer = async(account, blacklistStatus) => {
                     const result = await multiSigWallet.submitTransaction(
