@@ -76,6 +76,12 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/units/stableswap-daily-limit-update.js', '--network', 'apothem'],
   ],
+
+  updateMinTokenVotingBalance: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/update-voting-tokens-min-balance.js', '--network', 'apothem'],
+  ],
+  
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],

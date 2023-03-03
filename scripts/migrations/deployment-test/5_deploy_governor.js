@@ -8,7 +8,7 @@ const TimelockController_address = TimelockController.address;
 const MultiSigWallet_address = MultiSigWallet.address;
 const initialVotingDelay = 1; 
 const votingPeriod = 30; 
-const initialProposalThreshold = 1000;
+const initialProposalThreshold = web3.utils.toWei('1000','ether');
 const proposalTimeDelay = 5;
 const proposalLifetime = 86400;
 
