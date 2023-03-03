@@ -7,9 +7,6 @@ const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED
 // this needs to be sum of all the stakes. Right now 10KK * 3. 
@@ -22,7 +19,7 @@ const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 const COUNCIL_2 = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";
 const COUNCIL_3 = "0x4C5F0f90a2D4b518aFba11E22AC9b8F6B031d204";
 
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 const _createLockParamObject = (
@@ -75,13 +72,13 @@ module.exports = async function(deployer) {
     
     let resultApprove = await multiSigWallet.submitTransaction(
         addresses.fthmToken,
-        EMPTY_BYTES,
+        constants.EMPTY_BYTES,
         _encodeApproveFunction(stakingService.address,T_TOTAL_TO_APPROVE),
         0,
         {gas: 8000000}
     )
     
-    let txIndexApprove = eventsHelper.getIndexedEventArgs(resultApprove, SUBMIT_TRANSACTION_EVENT)[0];
+    let txIndexApprove = eventsHelper.getIndexedEventArgs(resultApprove, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexApprove, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexApprove, {gas: 8000000});
     const LockParamObjectForAllCouncils = [
@@ -92,14 +89,14 @@ module.exports = async function(deployer) {
 
     let resultCreateLock = await multiSigWallet.submitTransaction(
         stakingService.address,
-        EMPTY_BYTES,
+        constants.EMPTY_BYTES,
         _encodeCreateLocksForCouncils(LockParamObjectForAllCouncils),
         0,
         {gas: 8000000}
     )
 
     
-    let txIndexCreateLock = eventsHelper.getIndexedEventArgs(resultCreateLock, SUBMIT_TRANSACTION_EVENT)[0];
+    let txIndexCreateLock = eventsHelper.getIndexedEventArgs(resultCreateLock, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexCreateLock, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexCreateLock, {gas: 8000000});
 }

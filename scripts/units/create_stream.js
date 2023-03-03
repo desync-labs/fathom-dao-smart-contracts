@@ -1,12 +1,10 @@
-const { create } = require('domain');
 const fs = require('fs');
+const constants = require('./helpers/constants') 
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const STREAM_REWARD_TOKEN_ADDRESS = ""
 const REWARD_PROPOSAL_AMOUNT = web3.utils.toWei('','ether')
@@ -57,7 +55,7 @@ module.exports = async function(deployer) {
     ) => {
         const result = await multiSigWallet.submitTransaction(
             STREAM_REWARD_TOKEN_ADDRESS,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeApproveFunction(
                 _account,
                 _amount
@@ -66,7 +64,7 @@ module.exports = async function(deployer) {
             {gas: 8000000}
         )
 
-        const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
         approveStreamRewardsTxnIdx = tx;
@@ -77,7 +75,7 @@ module.exports = async function(deployer) {
     ) => {
         const result = await multiSigWallet.submitTransaction(
             addresses.staking,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeCreateStreamFunction(
                 _streamId,
                 _rewardTokenAmount
@@ -86,7 +84,7 @@ module.exports = async function(deployer) {
             {gas: 8000000}
         )
 
-        const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
         createStreamRewardsTxnIdx = tx;
@@ -108,7 +106,7 @@ module.exports = async function(deployer) {
     }
     let data = JSON.stringify(streamTxn);
 
-    fs.writeFileSync('./config/newly-generated-transaction-index.json',data, function(err){
+    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
         if(err){
             console.log(err)
         }

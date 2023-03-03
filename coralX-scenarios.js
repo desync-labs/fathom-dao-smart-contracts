@@ -81,7 +81,23 @@ module.exports = {
     ['compile'],
     ['execute', '--path', 'scripts/units/update-voting-tokens-min-balance.js', '--network', 'apothem'],
   ],
-  
+
+  proposeProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/propose-proposal.js', '--network', 'apothem'],
+  ],
+
+  queueProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/queue-proposal.js', '--network', 'apothem'],
+  ],
+
+  executeProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/execute-proposal.js', '--network', 'apothem'],
+  ],
+
+
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],

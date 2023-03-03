@@ -5,11 +5,9 @@ const eventsHelper = require("../tests/helpers/eventsHelper");
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
 const USDAddress = addressesExternal.USD_ADDRESS
@@ -57,12 +55,12 @@ module.exports = async function(deployer) {
     const approveUSD = async() =>{
         let resultApproveUSD = await multiSigWallet.submitTransaction(
             USDAddress,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeApproveFunction(STABLE_SWAP_ADDRESS,USDDepositAmount),
             0,
             {gas: 8000000}
         )
-        let txIndexApproveUSD = eventsHelper.getIndexedEventArgs(resultApproveUSD, SUBMIT_TRANSACTION_EVENT)[0];
+        let txIndexApproveUSD = eventsHelper.getIndexedEventArgs(resultApproveUSD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexApproveUSD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexApproveUSD, {gas: 8000000});
     }
@@ -72,13 +70,13 @@ module.exports = async function(deployer) {
 
         let resultApproveFXD = await multiSigWallet.submitTransaction(
             FXDAddress,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeApproveFunction(STABLE_SWAP_ADDRESS,FXDDepositAmount),
             0,
             {gas: 8000000}
         )
 
-        let txIndexApproveFXD = eventsHelper.getIndexedEventArgs(resultApproveFXD, SUBMIT_TRANSACTION_EVENT)[0];
+        let txIndexApproveFXD = eventsHelper.getIndexedEventArgs(resultApproveFXD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexApproveFXD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexApproveFXD, {gas: 8000000});
     }
@@ -87,14 +85,14 @@ module.exports = async function(deployer) {
     const depositUSD = async() => {
         let resultDepositUSD = await multiSigWallet.submitTransaction(
             STABLE_SWAP_ADDRESS,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeDepositFunction(
                 USDAddress,
                 USDDepositAmount
             ),0,{gas: 8000000}
         )
         
-        let txIndexDepositUSD= eventsHelper.getIndexedEventArgs(resultDepositUSD, SUBMIT_TRANSACTION_EVENT)[0];
+        let txIndexDepositUSD= eventsHelper.getIndexedEventArgs(resultDepositUSD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexDepositUSD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexDepositUSD, {gas: 8000000});
     }
@@ -104,14 +102,14 @@ module.exports = async function(deployer) {
     const depositFXD = async() =>{
         let resultDepositFXD = await multiSigWallet.submitTransaction(
             STABLE_SWAP_ADDRESS,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeDepositFunction(
                 FXDAddress,
                 FXDDepositAmount
             ),0,{gas: 8000000}
         )
         
-        let txIndexDepositFXD = eventsHelper.getIndexedEventArgs(resultDepositFXD, SUBMIT_TRANSACTION_EVENT)[0];
+        let txIndexDepositFXD = eventsHelper.getIndexedEventArgs(resultDepositFXD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexDepositFXD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexDepositFXD, {gas: 8000000});
     }

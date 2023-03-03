@@ -1,13 +1,11 @@
 const fs = require('fs');
+const constants = require('./helpers/constants') 
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 //RIGHT NOW SETUP FOR STAKING
 const PROXY_ADMIN = "0x43d97AD756fe2b7E48a2384eD7c400Db37698167"
@@ -40,13 +38,13 @@ module.exports = async function(deployer) {
     ) => {
         const result = await multiSigWallet.submitTransaction(
             PROXY_ADMIN,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeUpgradeFunction(
                 _proxy,
                 _impl
             ),0,{gas:8000000}
         )
-        const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
     }

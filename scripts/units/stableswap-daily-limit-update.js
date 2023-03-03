@@ -4,12 +4,9 @@ const eventsHelper = require("../tests/helpers/eventsHelper");
 
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
 //const STABLE_SWAP_ADDRESS = "" //SET
@@ -38,13 +35,13 @@ module.exports = async function(deployer)  {
     ) => {
         const result = await multiSigWallet.submitTransaction(
             STABLE_SWAP_ADDRESS,
-            EMPTY_BYTES,
+            constants.EMPTY_BYTES,
             _encodeUpdateDailySwapLimit(
                 newdailySwapLimit
             ),0,{gas:8000000}
         )
 
-        const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
     }

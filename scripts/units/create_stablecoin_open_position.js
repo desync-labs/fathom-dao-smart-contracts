@@ -1,16 +1,15 @@
 const fs = require('fs');
-
+const constants = require('./helpers/constants') 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const rawDataStablecoin = fs.readFileSync('../../config/stablecoin-addresses-proxy-wallet.json');
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
 const XDC_COL = web3.utils.toWei('20','ether')
-const rawdataExternal = fs.readFileSync('../../config/external-addresses.json');
+const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 
 //xdcBe6f6500C3e45a78E17818570b99a7646F8b59F3
@@ -110,7 +109,7 @@ module.exports = async function(deployer) {
         {gas: 8000000}
     )
 
-    let txExecute = eventsHelper.getIndexedEventArgs(resultExecute, SUBMIT_TRANSACTION_EVENT)[0];
+    let txExecute = eventsHelper.getIndexedEventArgs(resultExecute, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txExecute, {gas: 8000000});
     await multiSigWallet.executeTransaction(txExecute, {gas: 8000000});
 
@@ -119,7 +118,7 @@ module.exports = async function(deployer) {
     }
     let data = JSON.stringify(openPositionTxn);
 
-    fs.writeFileSync('./config/newly-generated-transaction-index.json',data, function(err){
+    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
         if(err){
             console.log(err)
         }
