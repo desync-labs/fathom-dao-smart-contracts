@@ -4,7 +4,6 @@ const PATH_TO_ADDRESSES= '../../addresses.json'
 const PATH_TO_ADDRESSES_EXTERNAL = '../../config/external-addresses.json'
 const PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX = './config/newly-generated-transaction-index.json'
 
-
 module.exports = {
     SUBMIT_TRANSACTION_EVENT,
     EMPTY_BYTES,

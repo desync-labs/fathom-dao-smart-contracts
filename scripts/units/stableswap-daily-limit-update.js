@@ -44,6 +44,17 @@ module.exports = async function(deployer)  {
         const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
+
+        let stableSwapDailyLimitUpdate = {
+            stableSwapDailyLimitUpdateIdx: tx
+        }
+
+        let data = JSON.stringify(stableSwapDailyLimitUpdate)
+        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
+            if(err){
+                console.log(err)
+            }
+        })
     }
 
     await _updateDailySwapLimit(DAILY_LIMIT)

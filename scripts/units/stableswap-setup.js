@@ -63,6 +63,7 @@ module.exports = async function(deployer) {
         let txIndexApproveUSD = eventsHelper.getIndexedEventArgs(resultApproveUSD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexApproveUSD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexApproveUSD, {gas: 8000000});
+        return txIndexApproveUSD
     }
         
     const approveFXD = async () => {
@@ -79,6 +80,7 @@ module.exports = async function(deployer) {
         let txIndexApproveFXD = eventsHelper.getIndexedEventArgs(resultApproveFXD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexApproveFXD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexApproveFXD, {gas: 8000000});
+        return txIndexApproveFXD
     }
     
 
@@ -95,6 +97,7 @@ module.exports = async function(deployer) {
         let txIndexDepositUSD= eventsHelper.getIndexedEventArgs(resultDepositUSD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexDepositUSD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexDepositUSD, {gas: 8000000});
+        return txIndexDepositUSD
     }
 
 
@@ -112,11 +115,27 @@ module.exports = async function(deployer) {
         let txIndexDepositFXD = eventsHelper.getIndexedEventArgs(resultDepositFXD, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(txIndexDepositFXD, {gas: 8000000});
         await multiSigWallet.executeTransaction(txIndexDepositFXD, {gas: 8000000});
+        return txIndexDepositFXD
+
     }
 
-    await approveUSD();
-    await approveFXD();
-    await depositUSD();
-    await depositFXD();
+    let txIndexApproveUSD = await approveUSD();
+    let txIndexApproveFXD = await approveFXD();
+    let txIndexDepositUSD = await depositUSD();
+    let txIndexDepositFXD = await depositFXD();
+
+    let stableSwapTxn = {
+        txIndexApproveUSD: txIndexApproveUSD,
+        txIndexApproveFXD: txIndexApproveFXD,
+        txIndexDepositUSD: txIndexDepositUSD,
+        txIndexDepositFXD: txIndexDepositFXD,
+    }
+
+    let data = JSON.stringify(stableSwapTxn)
+        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
+            if(err){
+                console.log(err)
+            }
+        })
     
 }
