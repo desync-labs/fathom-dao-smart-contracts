@@ -6,7 +6,8 @@ const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-
+const EXECUTE_TRANSACTION_EVENT = "ExecuteTransaction(address,uint256)";
+ 
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
@@ -89,5 +90,6 @@ module.exports = async function(deployer) {
 
     let txIndexInit = eventsHelper.getIndexedEventArgs(resultInit, SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexInit, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexInit, {gas: 10000000});
+    let resultExecute = await multiSigWallet.executeTransaction(txIndexInit, {gas: 10000000});
+    eventsHelper.getIndexedEventArgs(resultExecute, EXECUTE_TRANSACTION_EVENT)[0]
 }

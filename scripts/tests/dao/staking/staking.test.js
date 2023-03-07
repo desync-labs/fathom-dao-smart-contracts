@@ -1394,7 +1394,7 @@ describe("Staking Test", () => {
             
         })
 
-        it('Should set Max Lock Positions', async() => {
+        it('Should not set Max Lock Positions', async() => {
 
             const _setMaxLockPositionsBad = async(
                 newMaxLockPositions

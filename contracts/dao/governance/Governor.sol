@@ -107,8 +107,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     ) public payable virtual override  returns (uint256) {
         require(live == 1,"not live");
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-        requireNotExpired(proposalId);
-        requireConfirmed(proposalId);
+        _requireNotExpired(proposalId);
+        _requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Queued, "Governor: proposal not successful");
@@ -197,12 +197,11 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         string memory description
     ) public virtual override returns (uint256) {
         require(live == 1,"not live");
-        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below threshold");
+        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), 
+            "Governor: proposer votes below threshold");
         
         require(!isBlacklisted[msg.sender],"Proposer is blacklisted");
-        require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Can submit in interval");
-
-        nextAcceptableProposalTimestamp[msg.sender] = block.timestamp + proposalTimeDelay;
+        _checkNextProposalDelayPassed(msg.sender);
 
         uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
 
@@ -224,13 +223,13 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         proposalIds.push(proposalId);
 
-        emit ProposalCreated(proposalId, _msgSender(), targets, values, new string[](targets.length), calldatas, snapshot, deadline, description);
-
+        emit ProposalCreated(proposalId, _msgSender(), targets, values, new string[](targets.length), 
+                             calldatas, snapshot, deadline, description);
         return proposalId;
     }
 
     function confirmProposal(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) notConfirmed(_proposalId) {
-        requireNotExpired(_proposalId);
+        _requireNotExpired(_proposalId);
         isConfirmed[_proposalId] = true;
         ProposalState status = state(_proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "proposal not successful");
@@ -238,7 +237,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function revokeConfirmation(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) {
-        requireConfirmed(_proposalId);
+        _requireConfirmed(_proposalId);
         isConfirmed[_proposalId] = false;
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
@@ -600,16 +599,21 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return (_proposalIds, _descriptionsArray, _statusses);
     }
 
-    function requireConfirmed(uint256 _proposalId) internal view {
+    function _requireConfirmed(uint256 _proposalId) internal view {
         require(isConfirmed[_proposalId], "proposal not confirmed");
     }
 
-    function requireNotExpired(uint256 _proposalId) internal view {
+    function _requireNotExpired(uint256 _proposalId) internal view {
         require(_proposals[_proposalId].expireTimestamp >= block.timestamp,"proposal expired");
     }
 
     function _executor() internal view virtual returns (address) {
         return address(this);
+    }
+
+    function _checkNextProposalDelayPassed(address account) internal {
+        require(block.timestamp > nextAcceptableProposalTimestamp[account], "Can submit only after certain delay");
+        nextAcceptableProposalTimestamp[account] = block.timestamp + proposalTimeDelay;
     }
 
     function _quorumReached(uint256 proposalId) internal view virtual returns (bool);

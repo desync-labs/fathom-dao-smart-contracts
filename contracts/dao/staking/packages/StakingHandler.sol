@@ -369,4 +369,5 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         maxLockPositions = newMaxLockPositions;
     }
+    
 }
