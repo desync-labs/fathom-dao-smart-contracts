@@ -49,7 +49,9 @@ contract MainTokenGovernor is
     ) public override(Governor, IGovernor) returns (uint256) {
         return super.propose(targets, values, calldatas, description);
     }
-
+    /**
+     * @dev Cancelling of proposal can be done only through Multisig
+     */
     function cancelProposal(
         address[] memory targets,
         uint256[] memory values,
@@ -83,6 +85,10 @@ contract MainTokenGovernor is
         return super.state(proposalId);
     }
 
+    /**
+     * @dev A multisig can stop this contract. Once stopped we will have to migrate.
+     *     Once this function is called, the contract cannot be made live again.
+     */
     function emergencyStop() public onlyMultiSig{
         _emergencyStop();
         for(uint i = 0; i < listOfSupportedTokens.length;i++){
@@ -97,10 +103,20 @@ contract MainTokenGovernor is
             require(sent, "Failed to send ether");
         } 
     }
-
+    /**
+     * @dev Adds supporting tokens so that if there are tokens then it can be transferred
+     *     Only Governance is able to access this function.
+     *     It has to go through proposal and successful voting for execution.
+    */
     function addSupportingToken(address _token) public onlyGovernance {
         _addSupportedToken(_token);
     }
+
+    /**
+     * @dev Removes supporting tokens
+     *      Only Governance is able to access this function.
+     *      It has to go through proposal and successful voting for execution.
+    */
     function removeSupportingToken(address _token) public onlyGovernance {
         _removeSupportingToken(_token);
     }
@@ -127,7 +143,7 @@ contract MainTokenGovernor is
     /**
      * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
      * is some contract other than the governor itself, like when using a timelock, this function can be invoked
-     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * in a governance proposal to recover tokens that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
     function relayERC20(
@@ -142,7 +158,7 @@ contract MainTokenGovernor is
     /**
      * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
      * is some contract other than the governor itself, like when using a timelock, this function can be invoked
-     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * in a governance proposal to recover Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
     function relayNativeToken(

@@ -227,7 +227,9 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
                              calldatas, snapshot, deadline, description);
         return proposalId;
     }
-
+    /**
+     * @dev Only Multisig is able to confirm a proposal
+     */
     function confirmProposal(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) notConfirmed(_proposalId) {
         _requireNotExpired(_proposalId);
         isConfirmed[_proposalId] = true;
@@ -235,37 +237,51 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "proposal not successful");
         emit ConfirmProposal(msg.sender, _proposalId);
     }
-
+    /**
+     * @dev Only Multisig is able to revoke a proposal confirmation
+     */
     function revokeConfirmation(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) {
         _requireConfirmed(_proposalId);
         isConfirmed[_proposalId] = false;
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
+    /**
+     * @dev Only Multisig can update
+    */
     function updateMultiSig(address newMultiSig) public onlyMultiSig {
         require(newMultiSig != address(0), "zero address");
         emit MultiSigUpdated(newMultiSig, multiSig);
         multiSig = newMultiSig;
     }
-
+    /**
+     * @dev Only Multisig can update
+     */
     function updateMaxTargets(uint256 newMaxTargets) public onlyMultiSig {
         require(newMaxTargets != 0, "zero value");
         emit MaxTargetUpdated(newMaxTargets, maxTargets);
         maxTargets = newMaxTargets;
     }
 
+    /**
+     * @dev Only Multisig can update
+     */
     function updateProposalTimeDelay(uint256 newProposalTimeDelay) public onlyMultiSig {
         require(newProposalTimeDelay != 0, "zero value");
         emit ProposalTimeDelayUpdated(newProposalTimeDelay, proposalTimeDelay);
         proposalTimeDelay = newProposalTimeDelay;
     }
-
+    /**
+     * @dev Only Multisig can update
+     */
     function updateProposalLifetime(uint256 newProposalLifetime) public onlyMultiSig {
         require(newProposalLifetime>= MINIMUM_LIFETIME, "less than minimum");
         emit ProposalLifetimeUpdated(newProposalLifetime, newProposalLifetime);
         proposalLifetime = newProposalLifetime;
     }
-
+    /**
+     * @dev Only Multisig can blacklist a an account or unblacklist an account
+     */
     function setBlacklistStatusForProposer(address account, bool blacklistStatus) public onlyMultiSig {
         isBlacklisted[account] = blacklistStatus;
     }

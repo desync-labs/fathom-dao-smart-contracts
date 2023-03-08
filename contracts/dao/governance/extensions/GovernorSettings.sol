@@ -25,14 +25,23 @@ abstract contract GovernorSettings is Governor {
         _setProposalThreshold(initialProposalThreshold);
     }
 
+    /**
+     * @dev Has to go through proposals and successful voting to update by Governance
+     */
     function setVotingDelay(uint256 newVotingDelay) public virtual onlyGovernance {
         _setVotingDelay(newVotingDelay);
     }
 
+    /**
+     * @dev Has to go through proposals and successful voting to update by Governance
+     */
     function setVotingPeriod(uint256 newVotingPeriod) public virtual onlyGovernance {
         _setVotingPeriod(newVotingPeriod);
     }
 
+    /**
+     * @dev Has to go through proposals and successful voting to update by Governance
+     */
     function setProposalThreshold(uint256 newProposalThreshold) public virtual onlyGovernance {
         _setProposalThreshold(newProposalThreshold);
     }

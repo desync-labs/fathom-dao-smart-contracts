@@ -62,6 +62,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         minLockPeriod = _minLockPeriod;
     }
 
+    /**
+     * @dev The function is callable only once, and it can be done only with admin,
+     *       which at initial setup is Multisig
+     */
     function initializeMainStream(
         address _owner,
         uint256[] memory scheduleTimes,
@@ -144,7 +148,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         );
         emit StreamProposed(streamId, streamOwner, rewardToken, maxDepositAmount);
     }
-
+    /**
+     * @dev This function creates a stream and makes it live. Only the Stream Owner is able to call this function.
+     *      Stream Owner is set while proposing a stream
+     */
     function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1){
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "nt proposed");
@@ -167,6 +174,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _transfer(rewardTokenAmount,stream.rewardToken);
     }
 
+    /**
+     * @dev Proposed stream can be cancelled by Stream Manager, which at the time of deployment is Multisig
+     */
     function cancelStreamProposal(uint256 streamId) public override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
         require(stream.status == StreamStatus.PROPOSED, "nt proposed");
@@ -175,6 +185,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamProposalCancelled(streamId, stream.owner, stream.rewardToken);
     }
 
+    /**
+     * @dev A stream can be removed after all the rewards pending have been withdrawn.
+     *      Stream can be removed by the Stream Manager which is Multisig as time of deployment.
+     */
     function removeStream(uint256 streamId, address streamFundReceiver) public override onlyRole(STREAM_MANAGER_ROLE) {
         if(streamId == 0){
             revert StreamIdZero();
@@ -196,6 +210,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
+    /**
+     * @dev Creating locks for council can be done by Admin only which is Multisig.
+     *      Multisig can create locks for councils
+     */
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         if(councilsInitialized == true){
             revert AlreadyInitialized();
@@ -296,6 +314,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _withdraw(MAIN_STREAM);
     }
 
+    /**
+     * @dev Vault can be updated only if the contract is at paused state.
+     *      Only Admin that is, Multisig at the time of deployment can update Vault
+     */
     function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
@@ -314,6 +336,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         vault = _vault;
     }
 
+    /**
+     * @dev Penalty accrued due to early unlocking can be withdrawn to some address, most likely the treasury.
+     *      Address with TREASURY_ROLE can access this function, which is Multisig at time of deployment
+     */
     function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE) {
         if(totalPenaltyBalance == 0){
             revert ZeroPenalty();
@@ -356,6 +382,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IVault(vault).deposit(_token, _amount);
     }
 
+    /**
+     * @dev This allows for setting up minimum locking period.
+     *      Only admin which is Multisig at deployment can call this
+     */
     function setMinimumLockPeriod(uint256 _minLockPeriod) public override onlyRole(DEFAULT_ADMIN_ROLE){
         if(_minLockPeriod > maxLockPeriod){
             revert MaxLockPeriodExceeded();
@@ -363,6 +393,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         minLockPeriod = _minLockPeriod;
     }
 
+    /**
+     * @dev This allows for setting up maximum lock positions.
+     *      Only admin which is Multisig at deployment can call this
+     */
     function setMaxLockPositions(uint256 newMaxLockPositions) public override onlyRole(DEFAULT_ADMIN_ROLE){
         if(newMaxLockPositions < maxLockPositions){
             revert BadMaxLockPositions();

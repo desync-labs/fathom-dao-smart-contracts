@@ -39,6 +39,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         uint256 streamId
     )
         external
+        override
         view
         returns (
             uint256 rewardDepositAmount,
@@ -55,4 +56,5 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
             stream.status
         );
     }
+    
 }

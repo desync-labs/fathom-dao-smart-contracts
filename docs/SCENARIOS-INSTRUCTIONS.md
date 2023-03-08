@@ -21,12 +21,12 @@ Hardcode:
 
 **How to create dex pool with Native Tokenr**
 1. In scripts/units/create_pool_dex_xdc.js Hardcode the followings:
-* TOKEN_ADDRESS 
+*    TOKEN_ADDRESS: The token address to create a pair with XDC
 *    AMOUNT_TOKEN_DESIRED
 *    AMOUNT_TOKEN_MIN
 *    AMOUNT_ETH_MIN
 *    DEX_ROUTER_ADDRESS //this comes from external address
-*    TOKEN_ETH
+*    TOKEN_ETH: The amount of ETH you are willing to spend
 
 2. coralX scenario --run createDexXDCPoolApothem
 
