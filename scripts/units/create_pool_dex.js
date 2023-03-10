@@ -15,10 +15,10 @@ const addressesExternal = JSON.parse(rawdataExternal);
 const Token_A_Address = "0x08B5860daD9947677F2a9d7DE563cBec9980E44c" //FXD
 const Token_B_Address = "0xC3047F0dF34216860448D848f3419CDCF73c6165" //FTHM
 // SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('1000', 'ether')
-const Amount_B_Desired = web3.utils.toWei('240000', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('100', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('140000', 'ether')
+const Amount_A_Desired = web3.utils.toWei('2', 'ether')
+const Amount_B_Desired = web3.utils.toWei('38', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
