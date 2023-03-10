@@ -1,6 +1,7 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const txnHelper = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 
@@ -21,11 +22,6 @@ const xdcAdapter = addressesExternal.xdcAdapter
 const stablecoinAdapter = addressesExternal.stablecoinAdapter
 const collateralPoolId = addressesExternal.collateralPoolId
 
-// const positionMananger = "0xe485eDc3D5aba4dbEcD76a78e6c71c8F5E114F3b"
-// const stabilityFeeCollector = "0x62889248B6C81D31D7acc450cc0334D0AA58A14A"
-// const xdcAdapter = "0xc3c7f26ffD1cd5ec682E23C076471194DE8ce4f1"
-// const stablecoinAdapter = "0x07a2C89774a3F3c57980AD7A528Aea6F262d8939"
-// const collateralPoolId = '0x5844430000000000000000000000000000000000000000000000000000000000'
 const stablecoinAmount = web3.utils.toWei('5')
 const data  = "0x00"
 
@@ -113,15 +109,5 @@ module.exports = async function(deployer) {
     await multiSigWallet.confirmTransaction(txExecute, {gas: 8000000});
     await multiSigWallet.executeTransaction(txExecute, {gas: 8000000});
 
-    let openPositionTxn = {
-        openPositionTxnIdx: txExecute
-    }
-    let data = JSON.stringify(openPositionTxn);
-
-    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-        if(err){
-            console.log(err)
-        }
-    })
-    
+    await txnHelper.saveTxnIndex("openPositionTransaction", txExecute)   
 }

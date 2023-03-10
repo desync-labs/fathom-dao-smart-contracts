@@ -1,6 +1,7 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const txnHelper = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -50,14 +51,5 @@ module.exports = async function(deployer) {
         }
     })
 
-    let proxyWalletTxn = {
-        proxyWalletTxnIdx: txIndexBuild
-    }
-    let data2 = JSON.stringify(proxyWalletTxn);
-
-    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data2, function(err){
-        if(err){
-            console.log(err)
-        }
-    })
+    await txnHelper.saveTxnIndex("proxyWalletTxn", txIndexBuild)   
 }

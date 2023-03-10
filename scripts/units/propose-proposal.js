@@ -1,4 +1,6 @@
 const fs = require('fs');
+const txnHelper = require('./helpers/transactionSaver')
+const constants = require('./helpers/constants')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
@@ -85,16 +87,9 @@ module.exports = async function(deployer) {
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
 
-        let proposeProposalTxn = {
-            proposeProposalTxnIdx: tx
-        }
-
-        let data = JSON.stringify(proposeProposalTxn)
-        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-            if(err){
-                console.log(err)
-            }
-        })
+        await txnHelper.saveTxnIndex(
+            "proposeProposalTxn",tx
+        )
     }
 
     await _proposeProposal(

@@ -2,6 +2,8 @@
 const fs = require('fs');
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const txnHelper = require('./helpers/transactionSaver')
+const constants = require('./helpers/constants')
 
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
@@ -99,4 +101,6 @@ module.exports = async function(deployer) {
     let txIndexCreateLock = eventsHelper.getIndexedEventArgs(resultCreateLock, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexCreateLock, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexCreateLock, {gas: 8000000});
+    await txnHelper.saveTxnIndex("createLocksForCouncilTxn", txIndexCreateLock)   
+
 }

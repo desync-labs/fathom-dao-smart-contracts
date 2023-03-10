@@ -1,5 +1,6 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
+const txnHelper = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
@@ -8,9 +9,9 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 //RIGHT NOW SETUP FOR STAKING
-const PROXY_ADMIN = "0x43d97AD756fe2b7E48a2384eD7c400Db37698167"
-const PROXY = "0x06F32926169b922F5e885c8a31CB7e60D554A6E6"
-const IMPLEMENTATION_ADDRESS = "0xe017a18Ad42abAE2e53F9A70EF037Ce52e2Eb484"
+const PROXY_ADMIN = "0xB7a8f3A8178B21499b56d9d054119821953d2C3f"
+const PROXY = "0xFD21E72b63568942E541284D275ce1057e7F1257"
+const IMPLEMENTATION_ADDRESS = "0xa5B675dd61c00C41F3FA5b919b7E917A61dbE7f7"
 const _encodeUpgradeFunction = (_proxy, _impl) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'upgrade',
@@ -47,17 +48,7 @@ module.exports = async function(deployer) {
         const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-        
-        let upgradeTxn = {
-            upgradeTxnIdx: tx
-        }
-
-        let data = JSON.stringify(upgradeTxn)
-        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-            if(err){
-                console.log(err)
-            }
-        })
+        await txnHelper.saveTxnIndex("upgradeTxn",tx)
     }
 
     await _upgrade(

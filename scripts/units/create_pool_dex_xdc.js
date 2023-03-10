@@ -1,6 +1,7 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const txnHelper = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -8,14 +9,14 @@ const addresses = JSON.parse(rawdata);
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
-const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('5', 'ether')
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('3', 'ether')
-const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
+const TOKEN_ADDRESS = "0x746a59A8F41DdC954542B6697954a94868126885" //FTHM address
+const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
+const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
+const AMOUNT_ETH_MIN = web3.utils.toWei('0', 'ether')
 
 //const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
-const TOKEN_ETH = web3.utils.toWei('10', 'ether')
+const TOKEN_ETH = web3.utils.toWei('3', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -111,17 +112,7 @@ module.exports = async function(deployer) {
     let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexAddLiquidity, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 15000000});
-    
-    let addLiquidityTxn = {
-        addLiquidityTxnIdx: txIndexAddLiquidity
-    }
-    let data = JSON.stringify(addLiquidityTxn);
-
-    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-        if(err){
-            console.log(err)
-        }
-    })
+    await txnHelper.saveTxnIndex("createPoolWithXDC", txIndexAddLiquidity)
 }
   
 

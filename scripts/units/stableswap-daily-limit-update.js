@@ -2,6 +2,7 @@ const fs = require('fs');
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
+const constants = require('./helpers/constants')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -44,17 +45,8 @@ module.exports = async function(deployer)  {
         const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-
-        let stableSwapDailyLimitUpdate = {
-            stableSwapDailyLimitUpdateIdx: tx
-        }
-
-        let data = JSON.stringify(stableSwapDailyLimitUpdate)
-        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-            if(err){
-                console.log(err)
-            }
-        })
+            
+        await txnHelper.saveTxnIndex("stableSwapDailyLimitUpdate", tx)  
     }
 
     await _updateDailySwapLimit(DAILY_LIMIT)

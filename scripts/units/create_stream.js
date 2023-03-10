@@ -1,5 +1,6 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
+const txnHelper = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
@@ -99,18 +100,8 @@ module.exports = async function(deployer) {
         STREAM_ID,
         REWARD_PROPOSAL_AMOUNT
     )
-
-    let streamTxn = {
-        approveStreamRewardsTxnIdx: approveStreamRewardsTxnIdx,
-        createStreamRewardsTxnIdx: createStreamRewardsTxnIdx
-    }
-    let data = JSON.stringify(streamTxn);
-
-    fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-        if(err){
-            console.log(err)
-        }
-    })
+    await txnHelper.saveTxnIndex("approveStreamRewardsTxn", approveStreamRewardsTxnIdx)   
+    await txnHelper.saveTxnIndex("createStreamRewardsTxn", createStreamRewardsTxnIdx)   
 
 }
 

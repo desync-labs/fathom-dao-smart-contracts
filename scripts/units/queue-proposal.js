@@ -1,6 +1,8 @@
 const fs = require('fs');
+const txnHelper = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const constants = require('./helpers/constants')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -60,7 +62,8 @@ module.exports = async function(deployer) {
     // Calldatas: The function you want to call should be encoded
     
     // Description
-    const DESCRIPTION_HASH = ''//note bytes32
+    const DESCRIPTION_HASH_STRING = ''//note bytes32
+    const DESCRIPTION_HASH = web3.utils.keccak256(DESCRIPTION_HASH_STRING)
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
 
     const encodedFunctionToCall = _encodedFucntionToCall()
@@ -84,17 +87,8 @@ module.exports = async function(deployer) {
         const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-
-        let queueProposalTxn = {
-            queueProposalTxnIdx: tx
-        }
-
-        let data = JSON.stringify(queueProposalTxn)
-        fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
-            if(err){
-                console.log(err)
-            }
-        })
+            
+        await txnHelper.saveTxnIndex("queueProposalTxn", tx)   
     }
 
     await _queueProposal(

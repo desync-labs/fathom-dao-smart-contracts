@@ -2,6 +2,7 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
 const eventsHelper = require("../tests/helpers/eventsHelper");
+const txnHelper = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const COUNCIL_1_PLACEHOLDER = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
@@ -40,4 +41,6 @@ module.exports = async function(deployer) {
 
     await multiSigWallet.confirmTransaction(txIndex, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndex, {gas: 8000000});
+    await txnHelper.saveTxnIndex("setupMultisigOwner", txIndex)   
+
 }
