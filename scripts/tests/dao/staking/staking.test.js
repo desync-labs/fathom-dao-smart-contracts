@@ -197,6 +197,18 @@ const _encodeAdminPause = (flag) => {
     return toRet;
 }
 
+const _encodeSetMaxLockPositions = (newMaxLockPositions) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'setMaxLockPositions',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'newMaxLockPositions'
+        }]}, [newMaxLockPositions]);
+
+    return toRet;
+}
+
 
 describe("Staking Test", () => {
 
@@ -1355,6 +1367,62 @@ describe("Staking Test", () => {
             ); 
             
         })
+
+        it('Should set Max Lock Positions', async() => {
+
+            const _setMaxLockPositions = async(
+                newMaxLockPositions
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeSetMaxLockPositions(
+                        newMaxLockPositions
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _setMaxLockPositions(15)
+            
+        })
+
+        it('Should not set Max Lock Positions', async() => {
+
+            const _setMaxLockPositionsBad = async(
+                newMaxLockPositions
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeSetMaxLockPositions(
+                        newMaxLockPositions
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await shouldRevert(multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),errTypes.revert);
+            }
+            await _setMaxLockPositionsBad(10)
+            
+        })
+
+        
     })
+
+    
 });
    

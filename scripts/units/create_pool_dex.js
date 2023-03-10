@@ -1,12 +1,15 @@
 const fs = require('fs');
+const constants = require('./helpers/constants')
+const txnHelper = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-const rawdata = fs.readFileSync('../../addresses.json');
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
+
+const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
+const addressesExternal = JSON.parse(rawdataExternal);
 
 
 const Token_A_Address = "0x08B5860daD9947677F2a9d7DE563cBec9980E44c" //FXD
@@ -103,31 +106,31 @@ module.exports = async function(deployer) {
     const deadline =  1776577600+86400 //ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP//NOTE: Please change it
     let resultApprove_A = await multiSigWallet.submitTransaction(
         Token_A_Address,
-        EMPTY_BYTES,
+        constants.EMPTY_BYTES,
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_A_Desired),
         0,
         {gas: 8000000}
     )
     
-    let txIndexApprove_A = eventsHelper.getIndexedEventArgs(resultApprove_A, SUBMIT_TRANSACTION_EVENT)[0];
+    let txIndexApprove_A = eventsHelper.getIndexedEventArgs(resultApprove_A, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexApprove_A, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexApprove_A, {gas: 8000000});
 
     let resultApprove_B = await multiSigWallet.submitTransaction(
         Token_B_Address,
-        EMPTY_BYTES,
+        constants.EMPTY_BYTES,
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_B_Desired),
         0,
         {gas: 8000000}
     )
 
-    let txIndexApprove_B = eventsHelper.getIndexedEventArgs(resultApprove_B, SUBMIT_TRANSACTION_EVENT)[0];
+    let txIndexApprove_B = eventsHelper.getIndexedEventArgs(resultApprove_B, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexApprove_B, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexApprove_B, {gas: 8000000});
     
     let resultAddLiquidity = await multiSigWallet.submitTransaction(
         DEX_ROUTER_ADDRESS,
-        EMPTY_BYTES,
+        constants.EMPTY_BYTES,
         _encodeAddLiqudityFunction(
             Token_A_Address,
             Token_B_Address,
@@ -142,9 +145,11 @@ module.exports = async function(deployer) {
         {gas: 8000000}
     )
 
-    let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, SUBMIT_TRANSACTION_EVENT)[0];
+    let txIndexAddLiquidity = eventsHelper.getIndexedEventArgs(resultAddLiquidity, constants.SUBMIT_TRANSACTION_EVENT)[0];
     await multiSigWallet.confirmTransaction(txIndexAddLiquidity, {gas: 8000000});
     await multiSigWallet.executeTransaction(txIndexAddLiquidity, {gas: 8000000});
+
+    await txnHelper.saveTxnIndex("createPoolWithTokenPair", txIndexAddLiquidity)
 }
   
 

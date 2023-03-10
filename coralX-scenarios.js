@@ -47,6 +47,57 @@ module.exports = {
     ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
   ],
   
+  createProxyWalletApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_stablecoin_proxy_wallet.js', '--network', 'apothem'],
+  ],
+
+  openPositionApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create_stablecoin_open_position.js', '--network', 'apothem'],
+  ],
+
+  createUpgradeApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/create-upgrade.js', '--network', 'apothem'],
+  ],
+
+  setupStableSwapApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/stableswap-setup.js', '--network', 'apothem'],
+  ],
+
+  deployStakingUpgradeApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/upgrades/1_deploy_staking_upgrade.js', '--network', 'apothem'],
+  ],
+
+  updateDailySwapLimitApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/stableswap-daily-limit-update.js', '--network', 'apothem'],
+  ],
+
+  updateMinTokenVotingBalance: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/update-voting-tokens-min-balance.js', '--network', 'apothem'],
+  ],
+
+  proposeProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/propose-proposal.js', '--network', 'apothem'],
+  ],
+
+  queueProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/queue-proposal.js', '--network', 'apothem'],
+  ],
+
+  executeProposalApothem: [
+    ['compile'],
+    ['execute', '--path', 'scripts/units/execute-proposal.js', '--network', 'apothem'],
+  ],
+
+
   migrateAndConfigureForTests: [
     ['compile'],
     ['execute', '--path', 'scripts/migrations/deployment-test'],

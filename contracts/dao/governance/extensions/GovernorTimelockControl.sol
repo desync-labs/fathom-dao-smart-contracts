@@ -24,6 +24,9 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         _updateTimelock(newTimelock);
     }
 
+    /**
+     * @notice The proposal must be confirmed by multisig before it can be queued
+     */
     function queue(
         address[] memory targets,
         uint256[] memory values,

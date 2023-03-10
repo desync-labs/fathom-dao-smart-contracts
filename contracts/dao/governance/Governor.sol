@@ -107,8 +107,8 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     ) public payable virtual override  returns (uint256) {
         require(live == 1,"not live");
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-        requireNotExpired(proposalId);
-        requireConfirmed(proposalId);
+        _requireNotExpired(proposalId);
+        _requireConfirmed(proposalId);
 
         ProposalState status = state(proposalId);
         require(status == ProposalState.Queued, "Governor: proposal not successful");
@@ -197,12 +197,11 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         string memory description
     ) public virtual override returns (uint256) {
         require(live == 1,"not live");
-        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), "Governor: proposer votes below threshold");
+        require(getVotes(_msgSender(), block.number - 1) >= proposalThreshold(), 
+            "Governor: proposer votes below threshold");
         
         require(!isBlacklisted[msg.sender],"Proposer is blacklisted");
-        require(block.timestamp > nextAcceptableProposalTimestamp[msg.sender], "Can submit in interval");
-
-        nextAcceptableProposalTimestamp[msg.sender] = block.timestamp + proposalTimeDelay;
+        _checkNextProposalDelayPassed(msg.sender);
 
         uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
 
@@ -224,49 +223,65 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
         proposalIds.push(proposalId);
 
-        emit ProposalCreated(proposalId, _msgSender(), targets, values, new string[](targets.length), calldatas, snapshot, deadline, description);
-
+        emit ProposalCreated(proposalId, _msgSender(), targets, values, new string[](targets.length), 
+                             calldatas, snapshot, deadline, description);
         return proposalId;
     }
-
+    /**
+     * @dev Only Multisig is able to confirm a proposal
+     */
     function confirmProposal(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) notConfirmed(_proposalId) {
-        requireNotExpired(_proposalId);
+        _requireNotExpired(_proposalId);
         isConfirmed[_proposalId] = true;
         ProposalState status = state(_proposalId);
         require(status == ProposalState.Succeeded || status == ProposalState.Queued, "proposal not successful");
         emit ConfirmProposal(msg.sender, _proposalId);
     }
-
+    /**
+     * @dev Only Multisig is able to revoke a proposal confirmation
+     */
     function revokeConfirmation(uint256 _proposalId) public onlyMultiSig notExecuted(_proposalId) {
-        requireConfirmed(_proposalId);
+        _requireConfirmed(_proposalId);
         isConfirmed[_proposalId] = false;
         emit RevokeConfirmation(msg.sender, _proposalId);
     }
 
+    /**
+     * @dev Only Multisig can update
+    */
     function updateMultiSig(address newMultiSig) public onlyMultiSig {
         require(newMultiSig != address(0), "zero address");
         emit MultiSigUpdated(newMultiSig, multiSig);
         multiSig = newMultiSig;
     }
-
+    /**
+     * @dev Only Multisig can update
+     */
     function updateMaxTargets(uint256 newMaxTargets) public onlyMultiSig {
         require(newMaxTargets != 0, "zero value");
         emit MaxTargetUpdated(newMaxTargets, maxTargets);
         maxTargets = newMaxTargets;
     }
 
+    /**
+     * @dev Only Multisig can update
+     */
     function updateProposalTimeDelay(uint256 newProposalTimeDelay) public onlyMultiSig {
         require(newProposalTimeDelay != 0, "zero value");
         emit ProposalTimeDelayUpdated(newProposalTimeDelay, proposalTimeDelay);
         proposalTimeDelay = newProposalTimeDelay;
     }
-
+    /**
+     * @dev Only Multisig can update
+     */
     function updateProposalLifetime(uint256 newProposalLifetime) public onlyMultiSig {
         require(newProposalLifetime>= MINIMUM_LIFETIME, "less than minimum");
         emit ProposalLifetimeUpdated(newProposalLifetime, newProposalLifetime);
         proposalLifetime = newProposalLifetime;
     }
-
+    /**
+     * @dev Only Multisig can blacklist a an account or unblacklist an account
+     */
     function setBlacklistStatusForProposer(address account, bool blacklistStatus) public onlyMultiSig {
         isBlacklisted[account] = blacklistStatus;
     }
@@ -600,16 +615,21 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return (_proposalIds, _descriptionsArray, _statusses);
     }
 
-    function requireConfirmed(uint256 _proposalId) internal view {
+    function _requireConfirmed(uint256 _proposalId) internal view {
         require(isConfirmed[_proposalId], "proposal not confirmed");
     }
 
-    function requireNotExpired(uint256 _proposalId) internal view {
+    function _requireNotExpired(uint256 _proposalId) internal view {
         require(_proposals[_proposalId].expireTimestamp >= block.timestamp,"proposal expired");
     }
 
     function _executor() internal view virtual returns (address) {
         return address(this);
+    }
+
+    function _checkNextProposalDelayPassed(address account) internal {
+        require(block.timestamp > nextAcceptableProposalTimestamp[account], "Can submit only after certain delay");
+        nextAcceptableProposalTimestamp[account] = block.timestamp + proposalTimeDelay;
     }
 
     function _quorumReached(uint256 proposalId) internal view virtual returns (bool);

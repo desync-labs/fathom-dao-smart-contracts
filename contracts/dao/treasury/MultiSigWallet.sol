@@ -226,7 +226,7 @@ contract MultiSigWallet is IMultiSigWallet {
         if (success) {
             emit ExecuteTransaction(msg.sender, _txIndex);
         } else {
-            revert TransactionRevered(data);
+            Address.verifyCallResult(success, data, "executeTransaction: reverted without reason");
         }
     }
 

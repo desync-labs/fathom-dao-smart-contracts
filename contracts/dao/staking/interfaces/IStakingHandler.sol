@@ -66,4 +66,6 @@ interface IStakingHandler {
 
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
     function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
+    function setMinimumLockPeriod(uint256 _minLockPeriod) external;
+    function setMaxLockPositions(uint256 newMaxLockPositions) external;
 }
