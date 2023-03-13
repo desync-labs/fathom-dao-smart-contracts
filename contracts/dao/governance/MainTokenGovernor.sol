@@ -150,9 +150,9 @@ contract MainTokenGovernor is
         address target,
         bytes calldata data
     ) external virtual onlyGovernance {
-        require(isSupportedToken[target], "relayERC20: token not supported");
+        require(isSupportedToken[target], "token not supported");
         (bool success, bytes memory returndata) = target.call(data);
-        Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
+        Address.verifyCallResult(success, returndata, "reverted without message");
     }
 
     /**
@@ -166,9 +166,9 @@ contract MainTokenGovernor is
         uint256 value,
         bytes calldata data
     ) external payable virtual onlyGovernance {
-        require(!isSupportedToken[target],"relayNativeToken: cant relay native token to supported token");
+        require(!isSupportedToken[target],"cant relay native token to supported token");
         (bool success, bytes memory returndata) = target.call{ value: value }(data);
-        Address.verifyCallResult(success, returndata, "Governor: relayNativeToken reverted without message");
+        Address.verifyCallResult(success, returndata, "reverted without message");
     }
 
     function _execute(
@@ -178,7 +178,7 @@ contract MainTokenGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
-        require(isConfirmed[proposalId], "MainTokenGovernor: Proposal not confirmed by council");
+        require(isConfirmed[proposalId], "Proposal not confirmed");
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 

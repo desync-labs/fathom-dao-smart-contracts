@@ -95,9 +95,7 @@ contract StakingInternals is RewardsInternals {
     ) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
-        if(updateLock.amountOfToken == 0){
-            revert ZeroLocked(lockId);
-        }
+
         if(totalAmountOfStakedToken == 0){
             revert ZeroTotalStakedToken();
         }

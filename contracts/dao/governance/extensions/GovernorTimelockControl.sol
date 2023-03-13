@@ -15,7 +15,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     event TimelockChange(address oldTimelock, address newTimelock);
 
     constructor(TimelockController timelockAddress) {
-        require(address(timelockAddress) != address(0), "timelockAddress: zero address");
+        require(address(timelockAddress) != address(0), "zero address");
         _updateTimelock(timelockAddress);
     }
 
@@ -86,7 +86,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal virtual override {
-        require(!isProposalExecuted[proposalId], "_execute: already executed");
+        require(!isProposalExecuted[proposalId], "already executed");
         _timelock.executeBatch{ value: msg.value }(targets, values, calldatas, 0, descriptionHash);
         isProposalExecuted[proposalId] = true;
     }
@@ -115,7 +115,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     }
 
     function _updateTimelock(TimelockController newTimelock) private {
-        require(address(newTimelock) != address(0), "updateTimelock: zero address");
+        require(address(newTimelock) != address(0), "zero address");
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }

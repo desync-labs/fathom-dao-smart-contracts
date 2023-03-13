@@ -442,7 +442,6 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return 0;
     }
 
-    
 
     function hashProposal(
         address[] memory targets,

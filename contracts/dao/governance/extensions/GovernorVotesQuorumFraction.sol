@@ -54,7 +54,7 @@ abstract contract GovernorVotesQuorumFraction is GovernorVotes {
 
     function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
         require(newQuorumNumerator <= quorumDenominator(), "quorumNumerator over quorumDenominator");
-        require(newQuorumNumerator >= MINIMUM_QUORUM_NUMERATOR, "quorumNumerator less than Minimum");
+        require(newQuorumNumerator >= MINIMUM_QUORUM_NUMERATOR, "less than Minimum");
         uint256 oldQuorumNumerator = _quorumNumerator;
         _quorumNumerator = newQuorumNumerator;
 
