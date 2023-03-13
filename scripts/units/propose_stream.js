@@ -1,5 +1,6 @@
 const fs = require('fs');
-const txnHelper = require('./helpers/transactionSaver')
+const txnSaver = require('./helpers/transactionSaver')
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const constants = require('./helpers/constants')
@@ -84,45 +85,19 @@ module.exports = async function(deployer) {
         web3.utils.toWei("0", 'ether')
     ];
 
-    const _proposeStreamFromMultiSig = async(_owner,
-        _rewardToken,
-        _maxDepositedAmount,
-        _minDepositedAmount,
-        _scheduleTimes,
-        _scheduleRewards,
-        _tau
-        ) => 
-    {
-        const result = await multiSigWallet.submitTransaction(
-            addresses.staking,
-            constants.EMPTY_BYTES,
-            _encodeProposeStreamFunction(
-                _owner,
-                _rewardToken,
-                _maxDepositedAmount,
-                _minDepositedAmount,
-                _scheduleTimes,
-                _scheduleRewards,
-                _tau
-            ),
-            0,
-            {gas: 8000000}
-        )
 
-        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-        await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
-        await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-        
-        await txnHelper.saveTxnIndex("proposeStreamTxn",tx)
-    }
-
-    await _proposeStreamFromMultiSig(
-        STREAM_OWNER,
-        REWARD_TOKEN_ADDRESS,
-        MAX_DEPOSIT_AMOUNT,
-        MIN_DEPOSIT_AMOUNT,
-        scheduleTimes,
-        scheduleRewards,
-        tau
+    await txnHelper.submitAndExecute(
+        _encodeProposeStreamFunction(
+            STREAM_OWNER,
+            REWARD_TOKEN_ADDRESS,
+            MAX_DEPOSIT_AMOUNT,
+            MIN_DEPOSIT_AMOUNT,
+            scheduleTimes,
+            scheduleRewards,
+            tau
+        ),
+        addresses.staking,
+        "proposeStreamTxn"
     )
+
 }

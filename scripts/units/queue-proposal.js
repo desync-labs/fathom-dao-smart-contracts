@@ -1,5 +1,5 @@
 const fs = require('fs');
-const txnHelper = require('./helpers/transactionSaver')
+const txnSaver = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const constants = require('./helpers/constants')
@@ -88,7 +88,7 @@ module.exports = async function(deployer) {
         await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
         await multiSigWallet.executeTransaction(tx, {gas: 8000000});
             
-        await txnHelper.saveTxnIndex("queueProposalTxn", tx)   
+        await txnSaver.saveTxnIndex("queueProposalTxn", tx)   
     }
 
     await _queueProposal(

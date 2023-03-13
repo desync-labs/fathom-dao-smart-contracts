@@ -1,10 +1,8 @@
 //NOTE: This script can be run only once for each deployment as making COUNCIL_STAKES is only possible once
 const fs = require('fs');
 
-const eventsHelper = require("../tests/helpers/eventsHelper");
-const txnHelper = require('./helpers/transactionSaver')
 const constants = require('./helpers/constants')
-
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
@@ -70,37 +68,22 @@ const _encodeCreateLocksForCouncils = (_createLockParam) => {
 
 module.exports = async function(deployer) {
     const stakingService = await IStaking.at(addresses.staking);
-    const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     
-    let resultApprove = await multiSigWallet.submitTransaction(
-        addresses.fthmToken,
-        constants.EMPTY_BYTES,
+
+    await txnHelper.submitAndExecute(
         _encodeApproveFunction(stakingService.address,T_TOTAL_TO_APPROVE),
-        0,
-        {gas: 8000000}
+        addresses.fthmToken,
+        "ApproveFathomTxn"
     )
-    
-    let txIndexApprove = eventsHelper.getIndexedEventArgs(resultApprove, constants.SUBMIT_TRANSACTION_EVENT)[0];
-    await multiSigWallet.confirmTransaction(txIndexApprove, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexApprove, {gas: 8000000});
     const LockParamObjectForAllCouncils = [
         _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_1),
         _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_2),
         _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_3)
     ]
 
-    let resultCreateLock = await multiSigWallet.submitTransaction(
-        stakingService.address,
-        constants.EMPTY_BYTES,
+    await txnHelper.submitAndExecute(
         _encodeCreateLocksForCouncils(LockParamObjectForAllCouncils),
-        0,
-        {gas: 8000000}
+        stakingService.address,
+        "createLocksForCouncilTxn"
     )
-
-    
-    let txIndexCreateLock = eventsHelper.getIndexedEventArgs(resultCreateLock, constants.SUBMIT_TRANSACTION_EVENT)[0];
-    await multiSigWallet.confirmTransaction(txIndexCreateLock, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexCreateLock, {gas: 8000000});
-    await txnHelper.saveTxnIndex("createLocksForCouncilTxn", txIndexCreateLock)   
-
 }
