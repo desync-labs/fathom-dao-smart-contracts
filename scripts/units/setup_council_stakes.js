@@ -15,9 +15,9 @@ const T_TOTAL_TO_APPROVE = web3.utils.toWei('30000000', 'ether');
 // this is how much to stake for one council . Right now 10KK
 const T_TO_STAKE = web3.utils.toWei('10000000', 'ether');
 
-const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
-const COUNCIL_2 = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";
-const COUNCIL_3 = "0x4C5F0f90a2D4b518aFba11E22AC9b8F6B031d204";
+const COUNCIL_1 = "0xE82C380C6Ca0306C61454569e84e020d68B063EF";
+const COUNCIL_2 = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7";
+const COUNCIL_3 = "0xFa869165D4fB9DB1041eBc3E8D976847372FcF91";
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);

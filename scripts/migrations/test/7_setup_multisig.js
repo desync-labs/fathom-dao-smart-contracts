@@ -6,7 +6,7 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
 
-const COUNCIL_1 = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
+const COUNCIL_1 = "0xE82C380C6Ca0306C61454569e84e020d68B063EF";
 
 const NEW_MULTISIG_REQUIREMENT = 2;
 

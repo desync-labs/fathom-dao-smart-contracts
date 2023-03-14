@@ -2,8 +2,6 @@
   "name": "fathom-dao-smart-contracts",
   "version": "1.0.0",
   "description": "Fathom DAO",
-  "main": "",
-  "directories": {},
   "scripts": {
     "test": "coralX test",
     "test-with-timeout": "coralX test --params TIMEOUT=100000",
@@ -16,11 +14,10 @@
     "migrate-reset": "coralX scenario --run migrateAndConfigureForTests",
     "migrate-reset-sepolia": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deploySepolia",
     "migrate-reset-apothem": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
-    "migrate-reset-xdc": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC",
-    "create-stablecoin-pool": "coralX scenario --run stablecoinGovUpdatePools"
+    "migrate-reset-xdc": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC"
   },
-  "author": "",
-  "license": "",
+  "author": "fathom.fi",
+  "license": "AGPL 3.0",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.4.1",
     "bignumber.js": "7.2.1",
