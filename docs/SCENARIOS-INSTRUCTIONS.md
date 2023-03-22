@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Scenarios Instructions](#scenarios-instructions)
+    - [How if file Structure](#How-is-file-Structured)
     - [How to Setup Council Stakes](#How-to-Setup-Council-Stakes)
     - [How to transfer tokens](#How-to-transfer-tokens)
     - [How to Add Owners](#How-to-Add-owners)
@@ -13,6 +14,17 @@
     - [How to propose a proposal](#How-to-propose-a-proposal)
     - [Queue Proposal](#Queue-Proposal)
     - [Execute Proposal](#Execute-Proposal)
+
+## How is file Structured?
+
+
+In config/external-addresses.json file all the addresses are stored that needs to be used externally
+
+In config/newly-generated-transaction-index.json file all the newly generated transaction indexes are stored. Note: It would be a good practise to make this file empty for each new deployment you do and each new deployment in another branch.
+
+config/external-addresses.json, config/newly-generated-transaction-index.json, stablecoin-addresses-proxy-wallet.json should not be deleted or the scenarios wont work
+
+
 
 ## How to Setup Council Stakes
 **//Note: This is only possible once as theres initializer for council stakes.**
