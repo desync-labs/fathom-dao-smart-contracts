@@ -7,15 +7,16 @@ const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
+const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 
-const Token_A_Address_FROM = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
-const Token_B_Address_TO = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
+const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
+const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
 
-const AMOUNT_IN_TOKEN_A = web3.utils.toWei('2', 'ether')
-const AMOUNT_OUT_MIN_TOKEN_B = web3.utils.toWei('0', 'ether')
+const AMOUNT_IN_TOKEN_A = '2'
+const SLIPPAGE = 0.05
 
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
 const _encodeApproveFunction = (_account, _amount) => {
@@ -76,29 +77,34 @@ const _encodeSwapExactTokensForTokens = (
 
 
 module.exports = async function(deployer) {
+    
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
+    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    const amountIn = web3.utils.toWei(AMOUNT_IN_TOKEN_A, 'ether')
+    const amounts = await uniswapRouter.getAmountsOut(amountIn,path)
+    const amountOut = String(amounts[1] - (amounts[1] * SLIPPAGE))
     const deadline =  await getDeadlineTimestamp(10000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
 
-    const path = [Token_A_Address_FROM, Token_B_Address_TO]
+    const path = [Token_A_Address, Token_B_Address] // swap from TokenA to receive TokenB
     await txnHelper.submitAndExecute(
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_IN_TOKEN_A),
-        Token_A_Address_FROM,
+        Token_A_Address,
         "ApproveTokenForSwap"
     )
 
     await txnHelper.submitAndExecute(
         _encodeSwapExactTokensForTokens(
-            AMOUNT_IN_TOKEN_A,
-            AMOUNT_OUT_MIN_TOKEN_B,
+            amountIn,
+            amountOut,
             path,
             multiSigWallet.address,
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-        "SwapExactTokensForTokens",
+        "swapExactTokensForTokens",
     )
 }
   
 async function getDeadlineTimestamp(deadline) {
-    return (await getCurrentTimestamp()) + deadline
+    return Math.floor(Date.now() / 1000) + deadline
 }

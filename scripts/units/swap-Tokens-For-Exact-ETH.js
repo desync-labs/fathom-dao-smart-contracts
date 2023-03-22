@@ -1,21 +1,23 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
+const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
+
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
+
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
+const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
+
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
-const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
+const WETH_ADDRESS = addressesExternal.WETH_ADDRESS
+const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" 
 
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
-const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
-const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
+const AMOUNT_OUT_ETH = '2'
+const SLIPPAGE = 0.05
 
-//const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
-const TOKEN_ETH = web3.utils.toWei('3', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -32,33 +34,28 @@ const _encodeApproveFunction = (_account, _amount) => {
     return toRet;
 }
 
-
-const _encodeAddLiqudityFunction = (
-    _token,
-    _amountTokenDesired,
-    _amountTokenMin,
-    _amountETHMin,
+const _encodeSwapTokensForExactETH = (
+    _amountOut,
+    _amountInMax,
+    _path,
     _to,
     _deadline
 ) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'addLiquidityETH',
+        name: 'swapTokensForExactETH',
         type: 'function',
-        inputs: [{
-            type: 'address',
-            name: 'token'
+        inputs: [
+        {
+            type: 'uint256',
+            name: 'amountOut'
         },
         {
             type: 'uint256',
-            name: 'amountTokenDesired'
+            name: 'amountInMax'
         },
         {
-            type: 'uint256',
-            name: 'amountTokenMin'
-        },
-        {
-            type: 'uint256',
-            name: 'amountETHMin'
+            type: 'address[]',
+            name: 'path'
         },
         {
             type: 'address',
@@ -67,11 +64,11 @@ const _encodeAddLiqudityFunction = (
         {
             type: 'uint256',
             name: 'deadline'
-        }]
-    }, [_token,
-        _amountTokenDesired,
-        _amountTokenMin,
-        _amountETHMin,
+        },
+       ]
+    }, [_amountOut,
+        _amountInMax,
+        _path,
         _to,
         _deadline]);
 
@@ -81,26 +78,30 @@ const _encodeAddLiqudityFunction = (
 
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
+    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    const path = [TOKEN_ADDRESS,WETH_ADDRESS] 
     const deadline =  await getDeadlineTimestamp(10000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
-    
+
+    const amountOut = web3.utils.toWei(AMOUNT_OUT_ETH,'ether')
+    const amounts = await uniswapRouter.getAmountsIn(amountOut, path)
+    const amountInMax = String(amounts[0] + (amounts[0] * SLIPPAGE))
+
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_TOKEN_DESIRED),
+        _encodeApproveFunction(DEX_ROUTER_ADDRESS,amountInMax),
         TOKEN_ADDRESS,
         "ApproveDexXDC"
     )
 
     await txnHelper.submitAndExecute(
-        _encodeAddLiqudityFunction(
-            TOKEN_ADDRESS,
-            AMOUNT_TOKEN_DESIRED,
-            AMOUNT_TOKEN_MIN,
-            AMOUNT_ETH_MIN,
+        _encodeSwapTokensForExactETH(
+            amountOut,
+            amountInMax,
+            path,
             multiSigWallet.address,
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-        "createPoolWithXDC",
-        TOKEN_ETH
+        "SwapTokensForExactETH",
     )
 }
   

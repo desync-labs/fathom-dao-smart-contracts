@@ -138,7 +138,6 @@ module.exports = async function(deployer) {
   
 
 async function getDeadlineTimestamp(deadline) {
-    return (await getCurrentTimestamp()) + deadline
+    return Math.floor(Date.now() / 1000) + deadline
 }
-
 

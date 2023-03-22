@@ -82,8 +82,16 @@ module.exports = {
     ['execute', '--path', 'scripts/units/execute-proposal.js', '--network', 'apothem'],
   ],
 
-  executeUniswapSwapTokens: [
-    ['execute', '--path', 'scripts/units/uniswap-swap-two-tokens.js', '--network', 'apothem'],
+  executeSwapTokensForExactETH: [
+    ['execute', '--path', 'scripts/units/swap-Tokens-For-Exact-ETH.js', '--network', 'apothem'],
+  ],
+
+  executeSwapExactTokensForTokens: [
+    ['execute', '--path', 'scripts/units/swap-Exact-Tokens-For-Tokens.js', '--network', 'apothem'],
+  ],
+
+  executeSwapExactETHForTokens: [
+    ['execute', '--path', 'scripts/units/swap-Exact-ETH-For-Tokens.js', '--network', 'apothem'],
   ],
 
 
