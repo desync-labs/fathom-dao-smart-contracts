@@ -1,21 +1,23 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
+const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
+
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
+
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
+
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
-const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
 
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
-const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
-const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
+const Token_A_Address_FROM = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
+const Token_B_Address_TO = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
 
-//const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
+const AMOUNT_IN_TOKEN_A = web3.utils.toWei('2', 'ether')
+const AMOUNT_OUT_MIN_TOKEN_B = web3.utils.toWei('0', 'ether')
+
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
-const TOKEN_ETH = web3.utils.toWei('3', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -32,33 +34,27 @@ const _encodeApproveFunction = (_account, _amount) => {
     return toRet;
 }
 
-
-const _encodeAddLiqudityFunction = (
-    _token,
-    _amountTokenDesired,
-    _amountTokenMin,
-    _amountETHMin,
+const _encodeSwapExactTokensForTokens = (
+    _amountIn,
+    _amountOutMin,
+    _path,
     _to,
     _deadline
 ) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'addLiquidityETH',
+        name: 'swapExactTokensForTokens',
         type: 'function',
         inputs: [{
-            type: 'address',
-            name: 'token'
+            type: 'uint256',
+            name: 'amountIn'
         },
         {
             type: 'uint256',
-            name: 'amountTokenDesired'
+            name: 'amountOutMin'
         },
         {
-            type: 'uint256',
-            name: 'amountTokenMin'
-        },
-        {
-            type: 'uint256',
-            name: 'amountETHMin'
+            type: 'address[]',
+            name: 'path'
         },
         {
             type: 'address',
@@ -67,11 +63,11 @@ const _encodeAddLiqudityFunction = (
         {
             type: 'uint256',
             name: 'deadline'
-        }]
-    }, [_token,
-        _amountTokenDesired,
-        _amountTokenMin,
-        _amountETHMin,
+        },
+       ]
+    }, [_amountIn,
+        _amountOutMin,
+        _path,
         _to,
         _deadline]);
 
@@ -82,25 +78,24 @@ const _encodeAddLiqudityFunction = (
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     const deadline =  await getDeadlineTimestamp(10000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
-    
+
+    const path = [Token_A_Address_FROM, Token_B_Address_TO]
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_TOKEN_DESIRED),
-        TOKEN_ADDRESS,
-        "ApproveDexXDC"
+        _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_IN_TOKEN_A),
+        Token_A_Address_FROM,
+        "ApproveTokenForSwap"
     )
 
     await txnHelper.submitAndExecute(
-        _encodeAddLiqudityFunction(
-            TOKEN_ADDRESS,
-            AMOUNT_TOKEN_DESIRED,
-            AMOUNT_TOKEN_MIN,
-            AMOUNT_ETH_MIN,
+        _encodeSwapExactTokensForTokens(
+            AMOUNT_IN_TOKEN_A,
+            AMOUNT_OUT_MIN_TOKEN_B,
+            path,
             multiSigWallet.address,
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-        "createPoolWithXDC",
-        TOKEN_ETH
+        "SwapExactTokensForTokens",
     )
 }
   

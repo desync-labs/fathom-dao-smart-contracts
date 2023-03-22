@@ -82,6 +82,10 @@ module.exports = {
     ['execute', '--path', 'scripts/units/execute-proposal.js', '--network', 'apothem'],
   ],
 
+  executeUniswapSwapTokens: [
+    ['execute', '--path', 'scripts/units/uniswap-swap-two-tokens.js', '--network', 'apothem'],
+  ],
+
 
   migrateAndConfigureForTests: [
     ['compile'],

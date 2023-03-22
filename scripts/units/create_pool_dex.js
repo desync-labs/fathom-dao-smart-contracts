@@ -2,6 +2,7 @@ const fs = require('fs');
 const constants = require('./helpers/constants')
 
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
+const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -103,7 +104,7 @@ const _encodeAddLiqudityFunction = (
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     //Will need to change it once it expires
-    const deadline =  1676577600/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
+    const deadline =  await getDeadlineTimestamp(1000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
     
     await txnHelper.submitAndExecute(
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_A_Desired),
@@ -135,4 +136,9 @@ module.exports = async function(deployer) {
     )
 }
   
+
+async function getDeadlineTimestamp(deadline) {
+    return (await getCurrentTimestamp()) + deadline
+}
+
 
