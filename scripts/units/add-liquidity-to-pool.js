@@ -108,6 +108,13 @@ module.exports = async function(deployer) {
     const tokenAmountB = await uniswapRouter.quote(Amount_A_Desired, Token_A_Address, Token_B_Address)
     //account for slippage
     const tokenAmountBOptimal = String(tokenAmountB- tokenAmountB*SLIPPAGE)
+    
+
+    //Get Amounts out ie, if we give Amount_A_Desired of TokenA how much token we can receive back as Token B
+    const TOKEN_AMOUNT_B = await uniswapRouter.getAmountsOut(Amount_A_Desired,[Token_A_Address,Token_B_Address])
+    //Account for slippage 
+    const TOKEN_AMOUNT_MAX_B = String(TOKEN_AMOUNT_B[1] + (TOKEN_AMOUNT_B[1]*SLIPPAGE))
+    const TOKEN_AMOUNT_MIN_B = String(TOKEN_AMOUNT_B[1] - (TOKEN_AMOUNT_B[1]*SLIPPAGE))
 
     await txnHelper.submitAndExecute(
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_A_Desired),
@@ -127,9 +134,9 @@ module.exports = async function(deployer) {
             Token_A_Address,
             Token_B_Address,
             Amount_A_Desired,
-            tokenAmountBOptimal,
+            TOKEN_AMOUNT_MAX_B,
             Amount_A_Minimum,
-            Amount_B_Minimum,
+            TOKEN_AMOUNT_MIN_B,
             multiSigWallet.address,
             deadline
         ),

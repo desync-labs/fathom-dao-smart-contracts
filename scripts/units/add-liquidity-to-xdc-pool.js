@@ -11,8 +11,8 @@ const addressesExternal = JSON.parse(rawdataExternal);
 const WETH_ADDRESS = addressesExternal.WETH_ADDRESS
 const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
 const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
-const AMOUNT_ETH = web3.utils.toWei('3', 'ether')
-const AMOUNT_ETH_MIN = web3.utils.toWei('0', 'ether')
+const AMOUNT_ETH = web3.utils.toWei('100', 'ether')
+const AMOUNT_ETH_MIN = web3.utils.toWei('50', 'ether')
 const SLIPPAGE = 0.05
 //const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
@@ -88,13 +88,14 @@ module.exports = async function(deployer) {
     //ReserveA/ReserveB = (ReserveA + QTYA)/(ReserveB + QTYB)
     //ReserveA*ReserveB + ReserveA*QTYB = ReserveA*ReserveB +ReserveB*QRYA
     //ie, ReserveA*QTYB =  ReserveB*QTYA
-    
-    const tokenAmountA = await uniswapRouter.quote(AMOUNT_ETH, WETH_ADDRESS, TOKEN_ADDRESS)
-    const tokenAmountAOptimal = String(tokenAmountA- tokenAmountA*SLIPPAGE)
-    
+    //Get Amounts out ie, if we give AMOUNT_ETH of ETH how much token we can receive back as Token
+    const TOKEN_AMOUNT = await uniswapRouter.getAmountsOut(AMOUNT_ETH,[WETH_ADDRESS,TOKEN_ADDRESS])
+    //Account for slippage 
+    const TOKEN_AMOUNT_MAX = String(TOKEN_AMOUNT[1] + (TOKEN_AMOUNT[1]*SLIPPAGE))
+    const TOKEN_AMOUNT_MIN = String(TOKEN_AMOUNT[1] - (TOKEN_AMOUNT[1]*SLIPPAGE))
 
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(DEX_ROUTER_ADDRESS,tokenAmountAOptimal),
+        _encodeApproveFunction(DEX_ROUTER_ADDRESS,TOKEN_AMOUNT_MAX),
         TOKEN_ADDRESS,
         "ApproveDexXDC"
     )
@@ -102,8 +103,8 @@ module.exports = async function(deployer) {
     await txnHelper.submitAndExecute(
         _encodeAddLiqudityFunction(
             TOKEN_ADDRESS,
-            tokenAmountAOptimal,
-            AMOUNT_TOKEN_MIN,
+            TOKEN_AMOUNT_MAX,
+            TOKEN_AMOUNT_MIN,
             AMOUNT_ETH_MIN,
             multiSigWallet.address,
             deadline
