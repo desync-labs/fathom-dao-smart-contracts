@@ -3,7 +3,8 @@
 ## Table of contents
 
 - [Scenarios Instructions](#scenarios-instructions)
-    - [How if file Structure](#How-is-file-Structured)
+    - [How is file Structure](#How-is-file-Structured)
+    - [How to setup at first](#How-to-setup-at-first)
     - [How to Setup Council Stakes](#How-to-Setup-Council-Stakes)
     - [How to transfer tokens](#How-to-transfer-tokens)
     - [How to Add Owners](#How-to-Add-owners)
@@ -24,7 +25,10 @@ In config/newly-generated-transaction-index.json file all the newly generated tr
 
 config/external-addresses.json, config/newly-generated-transaction-index.json, stablecoin-addresses-proxy-wallet.json should not be deleted or the scenarios wont work
 
-
+## How to setup at first:
+1. First you need to have addresses.json file in your root folder. This is automatically setup while doing deployment.
+2. newly-generated-transaction-index.json must be made empty first for all the new deployment and must be taken into account that this does not in its own have context of the deployment. So for each new deployment-possibly on different branches, newly-generated-transaction-index.json must be cleared and then again it will be saved.
+3. external-addresses.json must have the correct addresses as per newer deployments.
 
 ## How to Setup Council Stakes
 **//Note: This is only possible once as theres initializer for council stakes.**

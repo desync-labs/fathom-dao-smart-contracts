@@ -1,6 +1,5 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
-const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
 
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
@@ -56,14 +55,18 @@ const _encodeSwapExactETHForTokens = (
 
 
 module.exports = async function(deployer) {
-    
+    //we want to swap exact eth for tokens
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    //we set path to swap from WETH and receive Token
     const path = [WETH_ADDRESS, TOKEN_ADDRESS] 
+    // we set exact eth that we want to swap
     const amountIn = web3.utils.toWei(AMOUNT_IN_ETH, 'ether')
+    // we get how much tokens we can receive for the exact eth
     const amounts = await uniswapRouter.getAmountsOut(amountIn,path)
+    // we set slippage to determine lowest amount of Tokens we are willing to receive taking Slippage into account
     const amountOut = String(amounts[1] - (amounts[1] * SLIPPAGE))
-    const deadline =  await getDeadlineTimestamp(10000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
+    const deadline =  await getDeadlineTimestamp(10000)
 
     await txnHelper.submitAndExecute(
         _encodeSwapExactETHForTokens(

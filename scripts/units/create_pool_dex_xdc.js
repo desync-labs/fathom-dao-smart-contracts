@@ -6,16 +6,15 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
-const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
 
 const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
 const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
 const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
+const AMOUNT_TOKEN_ETH = web3.utils.toWei('3', 'ether')
 const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
 
 //const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
-const TOKEN_ETH = web3.utils.toWei('3', 'ether')
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -81,7 +80,7 @@ const _encodeAddLiqudityFunction = (
 
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-    const deadline =  await getDeadlineTimestamp(10000)/* ZERO_AM_UAE_TIME_SEVENTEEN_FEB_TIMESTAMP*/+ 100 * 86400 //NOTE: Please change it
+    const deadline =  await getDeadlineTimestamp(10000)
     
     await txnHelper.submitAndExecute(
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_TOKEN_DESIRED),
@@ -100,7 +99,7 @@ module.exports = async function(deployer) {
         ),
         DEX_ROUTER_ADDRESS,
         "createPoolWithXDC",
-        TOKEN_ETH
+        AMOUNT_TOKEN_ETH
     )
 }
   

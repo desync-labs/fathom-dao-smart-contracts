@@ -2,7 +2,6 @@ const fs = require('fs');
 const constants = require('./helpers/constants')
 
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-const {getCurrentTimestamp} = require("./helpers/xdc3UtilsHelper")
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -17,8 +16,8 @@ const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
 // SET AS Necessary
 const Amount_A_Desired = web3.utils.toWei('2', 'ether')
 const Amount_B_Desired = web3.utils.toWei('38', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('0', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('0', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
@@ -105,7 +104,11 @@ module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     //Will need to change it once it expires
     const deadline =  await getDeadlineTimestamp(1000)
-    
+    //get the quote of token amount B that you want to add liquidity for
+    const tokenAmountB = await uniswapRouter.quote(Amount_A_Desired, Token_A_Address, Token_B_Address)
+    //account for slippage
+    const tokenAmountBOptimal = String(tokenAmountB- tokenAmountB*SLIPPAGE)
+
     await txnHelper.submitAndExecute(
         _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_A_Desired),
         Token_A_Address,
@@ -114,7 +117,7 @@ module.exports = async function(deployer) {
     )
     
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(DEX_ROUTER_ADDRESS,Amount_B_Desired),
+        _encodeApproveFunction(DEX_ROUTER_ADDRESS,tokenAmountBOptimal),
         Token_B_Address,
         "ApproveTokenB",
         0
@@ -124,7 +127,7 @@ module.exports = async function(deployer) {
             Token_A_Address,
             Token_B_Address,
             Amount_A_Desired,
-            Amount_B_Desired,
+            tokenAmountBOptimal,
             Amount_A_Minimum,
             Amount_B_Minimum,
             multiSigWallet.address,

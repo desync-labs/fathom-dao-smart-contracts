@@ -1,23 +1,22 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
-
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
-const addresses = JSON.parse(rawdata);
 const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
+const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
+const addresses = JSON.parse(rawdata);
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
-
-const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
-const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
-
-const AMOUNT_IN_TOKEN_A = '2'
+const WETH_ADDRESS = addressesExternal.WETH_ADDRESS
+const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
+const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
+const AMOUNT_ETH = web3.utils.toWei('3', 'ether')
+const AMOUNT_ETH_MIN = web3.utils.toWei('0', 'ether')
 const SLIPPAGE = 0.05
-
+//const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
+
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -34,27 +33,33 @@ const _encodeApproveFunction = (_account, _amount) => {
     return toRet;
 }
 
-const _encodeSwapExactTokensForTokens = (
-    _amountIn,
-    _amountOutMin,
-    _path,
+
+const _encodeAddLiqudityFunction = (
+    _token,
+    _amountTokenDesired,
+    _amountTokenMin,
+    _amountETHMin,
     _to,
     _deadline
 ) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'swapExactTokensForTokens',
+        name: 'addLiquidityETH',
         type: 'function',
         inputs: [{
-            type: 'uint256',
-            name: 'amountIn'
+            type: 'address',
+            name: 'token'
         },
         {
             type: 'uint256',
-            name: 'amountOutMin'
+            name: 'amountTokenDesired'
         },
         {
-            type: 'address[]',
-            name: 'path'
+            type: 'uint256',
+            name: 'amountTokenMin'
+        },
+        {
+            type: 'uint256',
+            name: 'amountETHMin'
         },
         {
             type: 'address',
@@ -63,11 +68,11 @@ const _encodeSwapExactTokensForTokens = (
         {
             type: 'uint256',
             name: 'deadline'
-        },
-       ]
-    }, [_amountIn,
-        _amountOutMin,
-        _path,
+        }]
+    }, [_token,
+        _amountTokenDesired,
+        _amountTokenMin,
+        _amountETHMin,
         _to,
         _deadline]);
 
@@ -76,38 +81,36 @@ const _encodeSwapExactTokensForTokens = (
 
 
 module.exports = async function(deployer) {
-    //swap exact tokens for tokens
-
-    
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
-    //amounts In is the fixed amount you want to give to the uniswap pool
-    const amountIn = web3.utils.toWei(AMOUNT_IN_TOKEN_A, 'ether')
-    //now, we set path where Token A is swapped to Token B
-    const path = [Token_A_Address, Token_B_Address] // swap from TokenA to receive TokenB
-    // we get amountsOut from the router which gives us the value of how much amount we can receive
-    const amounts = await uniswapRouter.getAmountsOut(amountIn,path)
-    // we caculate minimum amount of tokens we want with slippage as percentage subtracted from amount
-    const amountOut = String(amounts[1] - (amounts[1] * SLIPPAGE))
     const deadline =  await getDeadlineTimestamp(10000)
+    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
 
+    //ReserveA/ReserveB = (ReserveA + QTYA)/(ReserveB + QTYB)
+    //ReserveA*ReserveB + ReserveA*QTYB = ReserveA*ReserveB +ReserveB*QRYA
+    //ie, ReserveA*QTYB =  ReserveB*QTYA
     
+    const tokenAmountA = await uniswapRouter.quote(AMOUNT_ETH, WETH_ADDRESS, TOKEN_ADDRESS)
+    const tokenAmountAOptimal = String(tokenAmountA- tokenAmountA*SLIPPAGE)
+    
+
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(DEX_ROUTER_ADDRESS,AMOUNT_IN_TOKEN_A),
-        Token_A_Address,
-        "ApproveTokenForSwap"
+        _encodeApproveFunction(DEX_ROUTER_ADDRESS,tokenAmountAOptimal),
+        TOKEN_ADDRESS,
+        "ApproveDexXDC"
     )
 
     await txnHelper.submitAndExecute(
-        _encodeSwapExactTokensForTokens(
-            amountIn,
-            amountOut,
-            path,
+        _encodeAddLiqudityFunction(
+            TOKEN_ADDRESS,
+            tokenAmountAOptimal,
+            AMOUNT_TOKEN_MIN,
+            AMOUNT_ETH_MIN,
             multiSigWallet.address,
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-        "swapExactTokensForTokens",
+        "createPoolWithXDC",
+        AMOUNT_ETH
     )
 }
   

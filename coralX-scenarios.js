@@ -94,6 +94,13 @@ module.exports = {
     ['execute', '--path', 'scripts/units/swap-Exact-ETH-For-Tokens.js', '--network', 'apothem'],
   ],
 
+  addLiquidityToPool: [
+    ['execute', '--path', 'scripts/units/add-liquidity-to-pool.js', '--network', 'apothem'],
+  ],
+
+  addLiquidityToXDCPool: [
+    ['execute', '--path', 'scripts/units/add-liquidity-to-xdc-pool.js', '--network', 'apothem'],
+  ],
 
   migrateAndConfigureForTests: [
     ['compile'],
