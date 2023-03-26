@@ -71,10 +71,10 @@ abstract contract GovernorSettings is Governor {
     }
 
     function _setProposalThreshold(uint256 newProposalThreshold) internal virtual {
-        emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
         if (newProposalThreshold == 0) {
             revert ZeroThreshold();
         }
+        emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
         _proposalThreshold = newProposalThreshold;
     }
 }

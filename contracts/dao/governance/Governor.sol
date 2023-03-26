@@ -78,6 +78,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     error ProposalDelayNotPassed();
     error ProposalExpired();
     error ProposalNotConfirmed();
+    error UnknownProposal();
 
     modifier onlyGovernance() {
         if (_msgSender() != _executor()) {
@@ -431,7 +432,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         uint256 snapshot = proposalSnapshot(proposalId);
 
         if (snapshot == 0) {
-            revert("unknown proposal id");
+            revert UnknownProposal();
         }
 
         if (snapshot >= block.number) {

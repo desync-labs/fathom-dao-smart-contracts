@@ -80,7 +80,7 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes32 queueid = _timelockIds[proposalId];
         if (queueid == bytes32(0)) {
             return status;
-        } else if (isProposalExecuted[proposalId] == true) {
+        } else if (isProposalExecuted[proposalId]) {
             return ProposalState.Executed;
         } else if (_timelock.isOperationPending(queueid)) {
             return ProposalState.Queued;
