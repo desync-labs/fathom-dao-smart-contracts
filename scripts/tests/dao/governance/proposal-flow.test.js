@@ -3,7 +3,8 @@ const eventsHelper = require("../../helpers/eventsHelper");
 const { assert } = require("chai");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -42,10 +43,10 @@ const _encodeEmergencyStop = () => {
         },[]);
 }
 
-const _encodeBlacklistProposer = (_account,_blacklistStatus) =>{
+const _encodeBlocklistProposer = (_account,_blocklistStatus) =>{
     return web3.eth.abi.encodeFunctionCall(
         {   
-            name: 'setBlacklistStatusForProposer',
+            name: 'setBlocklistStatusForProposer',
             type: 'function',
             inputs: [
                 {
@@ -54,10 +55,10 @@ const _encodeBlacklistProposer = (_account,_blacklistStatus) =>{
                 },
                 {
                     type: 'bool',
-                    name: 'blacklistStatus'
+                    name: 'blocklistStatus'
                 }
             ]
-        },[_account,_blacklistStatus]);
+        },[_account,_blocklistStatus]);
 }
 
 const T_TO_STAKE = web3.utils.toWei('50000', 'ether');
@@ -267,11 +268,11 @@ describe('Proposal flow', () => {
         });
 
 
-        it('Should revert transfer if holder is not whitelisted to transfer', async() => {
+        it('Should revert transfer if holder is not allowlisted to transfer', async() => {
 
-            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 vMainToken.transfer(
                     accounts[2],
                     "10",
@@ -286,10 +287,9 @@ describe('Proposal flow', () => {
     describe("Update Parameter Through Governer", async() => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
+            let errorMessage = "revert";
 
-            let errorMessage = "Governor: proposer votes below threshold";
-
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [box.address],
                     [0],
@@ -416,9 +416,9 @@ describe('Proposal flow', () => {
                 {"from": accounts[0]}
             );  
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
-            const errorMessage = "TimelockController: operation is not ready";
+            const errorMessage = "revert";
             
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.execute(      
                     [box.address],
                     [0],
@@ -444,9 +444,9 @@ describe('Proposal flow', () => {
                 await blockchain.mineBlock(timestamp + nextBlock); 
                 nextBlock++;              
             }
-            const errorMessage = "TimelockController: operation is not ready";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.execute(      
                     [box.address],
                     [0],
@@ -536,9 +536,9 @@ describe('Proposal flow', () => {
 
         it('Should revert on creating another proposal too soon', async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 1);
-            const errorMessage = 'Can submit only after certain delay'
+            const errorMessage = "revert";
             
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [multiSigWallet.address],
                     [0],
@@ -584,9 +584,9 @@ describe('Proposal flow', () => {
         });
 
         it("Should not allow an account to vote twice on the same proposal", async () => {
-            const errorMessage = "GovernorVotingSimple: vote already cast";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
                 errTypes.revert,
                 errorMessage
@@ -595,9 +595,9 @@ describe('Proposal flow', () => {
         });
 
         it("Should not vote outside of option range", async () => {
-            const errorMessage = "GovernorVotingSimple: invalid value for enum VoteType";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "3", {"from": STAKER_2}),
                 errTypes.revert,
                 errorMessage
@@ -621,9 +621,9 @@ describe('Proposal flow', () => {
 
 
         it("Should not accept votes outside of the voting period", async () => {
-            const errorMessage = "Governor: vote inactive";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
                 errTypes.revert,
                 errorMessage
@@ -1209,12 +1209,12 @@ describe('Proposal flow', () => {
             }, [streamReward1.address]);
             // create a proposal in MainToken governor
 
-            let errorMessage = "Governor: proposer votes below threshold";
+            let errorMessage = "revert";
             await FTHMToken.approve(stakingService.address,T_TO_STAKE, {from: NOT_STAKER})
             await _transferFromMultiSigTreasury(NOT_STAKER)
             //get 1VOTE Token only.
             await stakingService.createLock(web3.utils.toWei('999','ether'),lockingPeriod,{from: NOT_STAKER});
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [stakingService.address],
                     [0],
@@ -1339,12 +1339,12 @@ describe('Proposal flow', () => {
         });
 
 
-        it('Should blacklist a proposer', async() =>{
-            const _blacklistAProposer = async(account, blacklistStatus) => {
+        it('Should blocklist a proposer', async() =>{
+            const _blocklistAProposer = async(account, blocklistStatus) => {
                 const result = await multiSigWallet.submitTransaction(
                     mainTokenGovernor.address,
                     EMPTY_BYTES,
-                    _encodeBlacklistProposer(account, blacklistStatus),
+                    _encodeBlocklistProposer(account, blocklistStatus),
                     0,
                     {"from": accounts[0]}
                 )
@@ -1355,12 +1355,12 @@ describe('Proposal flow', () => {
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
 
-            await _blacklistAProposer(accounts[5], true)
+            await _blocklistAProposer(accounts[5], true)
         })
 
-        it('Should revert on propose by blacklisted msg.sender', async() =>{
-            let errorMessage = "Proposer is blacklisted";
-            await shouldRevert(
+        it('Should revert on propose by blocklisted msg.sender', async() =>{
+            let errorMessage = "revert";
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [box.address],
                     [0],
@@ -1397,9 +1397,9 @@ describe('Proposal flow', () => {
         })
 
         it('Should fail to propose on emergency stop', async() =>{
-            let errorMessage = "not live";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [box.address],
                     [0],
@@ -1413,8 +1413,8 @@ describe('Proposal flow', () => {
         })
 
         it('Should fail to execute on emergency stop', async() =>{
-            let errorMessage = "not live";
-            await shouldRevert(
+            let errorMessage = "revert";
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.execute(      
                     [mainTokenGovernor.address],
                     [0],

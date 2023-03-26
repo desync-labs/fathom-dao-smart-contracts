@@ -5,7 +5,6 @@
 pragma solidity 0.8.16;
 
 import "./interfaces/IStakingStorage.sol";
-import "./library/StakingLibrary.sol";
 
 contract StakingStorage {
     uint256 internal constant MAIN_STREAM = 0;

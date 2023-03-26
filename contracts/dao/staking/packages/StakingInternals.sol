@@ -12,34 +12,26 @@ import "../../tokens/IVMainToken.sol";
 import "../../../common/math/BoringMath.sol";
 import "../../../common/math/FullMath.sol";
 
-
 contract StakingInternals is RewardsInternals {
     // solhint-disable not-rely-on-time
     error ZeroAddress();
     error ZeroLocked(uint256 lockId);
     error ZeroTotalStakedToken();
+    error InvalidShareWeights();
+    error InvalidPenaltyWeights();
+    error IncorrectWeight();
+    error ZeroCoefficient();
+
     function _initializeStaking(
         address _mainToken,
         address _voteToken,
-        Weight calldata _weight,
+        Weight memory _weight,
         address _vault,
         uint256 _maxLockPositions,
         uint256 _voteShareCoef,
         uint256 _voteLockCoef
     ) internal {
-        if(_mainToken == address(0x00)){
-            revert ZeroAddress();
-        }
-        if(_voteToken == address(0x00)){
-            revert ZeroAddress();
-        }
-        if(_vault == address(0x00)){
-            revert ZeroAddress();
-        }
-        require(_weight.maxWeightShares > _weight.minWeightShares, "bad share");
-        require(_weight.maxWeightPenalty > _weight.minWeightPenalty, "bad penalty");
-        require(_weight.penaltyWeightMultiplier * _weight.maxWeightPenalty <= 100000, "wrong weight");
-        require(_voteLockCoef != 0, "zero coef");
+        _verifyStaking(_mainToken, _voteToken, _weight, _vault, _voteLockCoef);
         mainToken = _mainToken;
         voteToken = _voteToken;
         weight = _weight;
@@ -49,11 +41,7 @@ contract StakingInternals is RewardsInternals {
         voteLockCoef = _voteLockCoef;
     }
 
-    function _lock(
-        address account,
-        uint256 amount,
-        uint256 lockPeriod
-    ) internal {
+    function _lock(address account, uint256 amount, uint256 lockPeriod) internal {
         uint256 nVoteToken;
         User storage userAccount = users[account];
         if (lockPeriod > 0) {
@@ -87,19 +75,14 @@ contract StakingInternals is RewardsInternals {
      * @notice If the lock position is completely unlocked then the last lock is swapped with current locked
      * and last lock is popped off.
      */
-    function _unlock(
-        uint256 stakeValue,
-        uint256 amount,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unlock(uint256 stakeValue, uint256 amount, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
 
-        if(totalAmountOfStakedToken == 0){
+        if (totalAmountOfStakedToken == 0) {
             revert ZeroTotalStakedToken();
         }
-        
+
         uint256 nVoteToken = updateLock.amountOfVoteToken;
         /// if you unstake, early or partial or complete,
         /// the number of vote tokens for lock position is set to zero
@@ -130,12 +113,7 @@ contract StakingInternals is RewardsInternals {
      * @notice the amount of stream shares you receive decreases from 100% to 25%
      * @notice the amount of stream shares you receive depends upon when in the timeline you have staked
      */
-    function _stake(
-        address account,
-        uint256 amount,
-        uint256 nVoteToken,
-        uint256 lockId
-    ) internal {
+    function _stake(address account, uint256 amount, uint256 nVoteToken, uint256 lockId) internal {
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
 
@@ -154,12 +132,7 @@ contract StakingInternals is RewardsInternals {
         emit Staked(account, amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
     }
 
-    function _unstake(
-        uint256 amount,
-        uint256 stakeValue,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unstake(uint256 amount, uint256 stakeValue, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         totalAmountOfStakedToken -= stakeValue;
@@ -183,12 +156,7 @@ contract StakingInternals is RewardsInternals {
         }
     }
 
-    function _restakeThePosition(
-        uint256 amountToRestake,
-        uint256 lockId,
-        LockedBalance storage updateLock,
-        User storage userAccount
-    ) internal {
+    function _restakeThePosition(uint256 amountToRestake, uint256 lockId, LockedBalance storage updateLock, User storage userAccount) internal {
         totalAmountOfStakedToken += amountToRestake;
         updateLock.amountOfToken += BoringMath.to128(amountToRestake);
         ///@notice if you unstake, early or partial or complete,
@@ -228,11 +196,7 @@ contract StakingInternals is RewardsInternals {
         totalPenaltyBalance += penalty;
     }
 
-    function _removeLockPosition(
-        User storage userAccount,
-        address account,
-        uint256 lockId
-    ) internal {
+    function _removeLockPosition(User storage userAccount, address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
         uint256 lastLockId = locks[account].length;
         if (lastLockId != lockId && lastLockId > 1) {
@@ -263,11 +227,7 @@ contract StakingInternals is RewardsInternals {
         IVault(vault).payRewards(accountTo, mainToken, pendingPenalty);
     }
 
-    function _weightedShares(
-        uint256 amountOfTokenShares,
-        uint256 nVoteToken,
-        uint256 timestamp
-    ) internal view returns (uint256) {
+    function _weightedShares(uint256 amountOfTokenShares, uint256 nVoteToken, uint256 timestamp) internal view returns (uint256) {
         ///@notice Shares accomodate vote the amount of  tokenShares and vote Tokens to be released
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards
@@ -301,4 +261,30 @@ contract StakingInternals is RewardsInternals {
             (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
             maxLockPeriod);
     }
+
+    // solhint-disable code-complexity
+    function _verifyStaking(address _mainToken, address _voteToken, Weight memory _weight, address _vault, uint256 _voteLockCoef) internal pure {
+        if (_mainToken == address(0x00)) {
+            revert ZeroAddress();
+        }
+        if (_voteToken == address(0x00)) {
+            revert ZeroAddress();
+        }
+        if (_vault == address(0x00)) {
+            revert ZeroAddress();
+        }
+        if (_weight.maxWeightShares <= _weight.minWeightShares) {
+            revert InvalidShareWeights();
+        }
+        if (_weight.maxWeightPenalty <= _weight.minWeightPenalty) {
+            revert InvalidPenaltyWeights();
+        }
+        if (_weight.penaltyWeightMultiplier * _weight.maxWeightPenalty > 100000) {
+            revert IncorrectWeight();
+        }
+        if (_voteLockCoef == 0) {
+            revert ZeroCoefficient();
+        }
+    }
+    // solhint-enable code-complexity
 }

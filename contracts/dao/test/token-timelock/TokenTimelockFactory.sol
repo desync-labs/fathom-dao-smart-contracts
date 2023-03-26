@@ -18,12 +18,10 @@ contract TokenTimelockFactory is ITokenTimelockFactory, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function deployTokenTimelocks(address[] memory beneficiaries, uint256[] memory releaseTimes)
-        public
-        override
-        onlyRole(DEPLOYER_ROLE)
-        returns (address[] memory)
-    {
+    function deployTokenTimelocks(
+        address[] memory beneficiaries,
+        uint256[] memory releaseTimes
+    ) public override onlyRole(DEPLOYER_ROLE) returns (address[] memory) {
         uint256 length = beneficiaries.length;
         require(length == releaseTimes.length, "Wrong lengths");
 
