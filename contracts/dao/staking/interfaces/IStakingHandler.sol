@@ -24,6 +24,7 @@ interface IStakingHandler {
     function proposeStream(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] calldata scheduleTimes,
@@ -66,4 +67,5 @@ interface IStakingHandler {
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
 
     function setMaxLockPositions(uint256 newMaxLockPositions) external;
+    function setTreasuryAddress(address newTreasury) external;
 }

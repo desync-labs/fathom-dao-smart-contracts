@@ -44,11 +44,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     event ConfirmProposal(address indexed signer, uint256 indexed proposalId);
     event RevokeConfirmation(address indexed signer, uint256 indexed proposalId);
-    event ExecuteProposal(address indexed signer, uint256 indexed proposalId);
+    event ExecuteProposal(address indexed owner, bool indexed success, bytes data);
     event MultiSigUpdated(address newMultiSig, address oldMultiSig);
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
-    event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
     event ProposalLifetimeUpdated(uint256 newProposalLifetime, uint256 oldProposalLifetime);
     event EmergencyStop();
 
@@ -514,7 +513,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     ) internal virtual {
         for (uint256 i = 0; i < targets.length; ++i) {
             (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(calldatas[i]);
-            emit ExecuteTransaction(msg.sender, success, returndata);
+            emit ExecuteProposal(msg.sender, success, returndata);
         }
     }
 

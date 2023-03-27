@@ -69,6 +69,7 @@ const stream_rewarder_1 = accounts[5];
 
 let vault_test_address;
 let treasury;
+const percentToTreasury = 50
 
 const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
@@ -200,6 +201,7 @@ const _encodeAddSupportedTokenFunction = (_token) => {
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -215,6 +217,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -234,6 +240,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -488,6 +495,7 @@ describe("DAO Demo", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_1,
                 _streamReward1Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -500,6 +508,7 @@ describe("DAO Demo", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_1,
                         _streamReward1Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -519,6 +528,7 @@ describe("DAO Demo", () => {
                 await _proposeStreamFromMultiSigTreasury(
                     stream_rewarder_1,
                     streamReward1Address,
+                    percentToTreasury,
                     maxRewardProposalAmountForAStream,
                     minRewardProposalAmountForAStream,
                     scheduleTimes,

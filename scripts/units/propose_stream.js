@@ -12,11 +12,12 @@ const REWARD_TOKEN_ADDRESS = ""
 const STREAM_OWNER = ""
 const MAX_DEPOSIT_AMOUNT = web3.utils.toWei('','ether')
 const MIN_DEPOSIT_AMOUNT = web3.utils.toWei('','ether')
-
+const PERCENT_TO_TREASURY = 0
 
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -32,6 +33,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -51,6 +56,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -90,6 +96,7 @@ module.exports = async function(deployer) {
         _encodeProposeStreamFunction(
             STREAM_OWNER,
             REWARD_TOKEN_ADDRESS,
+            PERCENT_TO_TREASURY,
             MAX_DEPOSIT_AMOUNT,
             MIN_DEPOSIT_AMOUNT,
             scheduleTimes,

@@ -44,6 +44,7 @@ contract StakingStorage {
     address public vault;
     address public rewardsCalculator;
     bool internal councilsInitialized;
+    address public treasury;
     bool internal mainStreamInitialized;
 
     ///Weighting coefficient for shares and penalties
@@ -55,4 +56,5 @@ contract StakingStorage {
     ///Mapping (user => LockedBalance) to keep locking information for each user
     mapping(address => LockedBalance[]) internal locks;
     mapping(uint256 => uint256) public streamTotalUserPendings;
+    
 }

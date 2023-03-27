@@ -26,7 +26,7 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
-
+const percentToTreasury = 50
 
 const _createVoteWeights = (
     voteShareCoef,
@@ -96,6 +96,7 @@ const _convertToEtherBalance = (balance) => {
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -111,6 +112,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -130,6 +135,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -616,6 +622,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_1,
                 _streamReward1Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -628,6 +635,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_1,
                         _streamReward1Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -647,6 +655,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_1,
                 streamReward1Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -685,6 +694,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_2,
                 _streamReward2Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -697,6 +707,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_2,
                         _streamReward2Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -716,6 +727,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_2,
                 streamReward2Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,

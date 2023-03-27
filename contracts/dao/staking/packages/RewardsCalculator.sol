@@ -8,6 +8,7 @@ import "../../../common/math/FullMath.sol";
 
 // solhint-disable not-rely-on-time
 contract RewardsCalculator is IRewardsHandler {
+    uint256 public constant MAXIMUM_PERCENT_TO_TREASURY = 5000; //10000th
     error BadOwnerError();
     error BadRewardTokenError();
     error NoMinDepositError();
@@ -26,11 +27,13 @@ contract RewardsCalculator is IRewardsHandler {
     error QueryBeforeStartError();
     error QueryAfterEndError();
     error InvalidIndexError();
+    error BadPercentToTreasuryError();
 
     // solhint-disable code-complexity
     function validateStreamParameters(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] calldata scheduleTimes,
@@ -52,7 +55,6 @@ contract RewardsCalculator is IRewardsHandler {
         if (maxDepositAmount != scheduleRewards[0]) {
             revert InvalidMaxDepositError();
         }
-        // scheduleTimes[0] == proposal expiration time
         if (scheduleTimes[0] <= block.timestamp) {
             revert BadExpirationError();
         }
@@ -64,6 +66,9 @@ contract RewardsCalculator is IRewardsHandler {
         }
         if (tau == 0) {
             revert BadTauError();
+        }
+        if (percentToTreasury > MAXIMUM_PERCENT_TO_TREASURY){
+            revert BadPercentToTreasuryError();
         }
         for (uint256 i = 1; i < scheduleTimes.length; i++) {
             if (scheduleTimes[i] <= scheduleTimes[i - 1]) {
