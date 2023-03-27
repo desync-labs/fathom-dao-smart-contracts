@@ -14,8 +14,14 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     mapping(uint256 => bool) private isProposalExecuted;
     event TimelockChange(address oldTimelock, address newTimelock);
 
+    error NotConfirmed();
+    error NotSuccessful();
+    error AlreadyExecuted();
+
     constructor(TimelockController timelockAddress) {
-        require(address(timelockAddress) != address(0), "zero address");
+        if (address(timelockAddress) == address(0)) {
+            revert ZeroAddress();
+        }
         _updateTimelock(timelockAddress);
     }
 
@@ -28,14 +34,18 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
      * @notice The proposal must be confirmed by multisig before it can be queued
      */
     function queue(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas,
         bytes32 descriptionHash
-    ) public virtual override returns (uint256) {
+    ) external virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-        require(isConfirmed[proposalId], "queue: not confirmed by multisig");
-        require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not successful");
+        if (!isConfirmed[proposalId]) {
+            revert NotConfirmed();
+        }
+        if (state(proposalId) != ProposalState.Succeeded) {
+            revert NotSuccessful();
+        }
 
         uint256 delay = _timelock.getMinDelay();
         _timelockIds[proposalId] = _timelock.hashOperationBatch(targets, values, calldatas, 0, descriptionHash);
@@ -45,6 +55,15 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         emit ProposalQueued(proposalId, block.timestamp + delay);
 
         return proposalId;
+    }
+
+    function timelock() external view virtual override returns (address) {
+        return address(_timelock);
+    }
+
+    function proposalEta(uint256 proposalId) external view virtual override returns (uint256) {
+        uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
+        return eta == 1 ? 0 : eta; // _DONE_TIMESTAMP (1) should be replaced with a 0 value
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, Governor) returns (bool) {
@@ -61,22 +80,13 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes32 queueid = _timelockIds[proposalId];
         if (queueid == bytes32(0)) {
             return status;
-        } else if (isProposalExecuted[proposalId] == true) {
+        } else if (isProposalExecuted[proposalId]) {
             return ProposalState.Executed;
         } else if (_timelock.isOperationPending(queueid)) {
             return ProposalState.Queued;
         } else {
             return ProposalState.Canceled;
         }
-    }
-
-    function timelock() public view virtual override returns (address) {
-        return address(_timelock);
-    }
-
-    function proposalEta(uint256 proposalId) public view virtual override returns (uint256) {
-        uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
-        return eta == 1 ? 0 : eta; // _DONE_TIMESTAMP (1) should be replaced with a 0 value
     }
 
     function _execute(
@@ -86,7 +96,9 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal virtual override {
-        require(!isProposalExecuted[proposalId], "already executed");
+        if (isProposalExecuted[proposalId]) {
+            revert AlreadyExecuted();
+        }
         _timelock.executeBatch{ value: msg.value }(targets, values, calldatas, 0, descriptionHash);
         isProposalExecuted[proposalId] = true;
     }
@@ -115,7 +127,9 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     }
 
     function _updateTimelock(TimelockController newTimelock) private {
-        require(address(newTimelock) != address(0), "zero address");
+        if (address(newTimelock) == address(0)) {
+            revert ZeroAddress();
+        }
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }

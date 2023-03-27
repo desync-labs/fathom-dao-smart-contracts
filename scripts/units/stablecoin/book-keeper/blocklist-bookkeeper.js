@@ -4,16 +4,16 @@ const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.j
 const addressesExternal = JSON.parse(rawdataExternal);
 
 const BOOK_KEEPER_ADDRESS =addressesExternal.BOOK_KEEPER_ADDRESS
-const TO_BE_WHITELISTED = "0x"
-const _encodeWhitelist = (toBeWhitelistedAddress) => {
+const TO_BE_BLOCKLISTED = "0x"
+const _encodeBlocklist = (toBeBlocklistedAddress) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'whitelist',
+        name: 'blocklist',
         type: 'function',
         inputs: [{
             type: 'address',
-            name: 'toBeWhitelistedAddress'
+            name: 'toBeBlocklistedAddress'
         }]
-    }, [toBeWhitelistedAddress]);
+    }, [toBeBlocklistedAddress]);
 
     return toRet;
 }
@@ -22,8 +22,8 @@ const _encodeWhitelist = (toBeWhitelistedAddress) => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodeWhitelist(TO_BE_WHITELISTED),
+        _encodeBlocklist(TO_BE_BLOCKLISTED),
         BOOK_KEEPER_ADDRESS,
-        "setWhitelistedAddressBookkeeper"
+        "setBlocklistedAddressBookkeeper"
     )
 }

@@ -38,7 +38,8 @@ const eventsHelper = require("../helpers/eventsHelper");
 const { assert } = require("chai");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -1018,9 +1019,9 @@ describe("DAO Demo", () => {
         
         it("Should Revert: early unlock not possible", async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const errorMessage = "early infeasible";
+            const errorMessage = "revert";
 
-             await shouldRevert(
+             await shouldRevertAndHaveSubstring(
                 stakingService.earlyUnlock(1, {from: comity_1}),
                 errTypes.revert, 
                 errorMessage

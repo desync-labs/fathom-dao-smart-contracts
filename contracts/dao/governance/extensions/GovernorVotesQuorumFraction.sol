@@ -12,6 +12,9 @@ abstract contract GovernorVotesQuorumFraction is GovernorVotes {
     uint256 public constant MINIMUM_QUORUM_NUMERATOR = uint256(2);
     event QuorumNumeratorUpdated(uint256 oldQuorumNumerator, uint256 newQuorumNumerator);
 
+    error QuorumNumeratorOverflow();
+    error QuorumNumeratorUnderflow();
+
     /**
      * @dev Initialize quorum as a fraction of the token's total supply.
      *
@@ -53,8 +56,12 @@ abstract contract GovernorVotesQuorumFraction is GovernorVotes {
     }
 
     function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
-        require(newQuorumNumerator <= quorumDenominator(), "quorumNumerator over quorumDenominator");
-        require(newQuorumNumerator >= MINIMUM_QUORUM_NUMERATOR, "less than Minimum");
+        if (newQuorumNumerator > quorumDenominator()) {
+            revert QuorumNumeratorOverflow();
+        }
+        if (newQuorumNumerator < MINIMUM_QUORUM_NUMERATOR) {
+            revert QuorumNumeratorUnderflow();
+        }
         uint256 oldQuorumNumerator = _quorumNumerator;
         _quorumNumerator = newQuorumNumerator;
 

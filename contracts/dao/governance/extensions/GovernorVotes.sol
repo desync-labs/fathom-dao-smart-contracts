@@ -11,15 +11,13 @@ abstract contract GovernorVotes is Governor {
     IVotes public immutable token;
 
     constructor(IVotes tokenAddress) {
-        require(address(tokenAddress) != address(0), "tokenAddress cant be zero address");
+        if (address(tokenAddress) == address(0)) {
+            revert ZeroAddress();
+        }
         token = tokenAddress;
     }
 
-    function _getVotes(
-        address account,
-        uint256 blockNumber,
-        bytes memory /*params*/
-    ) internal view virtual override returns (uint256) {
+    function _getVotes(address account, uint256 blockNumber, bytes memory /*params*/) internal view virtual override returns (uint256) {
         return token.getPastVotes(account, blockNumber);
     }
 }

@@ -9,6 +9,7 @@ import "../../common/Address.sol";
 import "./interfaces/ITimelockController.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+// solhint-disable not-rely-on-time
 contract TimelockController is AccessControl, Initializable, ITimelockController {
     bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
@@ -35,6 +36,18 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
 
     event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
 
+    error ZeroValue();
+    error ZeroAddress();
+    error LengthMismatch();
+    error OperationNotPending();
+    error InsufficientValue();
+    error FailedToSendEther();
+    error NotTimelock();
+    error OperationNotReady();
+    error OperationAlreadyScheduled();
+    error InsufficientDelay();
+    error MissingDependency();
+
     /**
      * @dev Modifier to make a function callable only by a certain role. In
      * addition to checking the sender's role, `address(0)` 's role is also
@@ -48,14 +61,16 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         _;
     }
 
-    function initialize(
-        uint256 minDelay,
-        address admin,
-        address[] memory proposers,
-        address[] memory executors
-    ) public override initializer {
-        require(minDelay != 0, "minDelay should be greater than zero");
-        require(admin != address(0), "admin should not be zero address");
+    // solhint-disable-next-line comprehensive-interface
+    receive() external payable {}
+
+    function initialize(uint256 minDelay, address admin, address[] memory proposers, address[] memory executors) public override initializer {
+        if (minDelay == 0) {
+            revert ZeroValue();
+        }
+        if (admin == address(0)) {
+            revert ZeroAddress();
+        }
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -67,21 +82,23 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
 
         for (uint256 i = 0; i < proposers.length; ++i) {
-            require(proposers[i] != address(0), "proposer should not be zero address");
+            if (proposers[i] == address(0)) {
+                revert ZeroAddress();
+            }
             _setupRole(PROPOSER_ROLE, proposers[i]);
             _setupRole(CANCELLER_ROLE, proposers[i]);
         }
 
         for (uint256 i = 0; i < executors.length; ++i) {
-            require(executors[i] != address(0), "executor should not be zero address");
+            if (executors[i] == address(0)) {
+                revert ZeroAddress();
+            }
             _setupRole(EXECUTOR_ROLE, executors[i]);
         }
 
         _minDelay = minDelay;
         emit MinDelayChange(0, minDelay);
     }
-
-    receive() external payable {}
 
     function schedule(
         address target,
@@ -90,7 +107,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
-    ) public virtual onlyRole(PROPOSER_ROLE) {
+    ) public virtual override onlyRole(PROPOSER_ROLE) {
         bytes32 id = hashOperation(target, value, data, predecessor, salt);
         _schedule(id, delay);
         emit CallScheduled(id, 0, target, value, data, predecessor, delay);
@@ -103,9 +120,10 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
-    ) public virtual onlyRole(PROPOSER_ROLE) {
-        require(targets.length == values.length, "TimelockController: length mismatch");
-        require(targets.length == payloads.length, "TimelockController: length mismatch");
+    ) public virtual override onlyRole(PROPOSER_ROLE) {
+        if (targets.length != values.length || targets.length != payloads.length) {
+            revert LengthMismatch();
+        }
 
         bytes32 id = hashOperationBatch(targets, values, payloads, predecessor, salt);
         _schedule(id, delay);
@@ -114,8 +132,10 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         }
     }
 
-    function cancel(bytes32 id) public virtual onlyRole(CANCELLER_ROLE) {
-        require(isOperationPending(id), "TimelockController: operation cannot be cancelled");
+    function cancel(bytes32 id) public virtual override onlyRole(CANCELLER_ROLE) {
+        if (!isOperationPending(id)) {
+            revert OperationNotPending();
+        }
         delete _timestamps[id];
 
         emit Cancelled(id);
@@ -127,16 +147,20 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes memory payload,
         bytes32 predecessor,
         bytes32 salt
-    ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
+    ) public payable virtual override onlyRoleOrOpenRole(EXECUTOR_ROLE) {
         bytes32 id = hashOperation(target, value, payload, predecessor, salt);
-        require(msg.value >= value, "execute: msg.value insufficient sent");
+        if (msg.value < value) {
+            revert InsufficientValue();
+        }
         _beforeCall(id, predecessor);
         _execute(target, value, payload);
         emit CallExecuted(id, 0, target, value, payload);
         _afterCall(id);
         if (msg.value > value) {
             (bool sent, ) = msg.sender.call{ value: (msg.value - value) }("");
-            require(sent, "Failed to send ether");
+            if (!sent) {
+                revert FailedToSendEther();
+            }
         }
     }
 
@@ -146,9 +170,10 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes[] memory payloads,
         bytes32 predecessor,
         bytes32 salt
-    ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
-        require(targets.length == values.length, "TimelockController: length mismatch");
-        require(targets.length == payloads.length, "TimelockController: length mismatch");
+    ) public payable virtual override onlyRoleOrOpenRole(EXECUTOR_ROLE) {
+        if (targets.length != values.length || targets.length != payloads.length) {
+            revert LengthMismatch();
+        }
 
         bytes32 id = hashOperationBatch(targets, values, payloads, predecessor, salt);
         uint256 totalValue;
@@ -162,46 +187,62 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
             emit CallExecuted(id, i, target, value, payload);
         }
         _afterCall(id);
-        require(msg.value >= totalValue,"executeBatch: msg.value insufficient sent");
-        if(msg.value > totalValue){
+        if (msg.value < totalValue) {
+            revert InsufficientValue();
+        }
+        if (msg.value > totalValue) {
             (bool sent, ) = msg.sender.call{ value: (msg.value - totalValue) }("");
-            require(sent, "Failed to send ether");
+            if (!sent) {
+                revert FailedToSendEther();
+            }
         }
     }
 
-    function updateDelay(uint256 newDelay) public virtual {
-        require(msg.sender == address(this), "TimelockController: caller must be timelock");
-        require(newDelay > 0, "new delay should be greater than zero");
+    function updateDelay(uint256 newDelay) public virtual override {
+        if (msg.sender != address(this)) {
+            revert NotTimelock();
+        }
+        if (newDelay == 0) {
+            revert ZeroValue();
+        }
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
+    }
+
+    function grantRoleByAdmin(bytes32 role, address account) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(role, account);
+    }
+
+    function revokeRoleByAdmin(bytes32 role, address account) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(role, account);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
-    function isOperation(bytes32 id) public view virtual returns (bool registered) {
+    function isOperation(bytes32 id) public view virtual override returns (bool registered) {
         return getTimestamp(id) > 0;
     }
 
-    function isOperationPending(bytes32 id) public view virtual returns (bool pending) {
+    function isOperationPending(bytes32 id) public view virtual override returns (bool pending) {
         return getTimestamp(id) > _DONE_TIMESTAMP;
     }
 
-    function isOperationReady(bytes32 id) public view virtual returns (bool ready) {
+    function isOperationReady(bytes32 id) public view virtual override returns (bool ready) {
         uint256 timestamp = getTimestamp(id);
         return timestamp > _DONE_TIMESTAMP && timestamp <= block.timestamp;
     }
 
-    function isOperationDone(bytes32 id) public view virtual returns (bool done) {
+    function isOperationDone(bytes32 id) public view virtual override returns (bool done) {
         return getTimestamp(id) == _DONE_TIMESTAMP;
     }
 
-    function getTimestamp(bytes32 id) public view virtual returns (uint256 timestamp) {
+    function getTimestamp(bytes32 id) public view virtual override returns (uint256 timestamp) {
         return _timestamps[id];
     }
 
-    function getMinDelay() public view virtual returns (uint256 duration) {
+    function getMinDelay() public view virtual override returns (uint256 duration) {
         return _minDelay;
     }
 
@@ -211,7 +252,7 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes memory data,
         bytes32 predecessor,
         bytes32 salt
-    ) public pure virtual returns (bytes32 hash) {
+    ) public pure virtual override returns (bytes32 hash) {
         return keccak256(abi.encode(target, value, data, predecessor, salt));
     }
 
@@ -221,40 +262,38 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         bytes[] memory payloads,
         bytes32 predecessor,
         bytes32 salt
-    ) public pure virtual returns (bytes32 hash) {
+    ) public pure virtual override returns (bytes32 hash) {
         return keccak256(abi.encode(targets, values, payloads, predecessor, salt));
     }
 
-    function grantRoleByAdmin(bytes32 role, address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _grantRole(role, account);
-    }
-
-    function revokeRoleByAdmin(bytes32 role, address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _revokeRole(role, account);
-    }
-
-    function _execute(
-        address target,
-        uint256 value,
-        bytes memory data
-    ) internal virtual {
+    function _execute(address target, uint256 value, bytes memory data) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
-        emit ExecuteTransaction(msg.sender,success, data);
+        emit ExecuteTransaction(msg.sender, success, data);
     }
 
     function _afterCall(bytes32 id) private {
-        require(isOperationReady(id), "TimelockController: operation is not ready");
+        if (!isOperationReady(id)) {
+            revert OperationNotReady();
+        }
         _timestamps[id] = _DONE_TIMESTAMP;
     }
 
     function _schedule(bytes32 id, uint256 delay) private {
-        require(!isOperation(id), "TimelockController: operation already scheduled");
-        require(delay >= getMinDelay(), "TimelockController: insufficient delay");
+        if (isOperation(id)) {
+            revert OperationAlreadyScheduled();
+        }
+        if (delay < getMinDelay()) {
+            revert InsufficientDelay();
+        }
         _timestamps[id] = block.timestamp + delay;
     }
 
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
-        require(isOperationReady(id), "TimelockController: operation is not ready");
-        require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
+        if (!isOperationPending(id)) {
+            revert OperationNotPending();
+        }
+        if (predecessor != bytes32(0) && !isOperationDone(predecessor)) {
+            revert MissingDependency();
+        }
     }
 }

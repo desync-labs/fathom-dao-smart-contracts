@@ -22,12 +22,7 @@ interface IMultiSigWallet {
 
     function changeRequirement(uint256 _required) external;
 
-    function submitTransaction(
-        address _to,
-        uint256 _value,
-        bytes memory _data,
-        uint256 _expireTimestamp
-    ) external;
+    function submitTransaction(address _to, uint256 _value, bytes memory _data, uint256 _expireTimestamp) external;
 
     function confirmTransaction(uint256 _txIndex) external;
 
@@ -39,14 +34,7 @@ interface IMultiSigWallet {
 
     function getTransactionCount() external returns (uint256);
 
-    function getTransaction(uint256 _txIndex)
-        external
-        returns (
-            address to,
-            uint256 value,
-            bytes memory data,
-            bool executed,
-            uint256 numConfirmations,
-            uint256 expireTimestamp
-        );
+    function getTransaction(
+        uint256 _txIndex
+    ) external returns (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expireTimestamp);
 }

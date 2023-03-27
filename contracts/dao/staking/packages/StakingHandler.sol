@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL 3.0
 // Original Copyright Aurora
 // Copyright Fathom 2022
-
 pragma solidity 0.8.16;
 
 import "./StakingInternals.sol";
@@ -10,12 +9,13 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/AdminPausable.sol";
 import "../../../common/SafeERC20Staking.sol";
+
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-    
+
     error NotPaused();
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
@@ -27,9 +27,30 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error StreamIdZero();
     error BadMaxLockPositions();
     error StreamNotWithdrawn();
+    error NotProposed();
+    error ProposalExpired();
+    error NotOwner();
+    error RewardsTooHigh();
+    error RewardsTooLow();
+    error LockNotClosed();
+    error EarlyWithdrawalInfeasible();
+    error LockAlreadyOpen();
+    error UnsupportedToken();
+    error BadStart();
+    error NoActiveStream();
+    error LockNotExpired();
+    error NoPendings();
+    error NotReleased();
+    error StreamInactive();
+    error MinLockPeriodNotMet();
+    error MaxLockPositionsReached();
+    error ZeroAmount();
+    error NotLockOwner();
+
     constructor() {
         _disableInitializers();
     }
+
     /**
      * @dev initialize the contract and deploys the first stream of rewards
      * @dev initializable only once due to stakingInitialised flag
@@ -54,7 +75,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
         _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
-        require(IVault(vault).isSupportedToken(_mainToken), "!token");
+        if (!IVault(vault).isSupportedToken(_mainToken)) {
+            revert UnsupportedToken();
+        }
         pausableInit(1, _admin);
         _grantRole(STREAM_MANAGER_ROLE, _admin);
         _grantRole(TREASURY_ROLE, _admin);
@@ -68,14 +91,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      */
     function initializeMainStream(
         address _owner,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
         uint256 tau
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE){
-        if(mainStreamInitialized == true){
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (mainStreamInitialized == true) {
             revert AlreadyInitialized();
         }
-        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),scheduleRewards[0]);
+        IERC20(mainToken).safeTransferFrom(msg.sender, address(this), scheduleRewards[0]);
         _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
@@ -95,15 +118,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             })
         );
         _adminPause(0);
-        mainStreamInitialized =true;
-        _transfer(scheduleRewards[0],mainToken);
+        mainStreamInitialized = true;
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
         emit StreamCreated(streamId, _owner, mainToken, tau);
+        _transfer(scheduleRewards[0], mainToken);
     }
 
     /**
-     * @dev An admin of the staking contract can whitelist (propose) a stream.
-     * Whitelisting of the stream provides the option for the stream
+     * @dev An admin of the staking contract can allowlist (propose) a stream.
+     * Allowlisting of the stream provides the option for the stream
      * owner (presumably the issuing party of a specific token) to
      * deposit some ERC-20 tokens on the staking contract and potentially
      * get in return some main tokens immediately. 
@@ -123,12 +146,14 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         address rewardToken,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
         uint256 tau
-    ) public override onlyRole(STREAM_MANAGER_ROLE) {
+    ) external override onlyRole(STREAM_MANAGER_ROLE) {
         _validateStreamParameters(streamOwner, rewardToken, maxDepositAmount, minDepositAmount, scheduleTimes, scheduleRewards, tau);
-        require(IVault(vault).isSupportedToken(rewardToken), "!Token");
+        if (!IVault(vault).isSupportedToken(rewardToken)) {
+            revert UnsupportedToken();
+        }
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         uint256 streamId = streams.length;
         streams.push(
@@ -148,19 +173,16 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         );
         emit StreamProposed(streamId, streamOwner, rewardToken, maxDepositAmount);
     }
+
     /**
      * @dev This function creates a stream and makes it live. Only the Stream Owner is able to call this function.
      *      Stream Owner is set while proposing a stream
      */
-    function createStream(uint256 streamId, uint256 rewardTokenAmount) public override pausable(1){
+    function createStream(uint256 streamId, uint256 rewardTokenAmount) external override pausable(1) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
-        require(stream.schedule.time[0] >= block.timestamp, "prop expire");
-        require(stream.owner == msg.sender, "bad owner");
+        _verifyStream(stream, rewardTokenAmount);
 
-        require(rewardTokenAmount <= stream.maxDepositAmount, "rwrds high");
-        require(rewardTokenAmount >= stream.minDepositAmount, "rwrds low");
-        IERC20(stream.rewardToken).safeTransferFrom(msg.sender,address(this), rewardTokenAmount);
+        IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
 
         stream.status = StreamStatus.ACTIVE;
 
@@ -168,18 +190,22 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (rewardTokenAmount < stream.maxDepositAmount) {
             _updateStreamsRewardsSchedules(streamId, rewardTokenAmount);
         }
-        require(stream.schedule.reward[0] == stream.rewardDepositAmount, "bad start");
+        if (stream.schedule.reward[0] != stream.rewardDepositAmount) {
+            revert BadStart();
+        }
 
-        emit StreamCreated(streamId, stream.owner, stream.rewardToken,stream.tau);
-        _transfer(rewardTokenAmount,stream.rewardToken);
+        emit StreamCreated(streamId, stream.owner, stream.rewardToken, stream.tau);
+        _transfer(rewardTokenAmount, stream.rewardToken);
     }
 
     /**
      * @dev Proposed stream can be cancelled by Stream Manager, which at the time of deployment is Multisig
      */
-    function cancelStreamProposal(uint256 streamId) public override onlyRole(STREAM_MANAGER_ROLE) {
+    function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.PROPOSED, "nt proposed");
+        if (stream.status != StreamStatus.PROPOSED) {
+            revert NotProposed();
+        }
         stream.status = StreamStatus.INACTIVE;
 
         emit StreamProposalCancelled(streamId, stream.owner, stream.rewardToken);
@@ -189,15 +215,17 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev A stream can be removed after all the rewards pending have been withdrawn.
      *      Stream can be removed by the Stream Manager which is Multisig as time of deployment.
      */
-    function removeStream(uint256 streamId, address streamFundReceiver) public override onlyRole(STREAM_MANAGER_ROLE) {
-        if(streamId == 0){
+    function removeStream(uint256 streamId, address streamFundReceiver) external override onlyRole(STREAM_MANAGER_ROLE) {
+        if (streamId == 0) {
             revert StreamIdZero();
         }
-        if(streamTotalUserPendings[streamId]!=0){
+        if (streamTotalUserPendings[streamId] != 0) {
             revert StreamNotWithdrawn();
         }
         Stream storage stream = streams[streamId];
-        require(stream.status == StreamStatus.ACTIVE, "No Stream");
+        if (stream.status != StreamStatus.ACTIVE) {
+            revert NoActiveStream();
+        }
         stream.status = StreamStatus.INACTIVE;
         uint256 releaseRewardAmount = stream.rewardDepositAmount - stream.rewardClaimedAmount;
         uint256 rewardTreasury = IERC20(stream.rewardToken).balanceOf(vault);
@@ -214,8 +242,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Creating locks for council can be done by Admin only which is Multisig.
      *      Multisig can create locks for councils
      */
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) public override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if(councilsInitialized == true){
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (councilsInitialized == true) {
             revert AlreadyInitialized();
         }
         councilsInitialized = true;
@@ -225,51 +253,58 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
         }
     }
-    
-    function createLock(uint256 amount, uint256 lockPeriod) public override pausable(1) {
+
+    function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);
     }
 
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) public override pausable(1){
+    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         prohibitedEarlyWithdraw[msg.sender][locks[msg.sender].length + 1] = true;
         _createLock(amount, lockPeriod, msg.sender);
     }
 
-    function unlock(uint256 lockId) public override pausable(1) {
+    function unlock(uint256 lockId) external override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end <= block.timestamp, "lock close");
+        if (lock.end > block.timestamp) {
+            revert LockNotClosed();
+        }
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
         _unlock(stakeValue, stakeValue, lockId, msg.sender);
-        
     }
 
-    function unlockPartially(uint256 lockId, uint256 amount) public override pausable(1) {
+    function unlockPartially(uint256 lockId, uint256 amount) external override pausable(1) {
         _verifyUnlock(lockId);
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end <= block.timestamp, "lock close");
+        if (lock.end > block.timestamp) {
+            revert LockNotExpired();
+        }
         _updateStreamRPS();
         uint256 stakeValue = lock.amountOfToken;
         prohibitedEarlyWithdraw[msg.sender][lockId] = false;
         _unlock(stakeValue, amount, lockId, msg.sender);
     }
 
-    function earlyUnlock(uint256 lockId) public override pausable(1) {
+    function earlyUnlock(uint256 lockId) external override pausable(1) {
         _verifyUnlock(lockId);
-        require(prohibitedEarlyWithdraw[msg.sender][lockId] == false, "early infeasible");
+        if (prohibitedEarlyWithdraw[msg.sender][lockId]) {
+            revert EarlyWithdrawalInfeasible();
+        }
         LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.end > block.timestamp, "lock open");
+        if (lock.end <= block.timestamp) {
+            revert LockAlreadyOpen();
+        }
         _updateStreamRPS();
         _earlyUnlock(lockId, msg.sender);
     }
 
-    function claimAllStreamRewardsForLock(uint256 lockId) public override pausable(1) {
-        if(lockId > locks[msg.sender].length){
+    function claimAllStreamRewardsForLock(uint256 lockId) external override pausable(1) {
+        if (lockId > locks[msg.sender].length) {
             revert MaxLockIdExceeded(lockId, msg.sender);
         }
-        if(lockId == 0){
+        if (lockId == 0) {
             revert ZeroLockId();
         }
         _updateStreamRPS();
@@ -277,21 +312,28 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _moveAllStreamRewardsToPending(msg.sender, lockId);
     }
 
-    function claimAllLockRewardsForStream(uint256 streamId) public override pausable(1) {
+    function claimAllLockRewardsForStream(uint256 streamId) external override pausable(1) {
         _updateStreamRPS();
         _moveAllLockPositionRewardsToPending(msg.sender, streamId);
     }
 
-    function withdrawStream(uint256 streamId) public override pausable(1) {
+    function withdrawStream(uint256 streamId) external override pausable(1) {
         User storage userAccount = users[msg.sender];
-        require(userAccount.pendings[streamId] != 0, "no pendings");
-        require(block.timestamp > userAccount.releaseTime[streamId], "not released");
-        require(streams[streamId].status == StreamStatus.ACTIVE, "stream inactive");
+        if (userAccount.pendings[streamId] == 0) {
+            revert NoPendings();
+        }
+
+        if (block.timestamp <= userAccount.releaseTime[streamId]) {
+            revert NotReleased();
+        }
+
+        if (streams[streamId].status != StreamStatus.ACTIVE) {
+            revert StreamInactive();
+        }
         _withdraw(streamId);
     }
-    
 
-    function withdrawAllStreams() public override pausable(1) {
+    function withdrawAllStreams() external override pausable(1) {
         User storage userAccount = users[msg.sender];
         for (uint256 i; i < streams.length; i++) {
             if (userAccount.pendings[i] != 0 && block.timestamp > userAccount.releaseTime[i] && streams[i].status == StreamStatus.ACTIVE) {
@@ -299,11 +341,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             }
         }
     }
+
     /**
      * @dev Disregard rewards for emergency unlock and withdraw
      */
-    function emergencyUnlockAndWithdraw() public override {
-        if(paused == 0){
+    function emergencyUnlockAndWithdraw() external override {
+        if (paused == 0) {
             revert NotPaused();
         }
         uint256 numberOfLocks = locks[msg.sender].length;
@@ -318,19 +361,19 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Vault can be updated only if the contract is at paused state.
      *      Only Admin that is, Multisig at the time of deployment can update Vault
      */
-    function updateVault(address _vault) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function updateVault(address _vault) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         // enforce pausing this contract before updating the address.
         // This mitigates the risk of future invalid reward claims
-        if (paused == 0){
+        if (paused == 0) {
             revert NotPaused();
         }
-        if(_vault == address(0)){
+        if (_vault == address(0)) {
             revert ZeroAddress();
         }
-        if(!IERC165Upgradeable(_vault).supportsInterface(type(IVault).interfaceId)){
+        if (!IERC165Upgradeable(_vault).supportsInterface(type(IVault).interfaceId)) {
             revert VaultNotSupported(_vault);
         }
-        if(!IVault(vault).migrated()){
+        if (!IVault(vault).migrated()) {
             revert VaultNotMigrated(vault);
         }
         vault = _vault;
@@ -340,54 +383,19 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Penalty accrued due to early unlocking can be withdrawn to some address, most likely the treasury.
      *      Address with TREASURY_ROLE can access this function, which is Multisig at time of deployment
      */
-    function withdrawPenalty(address penaltyReceiver) public override pausable(1) onlyRole(TREASURY_ROLE) {
-        if(totalPenaltyBalance == 0){
+    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(TREASURY_ROLE) {
+        if (totalPenaltyBalance == 0) {
             revert ZeroPenalty();
         }
         _withdrawPenalty(penaltyReceiver);
-    }
-
-    function _createLock(
-        uint256 amount,
-        uint256 lockPeriod,
-        address account
-    ) internal{
-        require(lockPeriod >= minLockPeriod, "min lock");
-        require(locks[account].length <= maxLockPositions, "max locks");
-        require(amount > 0, "amount 0");
-        require(lockPeriod <= maxLockPeriod, "max time");
-        IERC20(mainToken).safeTransferFrom(msg.sender,address(this),amount);
-        _updateStreamRPS();
-        _lock(account, amount, lockPeriod);
-        _transfer(amount,mainToken);
-    }
-
-    function _verifyUnlock(uint256 lockId) internal view {
-        if(lockId == 0){
-            revert ZeroLockId();
-        }
-        if(lockId > locks[msg.sender].length){
-            revert MaxLockIdExceeded(lockId, msg.sender);
-        }
-        LockedBalance storage lock = locks[msg.sender][lockId - 1];
-        require(lock.owner == msg.sender, "bad owner");
-        if(lock.amountOfToken == 0){
-            revert ZeroLocked(lockId);
-        }
-    }
-
-    function _transfer(uint256 _amount, address _token) internal{
-        IERC20(_token).safeApprove(vault,0);
-        IERC20(_token).safeApprove(vault,_amount);
-        IVault(vault).deposit(_token, _amount);
     }
 
     /**
      * @dev This allows for setting up minimum locking period.
      *      Only admin which is Multisig at deployment can call this
      */
-    function setMinimumLockPeriod(uint256 _minLockPeriod) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        if(_minLockPeriod > maxLockPeriod){
+    function setMinimumLockPeriod(uint256 _minLockPeriod) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_minLockPeriod > maxLockPeriod) {
             revert MaxLockPeriodExceeded();
         }
         minLockPeriod = _minLockPeriod;
@@ -397,11 +405,70 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev This allows for setting up maximum lock positions.
      *      Only admin which is Multisig at deployment can call this
      */
-    function setMaxLockPositions(uint256 newMaxLockPositions) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        if(newMaxLockPositions < maxLockPositions){
+    function setMaxLockPositions(uint256 newMaxLockPositions) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newMaxLockPositions < maxLockPositions) {
             revert BadMaxLockPositions();
         }
         maxLockPositions = newMaxLockPositions;
     }
-    
+
+    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
+        if (lockPeriod < minLockPeriod) {
+            revert MinLockPeriodNotMet();
+        }
+        if (locks[account].length > maxLockPositions) {
+            revert MaxLockPositionsReached();
+        }
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+        if (lockPeriod > maxLockPeriod) {
+            revert MaxLockPeriodExceeded();
+        }
+        IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
+        _updateStreamRPS();
+        _lock(account, amount, lockPeriod);
+        _transfer(amount, mainToken);
+    }
+
+    function _transfer(uint256 _amount, address _token) internal {
+        IERC20(_token).safeApprove(vault, 0);
+        IERC20(_token).safeApprove(vault, _amount);
+        IVault(vault).deposit(_token, _amount);
+    }
+
+    function _verifyStream(Stream memory stream, uint256 rewardTokenAmount) internal view {
+        if (stream.status != StreamStatus.PROPOSED) {
+            revert NotProposed();
+        }
+        if (stream.schedule.time[0] < block.timestamp) {
+            revert ProposalExpired();
+        }
+        if (stream.owner != msg.sender) {
+            revert NotOwner();
+        }
+
+        if (rewardTokenAmount > stream.maxDepositAmount) {
+            revert RewardsTooHigh();
+        }
+        if (rewardTokenAmount < stream.minDepositAmount) {
+            revert RewardsTooLow();
+        }
+    }
+
+    function _verifyUnlock(uint256 lockId) internal view {
+        if (lockId == 0) {
+            revert ZeroLockId();
+        }
+        if (lockId > locks[msg.sender].length) {
+            revert MaxLockIdExceeded(lockId, msg.sender);
+        }
+        LockedBalance storage lock = locks[msg.sender][lockId - 1];
+        if (lock.owner != msg.sender) {
+            revert NotLockOwner();
+        }
+        if (lock.amountOfToken == 0) {
+            revert ZeroLocked(lockId);
+        }
+    }
 }

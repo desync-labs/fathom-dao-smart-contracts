@@ -2,7 +2,8 @@ const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -189,11 +190,11 @@ describe('Token Creation Through Governance', () => {
         });
 
 
-        it('Should revert transfer if holder is not whitelisted to transfer', async() => {
+        it('Should revert transfer if holder is not allowlisted to transfer', async() => {
 
-            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 vMainToken.transfer(
                     accounts[2],
                     "10",
@@ -209,9 +210,9 @@ describe('Token Creation Through Governance', () => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
 
-            let errorMessage = "Governor: proposer votes below threshold";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [erc20Factory.address],
                     [0],

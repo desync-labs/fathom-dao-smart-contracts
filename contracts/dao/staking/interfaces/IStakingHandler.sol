@@ -7,33 +7,27 @@ import "../StakingStructs.sol";
 import "./IStakingGetter.sol";
 
 interface IStakingHandler {
-    
     function initializeStaking(
         address _admin,
         address _vault,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
-        VoteCoefficient memory voteCoef,
+        VoteCoefficient calldata voteCoef,
         uint256 _maxLocks,
         address _rewardsContract,
         uint256 _minLockPeriod
     ) external;
 
-    function initializeMainStream(
-        address _owner,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
-        uint256 tau
-    ) external;
+    function initializeMainStream(address _owner, uint256[] calldata scheduleTimes, uint256[] calldata scheduleRewards, uint256 tau) external;
 
     function proposeStream(
         address streamOwner,
         address rewardToken,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
-        uint256[] memory scheduleTimes,
-        uint256[] memory scheduleRewards,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
         uint256 tau
     ) external; // only STREAM_MANAGER_ROLE
 
@@ -60,12 +54,16 @@ interface IStakingHandler {
     function withdrawAllStreams() external;
 
     function withdrawPenalty(address penaltyReceiver) external;
+
     function updateVault(address _vault) external;
 
     function emergencyUnlockAndWithdraw() external;
 
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
+
     function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
+
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
+
     function setMaxLockPositions(uint256 newMaxLockPositions) external;
 }
