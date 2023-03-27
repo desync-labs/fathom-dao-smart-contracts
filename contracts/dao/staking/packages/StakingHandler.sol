@@ -187,10 +187,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
 
         stream.status = StreamStatus.ACTIVE;
-        uint256 updatedRewardTokenAmount = rewardTokenAmount - stream.percentToTreasury * rewardTokenAmount / 10000;
+        uint256 updatedRewardTokenAmount = rewardTokenAmount - stream.percentToTreasury * rewardTokenAmount / REWARDS_TO_TREASURY_DENOMINATOR;
         stream.rewardDepositAmount = updatedRewardTokenAmount;
+        
         _updateStreamsRewardsSchedules(streamId, updatedRewardTokenAmount);
-
+        
         if (stream.schedule.reward[0] != stream.rewardDepositAmount) {
             revert BadStart();
         }
@@ -215,7 +216,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     /**
      * @dev A stream can be removed after all the rewards pending have been withdrawn.
-     *      Stream can be removed by the Stream Manager which is Multisig as time of deployment.
+     *      Stream can be removed by the Stream Manager which is Multisig at time of deployment.
      */
     function removeStream(uint256 streamId, address streamFundReceiver) external override onlyRole(STREAM_MANAGER_ROLE) {
         if (streamId == 0) {
