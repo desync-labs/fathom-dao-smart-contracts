@@ -1,14 +1,10 @@
 //NOTE: Do this at the very end as other scripts wont execute after this is done due to owners signatures requirement
 const fs = require('fs');
 const constants = require('./helpers/constants')
-const eventsHelper = require("../tests/helpers/eventsHelper");
-const txnHelper = require('./helpers/transactionSaver')
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
-const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const COUNCIL_1_PLACEHOLDER = "0xc0Ee98ac1a44B56fbe2669A3B3C006DEB6fDd0f9";
 const COUNCIL_2_PLACEHOLDER = "0x01d2D3da7a42F64e7Dc6Ae405F169836556adC86";
-const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
-const addresses = JSON.parse(rawdata);
 
 const _encodeAddOwnersFunction = (_accounts) => {
     
@@ -26,21 +22,11 @@ const _encodeAddOwnersFunction = (_accounts) => {
 }
 
 module.exports = async function(deployer) {
-    const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
-    const multiSigWallet = await IMultiSigWallet.at(MULTISIG_WALLET_ADDRESS);
-
-    let result = await multiSigWallet.submitTransaction(
-        MULTISIG_WALLET_ADDRESS, 
-        constants.EMPTY_BYTES,
+    
+    await txnHelper.submitAndExecute(
         _encodeAddOwnersFunction([COUNCIL_1_PLACEHOLDER, COUNCIL_2_PLACEHOLDER]),
-        0,
-        {gas: 8000000}
-    );
-
-    txIndex = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-
-    await multiSigWallet.confirmTransaction(txIndex, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndex, {gas: 8000000});
-    await txnHelper.saveTxnIndex("setupMultisigOwner", txIndex)   
+        MULTISIG_WALLET_ADDRESS,
+        "setupMultisigOwner"
+    )
 
 }

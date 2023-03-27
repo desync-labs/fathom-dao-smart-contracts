@@ -1,1 +1,2 @@
-/contracts/oraclize-api
+/contracts/common
+/contracts/dao/test

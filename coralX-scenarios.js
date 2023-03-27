@@ -23,80 +23,84 @@ module.exports = {
   ],
 
   transferTokenFromMultisigApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/transfer-tokens.js', '--network', 'apothem'],
   ],
 
   addOwnersToMultisigApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/setup-multisig-owners.js', '--network', 'apothem'],
   ],
 
   addCouncilStakesApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/setup_council_stakes.js', '--network', 'apothem'],
   ],
 
   createDexXDCPoolApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/create_pool_dex_xdc.js', '--network', 'apothem'],
   ],
 
   createDexPoolApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/create_pool_dex.js', '--network', 'apothem'],
   ],
   
   createProxyWalletApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/create_stablecoin_proxy_wallet.js', '--network', 'apothem'],
   ],
 
   openPositionApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/create_stablecoin_open_position.js', '--network', 'apothem'],
   ],
 
   createUpgradeApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/create-upgrade.js', '--network', 'apothem'],
   ],
 
   setupStableSwapApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/stableswap-setup.js', '--network', 'apothem'],
   ],
 
   deployStakingUpgradeApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/upgrades/1_deploy_staking_upgrade.js', '--network', 'apothem'],
   ],
 
   updateDailySwapLimitApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/stableswap-daily-limit-update.js', '--network', 'apothem'],
   ],
 
   updateMinTokenVotingBalance: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/update-voting-tokens-min-balance.js', '--network', 'apothem'],
   ],
 
   proposeProposalApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/propose-proposal.js', '--network', 'apothem'],
   ],
 
   queueProposalApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/queue-proposal.js', '--network', 'apothem'],
   ],
 
   executeProposalApothem: [
-    ['compile'],
     ['execute', '--path', 'scripts/units/execute-proposal.js', '--network', 'apothem'],
   ],
 
+  executeSwapTokensForExactETH: [
+    ['execute', '--path', 'scripts/units/swap-Tokens-For-Exact-ETH.js', '--network', 'apothem'],
+  ],
+
+  executeSwapExactTokensForTokens: [
+    ['execute', '--path', 'scripts/units/swap-Exact-Tokens-For-Tokens.js', '--network', 'apothem'],
+  ],
+
+  executeSwapExactETHForTokens: [
+    ['execute', '--path', 'scripts/units/swap-Exact-ETH-For-Tokens.js', '--network', 'apothem'],
+  ],
+
+  addLiquidityToPool: [
+    ['execute', '--path', 'scripts/units/add-liquidity-to-pool.js', '--network', 'apothem'],
+  ],
+
+  addLiquidityToXDCPool: [
+    ['execute', '--path', 'scripts/units/add-liquidity-to-xdc-pool.js', '--network', 'apothem'],
+  ],
 
   migrateAndConfigureForTests: [
     ['compile'],

@@ -2,7 +2,8 @@ const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 // constants
@@ -119,16 +120,16 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to directly remove or add an owner', async() => {
-            let errorMessage = "MultiSig: Only this wallet can use this funciton";
+            let errorMessage = "revert";
             initial_owners = await multiSigWallet.getOwners();
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.removeOwner(initial_owners[1], {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
             );
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.addOwners([accounts[3]], {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -142,9 +143,9 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to execute a transaction without enough signers', async() => {
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex1, {from: accounts[0]}),
                 errTypes.revert,
                 errorMessage
@@ -161,9 +162,9 @@ describe('MultiSig Wallet', () => {
 
             await multiSigWallet.revokeConfirmation(txIndex1, {from: accounts[1]});
 
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex1, {from: accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -190,9 +191,9 @@ describe('MultiSig Wallet', () => {
 
             await multiSigWallet.revokeConfirmation(txIndex3, {from: accounts[1]});
 
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex3, {from: accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -202,9 +203,9 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Fail xecute the transaction to remove third signer because min number of confirmations not reached', async() => {
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex2, {from: accounts[0]}),
                 errTypes.revert,
                 errorMessage

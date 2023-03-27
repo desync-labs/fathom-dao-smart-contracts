@@ -8,7 +8,7 @@ Fathom project staking, governance and treasury smart contracts for EVM compatib
 - node v16.4.0
 - npm v7.18.1
 - CoralX v0.2.0
-- Solidity =0.8.13 (solc)
+- Solidity =0.8.16 (solc)
 - Ganache CLI v6.12.2 (ganache-core: 2.13.2)
 
 ## Setup
@@ -53,8 +53,8 @@ $ npm run migrate-reset
 # Deploy to the apothem
 $ npm run migrate-reset-apothem
 
-# Deploy to the goerli
-$ npm run migrate-reset-goerli
+# Deploy to the sepolia
+$ npm run migrate-reset-sepolia
 
 # Deploy to the xdc
 $ npm run migrate-reset-xdc

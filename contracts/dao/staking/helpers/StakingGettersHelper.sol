@@ -1,5 +1,5 @@
-// Copyright SECURRENCY INC.
 // SPDX-License-Identifier: AGPL 3.0
+// Copyright Fathom 2022
 pragma solidity 0.8.16;
 
 import "./IStakingHelper.sol";
@@ -8,48 +8,34 @@ import "../interfaces/IStakingGetter.sol";
 import "../StakingStructs.sol";
 import "../../../common/access/AccessControl.sol";
 
+// solhint-disable not-rely-on-time
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     address private stakingContract;
+
+    error LockOpenedError();
+    error LockIdOutOfIndexError();
+    error LockIdCantBeZeroError();
+
     constructor(address _stakingContract, address admin) {
         stakingContract = _stakingContract;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        require(lockId <= locks.length, "out of index");
-        require(lockId > 0, "lockId cant be 0");
-        return locks[lockId - 1];
-    }
-
-    function getLocksLength(address account) public view override returns (uint256) {
+    function getLocksLength(address account) external view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         return locks.length;
     }
-    function getWeight() public view override returns (Weight memory) {
+
+    function getWeight() external view override returns (Weight memory) {
         return _getWeight();
     }
 
-    function getLock(address account, uint256 lockId)
-        public
-        view
-        override
-        returns (
-            uint128,
-            uint128,
-            uint64,
-            address,
-            uint256
-        )
-    {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        LockedBalance memory lock = locks[lockId - 1];
-        require(lockId <= locks.length, "out of index");
-        require(lockId > 0, "lockId cant be 0");
-        return (lock.amountOfToken, lock.positionStreamShares, lock.end, lock.owner,lock.amountOfVoteToken);
+    function getLock(address account, uint256 lockId) external view override returns (uint128, uint128, uint64, address, uint256) {
+        LockedBalance memory lock = getLockInfo(account, lockId);
+        return (lock.amountOfToken, lock.positionStreamShares, lock.end, lock.owner, lock.amountOfVoteToken);
     }
 
-    function getUserTotalDeposit(address account) public view override returns (uint256) {
+    function getUserTotalDeposit(address account) external view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         if (locks.length == 0) {
             return 0;
@@ -61,7 +47,7 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return totalDeposit;
     }
 
-    function getStreamClaimableAmount(uint256 streamId, address account) public view override returns (uint256) {
+    function getStreamClaimableAmount(uint256 streamId, address account) external view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         if (locks.length == 0) {
             return 0;
@@ -73,7 +59,7 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return totalRewards;
     }
 
-    function getUserTotalVotes(address account) public view override returns (uint256) {
+    function getUserTotalVotes(address account) external view override returns (uint256) {
         LockedBalance[] memory locks = _getAllLocks(account);
         if (locks.length == 0) {
             return 0;
@@ -85,12 +71,11 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return totalVotes;
     }
 
-    function getFeesForEarlyUnlock(uint256 lockId, address account) public view override returns (uint256) {
-        LockedBalance[] memory locks = _getAllLocks(account);
-        require(lockId <= locks.length, "out of index");
-        LockedBalance memory lock = locks[lockId - 1];
-        require(lockId > 0, "lockId cant be 0");
-        require(lock.end > block.timestamp, "lock opened, no penalty");
+    function getFeesForEarlyUnlock(uint256 lockId, address account) external view override returns (uint256) {
+        LockedBalance memory lock = getLockInfo(account, lockId);
+        if (lock.end <= block.timestamp) {
+            revert LockOpenedError();
+        }
 
         uint256 amount = lock.amountOfToken;
         uint256 lockEnd = lock.end;
@@ -99,11 +84,21 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return penalty;
     }
 
+    function getLockInfo(address account, uint256 lockId) public view override returns (LockedBalance memory) {
+        LockedBalance[] memory locks = _getAllLocks(account);
+        if (lockId > locks.length) {
+            revert LockIdOutOfIndexError();
+        }
+        if (lockId == 0) {
+            revert LockIdCantBeZeroError();
+        }
+        return locks[lockId - 1];
+    }
 
-    
-    function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
+    function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
         return IStakingHelper(stakingContract).getAllLocks(account);
     }
+
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
         uint256 maxLockPeriod = IStakingHelper(stakingContract).maxLockPeriod();
@@ -118,7 +113,8 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
             (weight.penaltyWeightMultiplier * (weight.maxWeightPenalty - weight.minWeightPenalty) * remainingTime) /
             maxLockPeriod);
     }
-    function _getWeight() internal view returns (Weight memory) {        
-           return IStakingStorage(stakingContract).weight();
+
+    function _getWeight() internal view returns (Weight memory) {
+        return IStakingStorage(stakingContract).weight();
     }
 }

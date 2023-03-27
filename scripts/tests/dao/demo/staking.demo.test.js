@@ -9,7 +9,8 @@ const blockchain = require("../../helpers/blockchain");
 const maxGasForTxn = 600000
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 const SYSTEM_ACC = accounts[0];
@@ -421,9 +422,9 @@ describe("Staking Test and Upgrade Test", () => {
 
         it("Should not unlock locked position before the end of the lock position's lock period - staker_1", async() => {
             
-            const errorMessage = "lock close";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingService.unlock(1, {from: staker_1}),
                 errTypes.revert,  
                 errorMessage

@@ -1,12 +1,8 @@
 const fs = require('fs');
 
-const eventsHelper = require("../tests/helpers/eventsHelper");
-
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const constants = require('./helpers/constants')
 
-const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
-const addresses = JSON.parse(rawdata);
 const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
 const addressesExternal = JSON.parse(rawdataExternal);
 const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
@@ -28,26 +24,11 @@ const _encodeUpdateDailySwapLimit = (newdailySwapLimit) =>{
 }
 
 module.exports = async function(deployer)  {
-    const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
-    const multiSigWallet = await IMultiSigWallet.at(MULTISIG_WALLET_ADDRESS);
-
-    const _updateDailySwapLimit = async(
-        newdailySwapLimit
-    ) => {
-        const result = await multiSigWallet.submitTransaction(
-            STABLE_SWAP_ADDRESS,
-            constants.EMPTY_BYTES,
-            _encodeUpdateDailySwapLimit(
-                newdailySwapLimit
-            ),0,{gas:8000000}
-        )
-
-        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-        await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
-        await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-            
-        await txnHelper.saveTxnIndex("stableSwapDailyLimitUpdate", tx)  
-    }
-
-    await _updateDailySwapLimit(DAILY_LIMIT)
+    await txnHelper.submitAndExecute(
+        _encodeUpdateDailySwapLimit(
+            DAILY_LIMIT
+        ),
+        STABLE_SWAP_ADDRESS,
+        "stableSwapDailyLimitUpdate"
+    )
 }

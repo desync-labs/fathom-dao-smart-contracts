@@ -4,6 +4,9 @@
 pragma solidity 0.8.16;
 
 import "./Governor.sol";
+import "./interfaces/IRelay.sol";
+import "./interfaces/ISupportingTokens.sol";
+import "./interfaces/IEmergencyStop.sol";
 import "./extensions/GovernorSettings.sol";
 import "./extensions/GovernorCountingSimple.sol";
 import "./extensions/GovernorVotes.sol";
@@ -13,6 +16,9 @@ import "../tokens/ERC20/IERC20.sol";
 import "../../common/SafeERC20.sol";
 
 contract MainTokenGovernor is
+    IRelay,
+    ISupportingTokens,
+    IEmergencyStop,
     Governor,
     GovernorSettings,
     GovernorCountingSimple,
@@ -24,6 +30,9 @@ contract MainTokenGovernor is
     mapping(address => bool) public isSupportedToken;
     address[] public listOfSupportedTokens;
 
+    error TokenSupported();
+    error TokenUnsupported();
+
     constructor(
         IVotes _token,
         TimelockController _timelock,
@@ -34,12 +43,40 @@ contract MainTokenGovernor is
         uint256 _proposalTimeDelay,
         uint256 _proposalLifetime
     )
-        Governor("MainTokenGovernor", _multiSig, 20, _proposalTimeDelay,_proposalLifetime)
+        Governor("MainTokenGovernor", _multiSig, 20, _proposalTimeDelay, _proposalLifetime)
         GovernorSettings(_initialVotingDelay, _votingPeriod, _initialProposalThreshold)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {}
+
+    /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relayERC20(address target, bytes calldata data) external virtual override onlyGovernance {
+        if (!isSupportedToken[target]) {
+            revert TokenUnsupported();
+        }
+        (bool success, bytes memory returndata) = target.call(data);
+        Address.verifyCallResult(success, returndata, "empty revert");
+    }
+
+    /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relayNativeToken(address target, uint256 value, bytes calldata data) external payable virtual override onlyGovernance {
+        if (isSupportedToken[target]) {
+            revert TokenSupported();
+        }
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        Address.verifyCallResult(success, returndata, "empty revert");
+    }
 
     function propose(
         address[] memory targets,
@@ -49,6 +86,7 @@ contract MainTokenGovernor is
     ) public override(Governor, IGovernor) returns (uint256) {
         return super.propose(targets, values, calldatas, description);
     }
+
     /**
      * @dev Cancelling of proposal can be done only through Multisig
      */
@@ -59,6 +97,45 @@ contract MainTokenGovernor is
         bytes32 descriptionHash
     ) public override onlyMultiSig returns (uint256) {
         return _cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    /**
+     * @dev A multisig can stop this contract. Once stopped we will have to migrate.
+     *     Once this function is called, the contract cannot be made live again.
+     */
+    function emergencyStop() public override onlyMultiSig {
+        _emergencyStop();
+        for (uint i = 0; i < listOfSupportedTokens.length; i++) {
+            address _token = listOfSupportedTokens[i];
+            uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
+            if (balanceInContract > 0) {
+                IERC20(_token).safeTransfer(msg.sender, balanceInContract);
+            }
+        }
+        if (address(this).balance > 0) {
+            (bool sent, ) = msg.sender.call{ value: (address(this).balance) }("");
+            if (!sent) {
+                revert FailedToSendEther();
+            }
+        }
+    }
+
+    /**
+     * @dev Adds supporting tokens so that if there are tokens then it can be transferred
+     *     Only Governance is able to access this function.
+     *     It has to go through proposal and successful voting for execution.
+     */
+    function addSupportingToken(address _token) public override onlyGovernance {
+        _addSupportedToken(_token);
+    }
+
+    /**
+     * @dev Removes supporting tokens
+     *      Only Governance is able to access this function.
+     *      It has to go through proposal and successful voting for execution.
+     */
+    function removeSupportingToken(address _token) public override onlyGovernance {
+        _removeSupportingToken(_token);
     }
 
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
@@ -85,50 +162,18 @@ contract MainTokenGovernor is
         return super.state(proposalId);
     }
 
-    /**
-     * @dev A multisig can stop this contract. Once stopped we will have to migrate.
-     *     Once this function is called, the contract cannot be made live again.
-     */
-    function emergencyStop() public onlyMultiSig{
-        _emergencyStop();
-        for(uint i = 0; i < listOfSupportedTokens.length;i++){
-            address _token = listOfSupportedTokens[i];
-            uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
-            if(balanceInContract > 0){
-                IERC20(_token).safeTransfer(msg.sender, balanceInContract);
-            }  
-        }
-        if (address(this).balance > 0){
-            (bool sent,) =   msg.sender.call{ value: (address(this).balance) }("");
-            require(sent, "Failed to send ether");
-        } 
-    }
-    /**
-     * @dev Adds supporting tokens so that if there are tokens then it can be transferred
-     *     Only Governance is able to access this function.
-     *     It has to go through proposal and successful voting for execution.
-    */
-    function addSupportingToken(address _token) public onlyGovernance {
-        _addSupportedToken(_token);
-    }
-
-    /**
-     * @dev Removes supporting tokens
-     *      Only Governance is able to access this function.
-     *      It has to go through proposal and successful voting for execution.
-    */
-    function removeSupportingToken(address _token) public onlyGovernance {
-        _removeSupportingToken(_token);
-    }
-
     function _addSupportedToken(address _token) internal {
-        require(!isSupportedToken[_token], "Token already exists");
+        if (isSupportedToken[_token]) {
+            revert TokenSupported();
+        }
         isSupportedToken[_token] = true;
         listOfSupportedTokens.push(_token);
     }
 
     function _removeSupportingToken(address _token) internal {
-        require(isSupportedToken[_token], "Token already doesnt exist");
+        if (!isSupportedToken[_token]) {
+            revert TokenUnsupported();
+        }
         isSupportedToken[_token] = false;
         for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             if (listOfSupportedTokens[i] == _token) {
@@ -138,38 +183,6 @@ contract MainTokenGovernor is
         }
         listOfSupportedTokens.pop();
     }
-    
-
-    /**
-     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
-     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
-     * in a governance proposal to recover tokens that was sent to the governor contract by mistake.
-     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
-     */
-    function relayERC20(
-        address target,
-        bytes calldata data
-    ) external virtual onlyGovernance {
-        require(isSupportedToken[target], "relayERC20: token not supported");
-        (bool success, bytes memory returndata) = target.call(data);
-        Address.verifyCallResult(success, returndata, "Governor: relayERC20 reverted without message");
-    }
-
-    /**
-     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
-     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
-     * in a governance proposal to recover Ether that was sent to the governor contract by mistake.
-     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
-     */
-    function relayNativeToken(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) external payable virtual onlyGovernance {
-        require(!isSupportedToken[target],"relayNativeToken: cant relay native token to supported token");
-        (bool success, bytes memory returndata) = target.call{ value: value }(data);
-        Address.verifyCallResult(success, returndata, "Governor: relayNativeToken reverted without message");
-    }
 
     function _execute(
         uint256 proposalId,
@@ -178,7 +191,9 @@ contract MainTokenGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
-        require(isConfirmed[proposalId], "MainTokenGovernor: Proposal not confirmed by council");
+        if (!isConfirmed[proposalId]) {
+            revert ProposalNotConfirmed();
+        }
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 

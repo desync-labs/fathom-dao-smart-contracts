@@ -1,10 +1,8 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
-const txnHelper = require('./helpers/transactionSaver')
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
-const eventsHelper = require("../tests/helpers/eventsHelper");
 
-const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const STREAM_REWARD_TOKEN_ADDRESS = ""
@@ -45,63 +43,24 @@ const _encodeCreateStreamFunction = (
 }
 
 module.exports = async function(deployer) {
-    const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
-    const multiSigWallet = await IMultiSigWallet.at(MULTISIG_WALLET_ADDRESS);
-    let approveStreamRewardsTxnIdx;
-    let createStreamRewardsTxnIdx;
-
-    const _approveStreamRewards = async(
-        _account,
-        _amount
-    ) => {
-        const result = await multiSigWallet.submitTransaction(
-            STREAM_REWARD_TOKEN_ADDRESS,
-            constants.EMPTY_BYTES,
-            _encodeApproveFunction(
-                _account,
-                _amount
-            ),
-            0,
-            {gas: 8000000}
-        )
-
-        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-        await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
-        await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-        approveStreamRewardsTxnIdx = tx;
-    }
-
-    const _createStreamRewards = async(
-        _streamId, _rewardTokenAmount
-    ) => {
-        const result = await multiSigWallet.submitTransaction(
+    
+    await txnHelper.submitAndExecute(
+        _encodeApproveFunction(
             addresses.staking,
-            constants.EMPTY_BYTES,
-            _encodeCreateStreamFunction(
-                _streamId,
-                _rewardTokenAmount
-            ),
-            0,
-            {gas: 8000000}
-        )
-
-        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-        await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
-        await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-        createStreamRewardsTxnIdx = tx;
-    }
-
-    await _approveStreamRewards(
-        addresses.staking,
-        REWARD_PROPOSAL_AMOUNT
+            REWARD_PROPOSAL_AMOUNT
+        ),
+        STREAM_REWARD_TOKEN_ADDRESS,
+        "approveStreamRewardsTxn"
     )
 
-    await _createStreamRewards(
-        STREAM_ID,
-        REWARD_PROPOSAL_AMOUNT
+    await txnHelper.submitAndExecute(
+        _encodeCreateStreamFunction(
+            STREAM_ID,
+            REWARD_PROPOSAL_AMOUNT),
+            addresses.staking,
+        "createStreamRewardsTxn"
     )
-    await txnHelper.saveTxnIndex("approveStreamRewardsTxn", approveStreamRewardsTxnIdx)   
-    await txnHelper.saveTxnIndex("createStreamRewardsTxn", createStreamRewardsTxnIdx)   
+
 
 }
 

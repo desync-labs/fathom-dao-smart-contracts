@@ -1,9 +1,10 @@
 const fs = require('fs');
 const constants = require('./helpers/constants') 
-const txnHelper = require('./helpers/transactionSaver')
+const txnSaver = require('./helpers/transactionSaver')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
@@ -30,29 +31,12 @@ const _encodeUpgradeFunction = (_proxy, _impl) => {
 
 
 module.exports = async function(deployer) {
-    const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
-    const multiSigWallet = await IMultiSigWallet.at(MULTISIG_WALLET_ADDRESS);
-
-    const _upgrade = async(
-        _proxy,
-        _impl
-    ) => {
-        const result = await multiSigWallet.submitTransaction(
-            PROXY_ADMIN,
-            constants.EMPTY_BYTES,
-            _encodeUpgradeFunction(
-                _proxy,
-                _impl
-            ),0,{gas:8000000}
-        )
-        const tx = eventsHelper.getIndexedEventArgs(result, constants.SUBMIT_TRANSACTION_EVENT)[0];
-        await multiSigWallet.confirmTransaction(tx, {gas: 8000000});
-        await multiSigWallet.executeTransaction(tx, {gas: 8000000});
-        await txnHelper.saveTxnIndex("upgradeTxn",tx)
-    }
-
-    await _upgrade(
-        PROXY,
-        IMPLEMENTATION_ADDRESS
+    await txnHelper.submitAndExecute(
+        _encodeUpgradeFunction(
+            PROXY,
+            IMPLEMENTATION_ADDRESS
+        ),
+        PROXY_ADMIN,
+        "upgradeTxn"
     )
 }

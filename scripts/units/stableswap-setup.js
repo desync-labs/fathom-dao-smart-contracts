@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
-const txnHelper = require('./helpers/transactionSaver')
+const txnSaver = require('./helpers/transactionSaver')
 const constants = require('./helpers/constants')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
@@ -124,8 +124,8 @@ module.exports = async function(deployer) {
     let txIndexApproveFXD = await approveFXD();
     let txIndexDepositUSD = await depositUSD();
     let txIndexDepositFXD = await depositFXD();
-    await txnHelper.saveTxnIndex("txIndexApproveUSD",txIndexApproveUSD)
-    await txnHelper.saveTxnIndex("txIndexApproveFXD",txIndexApproveFXD)
-    await txnHelper.saveTxnIndex("txIndexDepositUSD",txIndexDepositUSD)
-    await txnHelper.saveTxnIndex("txIndexDepositFXD",txIndexDepositFXD)
+    await txnSaver.saveTxnIndex("txIndexApproveUSD",txIndexApproveUSD)
+    await txnSaver.saveTxnIndex("txIndexApproveFXD",txIndexApproveFXD)
+    await txnSaver.saveTxnIndex("txIndexDepositUSD",txIndexDepositUSD)
+    await txnSaver.saveTxnIndex("txIndexDepositFXD",txIndexDepositFXD)
 }

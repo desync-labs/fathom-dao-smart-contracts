@@ -15,11 +15,10 @@ abstract contract GovernorSettings is Governor {
     event VotingPeriodSet(uint256 oldVotingPeriod, uint256 newVotingPeriod);
     event ProposalThresholdSet(uint256 oldProposalThreshold, uint256 newProposalThreshold);
 
-    constructor(
-        uint256 initialVotingDelay,
-        uint256 initialVotingPeriod,
-        uint256 initialProposalThreshold
-    ) {
+    error ZeroVotePeriod();
+    error ZeroThreshold();
+
+    constructor(uint256 initialVotingDelay, uint256 initialVotingPeriod, uint256 initialProposalThreshold) {
         _setVotingDelay(initialVotingDelay);
         _setVotingPeriod(initialVotingPeriod);
         _setProposalThreshold(initialProposalThreshold);
@@ -28,21 +27,21 @@ abstract contract GovernorSettings is Governor {
     /**
      * @dev Has to go through proposals and successful voting to update by Governance
      */
-    function setVotingDelay(uint256 newVotingDelay) public virtual onlyGovernance {
+    function setVotingDelay(uint256 newVotingDelay) external virtual onlyGovernance {
         _setVotingDelay(newVotingDelay);
     }
 
     /**
      * @dev Has to go through proposals and successful voting to update by Governance
      */
-    function setVotingPeriod(uint256 newVotingPeriod) public virtual onlyGovernance {
+    function setVotingPeriod(uint256 newVotingPeriod) external virtual onlyGovernance {
         _setVotingPeriod(newVotingPeriod);
     }
 
     /**
      * @dev Has to go through proposals and successful voting to update by Governance
      */
-    function setProposalThreshold(uint256 newProposalThreshold) public virtual onlyGovernance {
+    function setProposalThreshold(uint256 newProposalThreshold) external virtual onlyGovernance {
         _setProposalThreshold(newProposalThreshold);
     }
 
@@ -64,14 +63,18 @@ abstract contract GovernorSettings is Governor {
     }
 
     function _setVotingPeriod(uint256 newVotingPeriod) internal virtual {
-        require(newVotingPeriod > 0, "GovernorSettings: voting period too low");
+        if (newVotingPeriod == 0) {
+            revert ZeroVotePeriod();
+        }
         emit VotingPeriodSet(_votingPeriod, newVotingPeriod);
         _votingPeriod = newVotingPeriod;
     }
 
     function _setProposalThreshold(uint256 newProposalThreshold) internal virtual {
+        if (newProposalThreshold == 0) {
+            revert ZeroThreshold();
+        }
         emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
-        require(newProposalThreshold > 0, "_setProposalThreshold: Threshold for proposal cant be zero");
         _proposalThreshold = newProposalThreshold;
     }
 }
