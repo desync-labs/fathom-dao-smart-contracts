@@ -14,6 +14,7 @@ import "../../../common/SafeERC20Staking.sol";
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     using SafeERC20Staking for IERC20;
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
+    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
 
     error NotPaused();
     error VaultNotSupported(address _vault);
@@ -64,6 +65,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function initializeStaking(
         address _admin,
         address _vault,
+        address _treasury,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
@@ -73,15 +75,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 _minLockPeriod
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
-        _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
+        _initializeStaking(_mainToken, _voteToken,_treasury, _weight, _vault, _maxLocks,voteCoef.voteShareCoef, voteCoef.voteLockCoef);
         if (!IVault(vault).isSupportedToken(_mainToken)) {
             revert UnsupportedToken();
         }
         pausableInit(1, _admin);
         _grantRole(STREAM_MANAGER_ROLE, _admin);
+        _grantRole(TREASURY_ROLE, _treasury);
         maxLockPeriod = ONE_YEAR;
         minLockPeriod = _minLockPeriod;
-        treasury = _admin;
     }
 
     /**
@@ -187,21 +189,24 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
 
         stream.status = StreamStatus.ACTIVE;
-        uint256 updatedRewardTokenAmount = rewardTokenAmount - stream.percentToTreasury * rewardTokenAmount / REWARDS_TO_TREASURY_DENOMINATOR;
-        stream.rewardDepositAmount = updatedRewardTokenAmount;
+        uint256 rewardsTokenToTreasury = stream.percentToTreasury * rewardTokenAmount / REWARDS_TO_TREASURY_DENOMINATOR;
         
-        _updateStreamsRewardsSchedules(streamId, updatedRewardTokenAmount);
+        stream.rewardDepositAmount = rewardTokenAmount - rewardsTokenToTreasury;
         
+        if(stream.rewardDepositAmount < stream.maxDepositAmount){
+            _updateStreamsRewardsSchedules(streamId, stream.rewardDepositAmount);
+        }
+
         if (stream.schedule.reward[0] != stream.rewardDepositAmount) {
             revert BadStart();
         }
 
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, stream.tau);
-        IERC20(stream.rewardToken).safeTransfer(treasury, rewardTokenAmount - updatedRewardTokenAmount);
-        _transfer(updatedRewardTokenAmount, stream.rewardToken);
+        IERC20(stream.rewardToken).safeTransfer(treasury, rewardsTokenToTreasury);
+        _transfer(stream.rewardDepositAmount, stream.rewardToken);
     }
 
-    /**
+    /*
      * @dev Proposed stream can be cancelled by Stream Manager, which at the time of deployment is Multisig
      */
     function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
@@ -386,11 +391,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Penalty accrued due to early unlocking can be withdrawn to some address, most likely the treasury.
      *      Address with TREASURY_ROLE can access this function, which is Multisig at time of deployment
      */
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawPenalty() external override pausable(1) onlyRole(TREASURY_ROLE) {
         if (totalPenaltyBalance == 0) {
             revert ZeroPenalty();
         }
-        _withdrawPenalty(penaltyReceiver);
+        _withdrawPenalty(treasury);
     }
 
     /**
@@ -419,6 +424,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (newTreasury == address(0)){
             revert ZeroAddress();
         }
+        _revokeRole(TREASURY_ROLE, treasury);
+        _grantRole(TREASURY_ROLE, newTreasury);
         treasury = newTreasury;
     }
 

@@ -285,6 +285,25 @@ describe('MultiSig Wallet', () => {
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
     });
+
+    describe("Maximum Lifetime", async() => {
+        it("Should revert for maximum lifetime", async() => {
+            let errorMessage = "revert";
+            const SEVENTY_DAYS = 70 * 86400;
+            await shouldRevertAndHaveSubstring(
+                multiSigWallet.submitTransaction(
+                    multiSigWallet.address, 
+                    EMPTY_BYTES, 
+                    encoded_add_owners_function,
+                    SEVENTY_DAYS,
+                    {"from": accounts[0]}
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+        
+    })
 });
 
 

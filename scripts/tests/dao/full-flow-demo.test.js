@@ -75,11 +75,8 @@ const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'withdrawPenalty',
         type: 'function',
-        inputs: [{
-            type: 'address',
-            name: 'penaltyReceiver'
-        }]
-    }, [_account]);
+        inputs: []
+    }, []);
 
     return toRet;
 }

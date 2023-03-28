@@ -170,11 +170,8 @@ const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'withdrawPenalty',
         type: 'function',
-        inputs: [{
-            type: 'address',
-            name: 'penaltyReceiver'
-        }]
-    }, [_account]);
+        inputs: []
+    }, []);
 
     return toRet;
 }
@@ -672,6 +669,10 @@ describe("Staking Test", () => {
             await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(1,RewardProposalAmountForAStream, {from: stream_rewarder_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('4', 'ether');// 800 * 50/10000 = 4
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward1.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(),ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it("Should propose a second stream, stream - 2", async() => {
@@ -742,6 +743,9 @@ describe("Staking Test", () => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(2,RewardProposalAmountForAStream, {from: stream_rewarder_2});
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('5', 'ether');// 1000 * 50/10000 = 5
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward2.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(), ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it('Setup Locks for staker_3 and staker_4 reward tests', async() => {

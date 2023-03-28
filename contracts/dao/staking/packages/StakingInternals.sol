@@ -25,15 +25,17 @@ contract StakingInternals is RewardsInternals {
     function _initializeStaking(
         address _mainToken,
         address _voteToken,
+        address _treasury,
         Weight memory _weight,
         address _vault,
         uint256 _maxLockPositions,
         uint256 _voteShareCoef,
         uint256 _voteLockCoef
     ) internal {
-        _verifyStaking(_mainToken, _voteToken, _weight, _vault, _voteLockCoef);
+        _verifyStaking(_mainToken, _voteToken,_treasury, _weight, _vault, _voteLockCoef);
         mainToken = _mainToken;
         voteToken = _voteToken;
+        treasury = _treasury;
         weight = _weight;
         vault = _vault;
         maxLockPositions = _maxLockPositions;
@@ -263,7 +265,7 @@ contract StakingInternals is RewardsInternals {
     }
 
     // solhint-disable code-complexity
-    function _verifyStaking(address _mainToken, address _voteToken, Weight memory _weight, address _vault, uint256 _voteLockCoef) internal pure {
+    function _verifyStaking(address _mainToken,address _voteToken,address _treasury,Weight memory _weight,address _vault,uint256 _voteLockCoef) internal pure {
         if (_mainToken == address(0x00)) {
             revert ZeroAddress();
         }
@@ -271,6 +273,9 @@ contract StakingInternals is RewardsInternals {
             revert ZeroAddress();
         }
         if (_vault == address(0x00)) {
+            revert ZeroAddress();
+        }
+        if (_treasury == address(0x00)) {
             revert ZeroAddress();
         }
         if (_weight.maxWeightShares <= _weight.minWeightShares) {

@@ -10,6 +10,7 @@ interface IStakingHandler {
     function initializeStaking(
         address _admin,
         address _vault,
+        address _treasury,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
@@ -54,7 +55,7 @@ interface IStakingHandler {
 
     function withdrawAllStreams() external;
 
-    function withdrawPenalty(address penaltyReceiver) external;
+    function withdrawPenalty() external;
 
     function updateVault(address _vault) external;
 

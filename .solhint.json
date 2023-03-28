@@ -3,7 +3,7 @@
   "plugins": [],
   "rules": {
     "compiler-version": ["error","0.8.16"],
-    "max-line-length": ["error", 155],
+    "max-line-length": ["error", 160],
     "reason-string": ["error", {"maxLength": 96}],
     "func-visibility": ["error", {"ignoreConstructors": true}],
     "not-rely-on-time": "error",
