@@ -55,7 +55,7 @@ contract MultiSigWallet is IMultiSigWallet {
     error TargetCodeChanged();
     error OwnerAlreadyExists();
     error TxNotConfirmed();
-    error LifetimeMaximumNotMet();
+    error LifetimeMaximumExceeded();
 
     modifier onlyOwnerOrGov() {
         if (!isOwner[msg.sender] && governor != msg.sender) {
@@ -124,7 +124,7 @@ contract MultiSigWallet is IMultiSigWallet {
         }
 
         if(_lifetime > MAXIMUM_LIFETIME){
-            revert LifetimeMaximumNotMet();
+            revert LifetimeMaximumExceeded();
         }
 
         if (!_to.isContract()) {

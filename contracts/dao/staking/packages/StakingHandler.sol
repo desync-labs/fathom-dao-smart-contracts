@@ -351,18 +351,25 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     /**
-     * @dev Disregard rewards for emergency unlock and withdraw
+     * @dev In case of emergency, unlock your tokens and withdraw your rewards.
+     * @notice This can be only executed only if the contract is at paused state.
      */
     function emergencyUnlockAndWithdraw() external override {
         if (paused == 0) {
             revert NotPaused();
         }
+        User storage userAccount = users[msg.sender];
         uint256 numberOfLocks = locks[msg.sender].length;
         for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
+            _moveAllStreamRewardsToPending(msg.sender, lockId);
             uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
             _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
-        _withdraw(MAIN_STREAM);
+        for (uint256 i; i < streams.length; i++) {
+            if (userAccount.pendings[i] != 0  && streams[i].status == StreamStatus.ACTIVE) {
+                    _withdraw(i);
+                }
+        }
     }
 
     /**
