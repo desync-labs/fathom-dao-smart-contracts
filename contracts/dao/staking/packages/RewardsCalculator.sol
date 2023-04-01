@@ -8,7 +8,7 @@ import "../../../common/math/FullMath.sol";
 
 // solhint-disable not-rely-on-time
 contract RewardsCalculator is IRewardsHandler {
-    uint256 public constant MAXIMUM_PERCENT_TO_TREASURY = 5000; //10000th
+    uint256 public constant MAXIMUM_PERCENT_TO_TREASURY = 10000; // equal to denominator
     error BadOwnerError();
     error BadRewardTokenError();
     error NoMinDepositError();
@@ -67,7 +67,7 @@ contract RewardsCalculator is IRewardsHandler {
         if (tau == 0) {
             revert BadTauError();
         }
-        if (percentToTreasury > MAXIMUM_PERCENT_TO_TREASURY){
+        if (percentToTreasury > MAXIMUM_PERCENT_TO_TREASURY) {
             revert BadPercentToTreasuryError();
         }
         for (uint256 i = 1; i < scheduleTimes.length; i++) {

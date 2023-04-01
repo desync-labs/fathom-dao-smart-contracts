@@ -123,7 +123,7 @@ contract MultiSigWallet is IMultiSigWallet {
             revert LifetimeMinimumNotMet();
         }
 
-        if(_lifetime > MAXIMUM_LIFETIME){
+        if (_lifetime > MAXIMUM_LIFETIME) {
             revert LifetimeMaximumExceeded();
         }
 

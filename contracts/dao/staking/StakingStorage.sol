@@ -57,5 +57,4 @@ contract StakingStorage {
     ///Mapping (user => LockedBalance) to keep locking information for each user
     mapping(address => LockedBalance[]) internal locks;
     mapping(uint256 => uint256) public streamTotalUserPendings;
-    
 }

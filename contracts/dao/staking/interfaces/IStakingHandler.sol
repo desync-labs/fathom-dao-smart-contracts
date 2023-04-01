@@ -68,5 +68,6 @@ interface IStakingHandler {
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
 
     function setMaxLockPositions(uint256 newMaxLockPositions) external;
+
     function setTreasuryAddress(address newTreasury) external;
 }
