@@ -466,7 +466,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (lockPeriod < minLockPeriod) {
             revert MinLockPeriodNotMet();
         }
-        if (locks[account].length > maxLockPositions) {
+        if (locks[account].length >= maxLockPositions) {
             revert MaxLockPositionsReached();
         }
         if (amount == 0) {
