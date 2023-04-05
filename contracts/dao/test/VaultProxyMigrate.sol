@@ -2,8 +2,8 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 pragma solidity 0.8.16;
-import "./transparent/TransparentUpgradeableProxy.sol";
+import "../../common/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract VaultProxy is TransparentUpgradeableProxy {
+contract VaultProxyMigrate is TransparentUpgradeableProxy {
     constructor(address _logic, address admin_, bytes memory _data) payable TransparentUpgradeableProxy(_logic, admin_, _data) {}
 }

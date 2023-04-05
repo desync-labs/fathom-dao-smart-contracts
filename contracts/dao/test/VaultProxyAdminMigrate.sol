@@ -2,6 +2,6 @@
 // Original Copyright Aurora
 // Copyright Fathom 2022
 pragma solidity 0.8.16;
-import "./transparent/ProxyAdmin.sol";
+import "../../common/proxy/transparent/ProxyAdmin.sol";
 
-contract VaultProxyAdmin is ProxyAdmin {}
+contract VaultProxyAdminMigrate is ProxyAdmin {}
