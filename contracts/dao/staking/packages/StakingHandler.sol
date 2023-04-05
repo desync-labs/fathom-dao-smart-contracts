@@ -48,7 +48,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error ZeroAmount();
     error NotLockOwner();
     error BadRewardsAmount();
-    
 
     constructor() {
         _disableInitializers();
@@ -205,7 +204,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      */
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external override pausable(1) {
         Stream storage stream = streams[streamId];
-        _verifyStream(stream, rewardTokenAmount);
+        _verifyStream(stream);
 
         IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
 
@@ -224,6 +223,13 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
         if (stream.schedule.reward[0] != stream.rewardDepositAmount) {
             revert BadStart();
+        }
+
+        if (stream.rewardDepositAmount > stream.maxDepositAmount) {
+            revert RewardsTooHigh();
+        }
+        if (stream.rewardDepositAmount < stream.minDepositAmount) {
+            revert RewardsTooLow();
         }
 
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, stream.tau);
@@ -379,9 +385,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     /**
-     * @dev In case of emergency, unlock your tokens and withdraw all your rewards you have already claimed.
-     * @notice This function does neglects all the rewards yet to be claimed in emergency
-     * @notice This can be only executed only if the contract is at paused state.
+     * @dev In case of emergency, unlock your tokens and withdraw all your position
+     * @notice This function neglects all the rewards
+     * @notice This can be executed only if the contract is at paused state.
      * @notice This function can only be called if VaultContract is not compromised and vault is not at paused state.
      */
     function emergencyUnlockAndWithdraw() external override {
@@ -391,19 +397,13 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (IVault(vault).migrated()) {
             revert VaultMigrated(vault);
         }
-
-        User storage userAccount = users[msg.sender];
+        //unlock all locks
         uint256 numberOfLocks = locks[msg.sender].length;
         for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
             uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
             _unlock(stakeValue, stakeValue, lockId, msg.sender);
         }
-        //withdraw if any rewards are already claimed and pending to be withdrawn.
-        for (uint256 i; i < streams.length; i++) {
-            if (userAccount.pendings[i] != 0 && streams[i].status == StreamStatus.ACTIVE) {
-                _withdraw(i);
-            }
-        }
+        _withdraw(MAIN_STREAM);
     }
 
     /**
@@ -495,7 +495,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IVault(vault).deposit(_token, _amount);
     }
 
-    function _verifyStream(Stream memory stream, uint256 rewardTokenAmount) internal view {
+    function _verifyStream(Stream memory stream) internal view {
         if (stream.status != StreamStatus.PROPOSED) {
             revert NotProposed();
         }
@@ -504,13 +504,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         if (stream.owner != msg.sender) {
             revert NotOwner();
-        }
-
-        if (rewardTokenAmount > stream.maxDepositAmount) {
-            revert RewardsTooHigh();
-        }
-        if (rewardTokenAmount < stream.minDepositAmount) {
-            revert RewardsTooLow();
         }
     }
 
