@@ -206,8 +206,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         Stream storage stream = streams[streamId];
         _verifyStream(stream);
 
-        IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
-
         stream.status = StreamStatus.ACTIVE;
 
         if (rewardTokenAmount < REWARDS_TO_TREASURY_DENOMINATOR) {
@@ -234,6 +232,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, stream.tau);
 
+        IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
         if (rewardsTokenToTreasury > 0) {
             IERC20(stream.rewardToken).safeTransfer(treasury, rewardsTokenToTreasury);
         }
