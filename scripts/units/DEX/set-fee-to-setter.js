@@ -20,7 +20,7 @@ const _encodeSetFeeToSetter = (_feeToSetter) => {
 
 
 module.exports = async function(deployer) {
-
+    
     await txnHelper.submitAndExecute(
         _encodeSetFeeToSetter(FEE_TO),
         FEE_TO_SETTER,

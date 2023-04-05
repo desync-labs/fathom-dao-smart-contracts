@@ -26,7 +26,7 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
-
+const percentToTreasury = 50
 
 const _createVoteWeights = (
     voteShareCoef,
@@ -96,6 +96,7 @@ const _convertToEtherBalance = (balance) => {
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -111,6 +112,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -130,6 +135,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -164,11 +170,8 @@ const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'withdrawPenalty',
         type: 'function',
-        inputs: [{
-            type: 'address',
-            name: 'penaltyReceiver'
-        }]
-    }, [_account]);
+        inputs: []
+    }, []);
 
     return toRet;
 }
@@ -616,6 +619,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_1,
                 _streamReward1Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -628,6 +632,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_1,
                         _streamReward1Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -647,6 +652,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_1,
                 streamReward1Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -663,6 +669,10 @@ describe("Staking Test", () => {
             await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(1,RewardProposalAmountForAStream, {from: stream_rewarder_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('4', 'ether');// 800 * 50/10000 = 4
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward1.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(),ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it("Should propose a second stream, stream - 2", async() => {
@@ -685,6 +695,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_2,
                 _streamReward2Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -697,6 +708,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_2,
                         _streamReward2Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -716,6 +728,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_2,
                 streamReward2Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -730,6 +743,9 @@ describe("Staking Test", () => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(2,RewardProposalAmountForAStream, {from: stream_rewarder_2});
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('5', 'ether');// 1000 * 50/10000 = 5
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward2.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(), ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it('Setup Locks for staker_3 and staker_4 reward tests', async() => {

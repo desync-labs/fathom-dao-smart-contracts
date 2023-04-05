@@ -9,6 +9,7 @@ interface IRewardsHandler {
     function validateStreamParameters(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] calldata scheduleTimes,

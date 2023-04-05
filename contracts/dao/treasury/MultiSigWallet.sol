@@ -33,6 +33,8 @@ contract MultiSigWallet is IMultiSigWallet {
     mapping(address => EnumerableSet.UintSet) internal confirmedTransactionsByOwner;
 
     uint256 public constant MINIMUM_LIFETIME = 86400; //oneDay
+    //Most common used lifetime is 30 days, Maximum lifetime is 60 days which allows for more complex transactions to proceed with ample time
+    uint256 public constant MAXIMUM_LIFETIME = 60 * 86400; //60Days
     uint256 public constant MAX_OWNER_COUNT = 50;
 
     error TxDoesNotExist();
@@ -53,6 +55,7 @@ contract MultiSigWallet is IMultiSigWallet {
     error TargetCodeChanged();
     error OwnerAlreadyExists();
     error TxNotConfirmed();
+    error LifetimeMaximumExceeded();
 
     modifier onlyOwnerOrGov() {
         if (!isOwner[msg.sender] && governor != msg.sender) {
@@ -118,6 +121,10 @@ contract MultiSigWallet is IMultiSigWallet {
     ) {
         if (_lifetime < MINIMUM_LIFETIME && _lifetime > 0) {
             revert LifetimeMinimumNotMet();
+        }
+
+        if (_lifetime > MAXIMUM_LIFETIME) {
+            revert LifetimeMaximumExceeded();
         }
 
         if (!_to.isContract()) {

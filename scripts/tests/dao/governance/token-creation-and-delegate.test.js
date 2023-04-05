@@ -1,3 +1,4 @@
+const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
 const {
@@ -31,7 +32,23 @@ const _encodeConfirmation = async (_proposalId) => {
 const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
 const STAKER_1 = accounts[5];
 const STAKER_2 = accounts[6];
+const DELEGATOR_1 = accounts[3];
+const DELEGATOR_2 = accounts[4];
+const DELEGATEE_1 = accounts[7]
+const DELEGATEE_2 = accounts[8]
+const TO_MINT_AND_DELEGATE = web3.utils.toWei('10000', 'ether')
+const _encodeGrantMinterRole=(_account) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'grantMinterRole',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_minter'
+        }]
+    }, [_account]);
 
+    return toRet;
+}
 const _encodeTransferFunction = (_account) => {
     // encoded transfer function call for the main token.
 
@@ -372,5 +389,69 @@ describe('Token Creation Through Governance', () => {
             expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("7");
         })
     });
+
+    describe("#ERC20Votes-mint-delegate-burn-check", async() => {
+        it('Grant Minter Role to deployer', async() =>{
+            const _grantMinterRole = async(
+                _account
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vMainToken.address,
+                    EMPTY_BYTES,
+                    _encodeGrantMinterRole(
+                        _account
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _grantMinterRole(accounts[0])
+        })
+
+        it('Mint Tokens to accounts Staker 1 and staker 2', async() => {
+            await vMainToken.mint(DELEGATOR_1,TO_MINT_AND_DELEGATE)
+            await vMainToken.mint(DELEGATOR_2,TO_MINT_AND_DELEGATE)
+        })
+
+        it('Should revert transfer if holder is not allowlisted to transfer', async() => {
+
+            let errorMessage = "revert";
+
+            await shouldRevertAndHaveSubstring(
+                vMainToken.transfer(
+                    accounts[2],
+                    "1",
+                    {from: DELEGATOR_1}
+                ),
+                errTypes.revert,
+                errorMessage
+            ); 
+        });
+
+        it('Delegate Vote Tokens to accounts Staker 1 and staker 2', async() => {
+            await vMainToken.delegate(DELEGATEE_1, {from: DELEGATOR_1})
+            await vMainToken.delegate(DELEGATEE_2, {from: DELEGATOR_2})
+            expect((await vMainToken.getVotes(DELEGATEE_1)).toString()).to.equal(TO_MINT_AND_DELEGATE)
+            expect((await vMainToken.getVotes(DELEGATEE_2)).toString()).to.equal(TO_MINT_AND_DELEGATE)
+        })
+
+        it('Burn Vote Tokens of Delegatee', async() => {
+            const ZERO_TOKEN_AMOUNT = web3.utils.toWei('0','ether')
+            await vMainToken.burn(DELEGATOR_1, TO_MINT_AND_DELEGATE)
+            await vMainToken.burn(DELEGATOR_2, TO_MINT_AND_DELEGATE)
+            expect((await vMainToken.getVotes(DELEGATEE_1)).toString()).to.equal(ZERO_TOKEN_AMOUNT)
+            expect((await vMainToken.getVotes(DELEGATEE_2)).toString()).to.equal(ZERO_TOKEN_AMOUNT)
+            expect((await vMainToken.getVotes(DELEGATOR_1)).toString()).to.equal(ZERO_TOKEN_AMOUNT)
+            expect((await vMainToken.getVotes(DELEGATOR_2)).toString()).to.equal(ZERO_TOKEN_AMOUNT)
+        })
+        
+    })
 });
 

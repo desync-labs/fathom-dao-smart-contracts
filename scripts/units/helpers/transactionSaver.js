@@ -1,6 +1,14 @@
 const fs = require('fs');
 
-const rawdata = fs.readFileSync('../../../config/newly-generated-transaction-index.json');
+let rawdata;
+if (fs.existsSync('../../../config/newly-generated-transaction-index.json')) {
+  rawdata = fs.readFileSync('../../../config/newly-generated-transaction-index.json');
+} else {
+  // create new file
+  fs.writeFileSync('../../../config/newly-generated-transaction-index.json', '{}');
+  rawdata = fs.readFileSync('../../../config/newly-generated-transaction-index.json');
+}
+
 const constants = require('./constants')
 
 async function saveTxnIndex(
