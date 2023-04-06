@@ -5,7 +5,7 @@ const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
-const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
+const addressesConfig = require('../../config/config.js')
 
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED
@@ -15,9 +15,9 @@ const T_TOTAL_TO_APPROVE = web3.utils.toWei('30000000', 'ether');
 // this is how much to stake for one council . Right now 10KK
 const T_TO_STAKE = web3.utils.toWei('10000000', 'ether');
 
-const COUNCIL_1 = "0xE82C380C6Ca0306C61454569e84e020d68B063EF";
-const COUNCIL_2 = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7";
-const COUNCIL_3 = "0xFa869165D4fB9DB1041eBc3E8D976847372FcF91";
+const COUNCIL_1 = addressesConfig.COUNCIL_1;
+const COUNCIL_2 = addressesConfig.COUNCIL_2;
+const COUNCIL_3 = addressesConfig.COUNCIL_3;
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);

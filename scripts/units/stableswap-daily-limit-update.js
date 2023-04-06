@@ -3,9 +3,9 @@ const fs = require('fs');
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const constants = require('./helpers/constants')
 
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
-const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
+
+const addressesConfig = require('../../config/config.js')
+const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
 //const STABLE_SWAP_ADDRESS = "" //SET
 const DAILY_LIMIT = web3.utils.toWei('100000','ether') //SET
 

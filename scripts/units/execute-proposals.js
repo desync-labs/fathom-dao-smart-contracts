@@ -7,8 +7,8 @@ const constants = require('./helpers/constants')
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../config/config.js')
 //SET VALUE AS HOW MUCH ETH YOU WANT TO SPEND FOR THE WHOLE TRANSACTION(msg.value)
 const value = constants.EMPTY_BYTES;
 
@@ -79,7 +79,7 @@ module.exports = async function(deployer) {
         _descriptionHash
     ) => {
         const result = await multiSigWallet.submitTransaction(
-            addressesExternal.MAIN_TOKEN_GOVERNOR_ADDRESS,
+            addressesConfig.MAIN_TOKEN_GOVERNOR_ADDRESS,
             value,
             _encodeExecuteProposal(
                 _targets,

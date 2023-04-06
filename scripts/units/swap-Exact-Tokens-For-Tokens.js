@@ -8,8 +8,8 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../config/config.js')
 
 const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
 const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
@@ -17,7 +17,7 @@ const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
 const AMOUNT_IN_TOKEN_A = '2'
 const SLIPPAGE = 0.05
 
-const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
+const DEX_ROUTER_ADDRESS = addressesConfig.DEX_ROUTER_ADDRESS
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',
@@ -80,7 +80,7 @@ module.exports = async function(deployer) {
 
     
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    const uniswapRouter = await IUniswapRouter.at(addressesConfig.DEX_ROUTER_ADDRESS)
     //amounts In is the fixed amount you want to give to the uniswap pool
     const amountIn = web3.utils.toWei(AMOUNT_IN_TOKEN_A, 'ether')
     //now, we set path where Token A is swapped to Token B

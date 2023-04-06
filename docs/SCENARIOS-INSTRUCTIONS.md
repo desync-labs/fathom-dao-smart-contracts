@@ -19,16 +19,17 @@
 ## How is file Structured?
 
 
-In config/external-addresses.json file all the addresses are stored that needs to be used externally
+In config/config.js file all the addresses are stored that needs to be used externally
 
 In config/newly-generated-transaction-index.json file all the newly generated transaction indexes are stored. Note: It would be a good practise to make this file empty for each new deployment you do and each new deployment in another branch.
 
-config/external-addresses.json, config/newly-generated-transaction-index.json, stablecoin-addresses-proxy-wallet.json should not be deleted or the scenarios wont work
-
 ## How to setup at first:
 1. First you need to have addresses.json file in your root folder. This is automatically setup while doing deployment.
-2. newly-generated-transaction-index.json must be made empty first for all the new deployment and must be taken into account that this does not in its own have context of the deployment. So for each new deployment-possibly on different branches, newly-generated-transaction-index.json must be cleared and then again it will be saved.
-3. external-addresses.json must have the correct addresses as per newer deployments.
+2. A config folder needs to be created at root folder. There is a template folder in root folder named config-template.js. Copy the config-template.js and paste it in config directory and rename it with config.js
+
+So basically you need to end up with config/config.js file path in your root folder for the scripts to work
+
+
 
 ## How to Setup Council Stakes
 **//Note: This is only possible once as theres initializer for council stakes.**
