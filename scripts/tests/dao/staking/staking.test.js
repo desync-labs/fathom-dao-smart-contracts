@@ -4,7 +4,7 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-
+const constants = require("../../helpers/testConstants");
 
 const maxGasForTxn = 600000
 const {
@@ -37,9 +37,9 @@ const _createVoteWeights = (
     }
 }
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 // event
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 const _createWeightObject = (
     maxWeightShares,

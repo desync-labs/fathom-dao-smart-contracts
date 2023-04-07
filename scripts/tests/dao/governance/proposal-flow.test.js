@@ -1,5 +1,6 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
+const constants = require("../../helpers/testConstants");
 const { assert } = require("chai");
 const {
     shouldRevert,
@@ -7,7 +8,7 @@ const {
     shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 const TRUE_EVENT_RETURN_IN_HEX = "0x0000000000000000000000000000000000000000000000000000000000000001"
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -20,7 +21,7 @@ const SUCCEEDED_PROPOSAL_STATE = "4"
 const DEFEATED_PROPOSAL_STATE = "3"
 // Events
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 const EXECUTE_TRANSACTION_EVENT = "ExecuteTransaction(address,bool,bytes)";
 
 const _encodeConfirmation = async (_proposalId) => {

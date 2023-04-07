@@ -11,8 +11,8 @@ const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol"
 
 const addressesConfig = require('../../config/config.js')
 
-const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
-const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
+const Token_A_Address = addressesConfig.USD_ADDRESS //USD+
+const Token_B_Address =  addressesConfig.WETH_ADDRESS //WXDC
 
 const AMOUNT_IN_TOKEN_A = '2'
 const SLIPPAGE = 0.05

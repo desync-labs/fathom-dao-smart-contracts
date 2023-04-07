@@ -8,8 +8,8 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const addressesConfig = require('../../config/config.js')
 const WETH_ADDRESS = addressesConfig.WETH_ADDRESS
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
+const TOKEN_ADDRESS = addresses.fthmToken //FTHM address
+
 const AMOUNT_ETH = web3.utils.toWei('100', 'ether')
 const AMOUNT_ETH_MIN = web3.utils.toWei('50', 'ether')
 const SLIPPAGE = 0.05

@@ -35,6 +35,7 @@ TO INCLUDE:
 
 const blockchain = require("../helpers/blockchain");
 const eventsHelper = require("../helpers/eventsHelper");
+const constants = require("../helpers/testConstants");
 const { assert } = require("chai");
 const {
     shouldRevert,
@@ -42,7 +43,7 @@ const {
     shouldRevertAndHaveSubstring
 } = require('../helpers/expectThrow');
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 
 
 // Proposal 1
@@ -54,7 +55,7 @@ const PROPOSAL_DESCRIPTION_2 = "Proposal #2: Distribute funds from treasury to a
 
 // Events
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 
 const SYSTEM_ACC = accounts[0];

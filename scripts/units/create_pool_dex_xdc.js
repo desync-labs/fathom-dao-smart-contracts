@@ -7,7 +7,7 @@ const addresses = JSON.parse(rawdata);
 
 const addressesConfig = require('../../config/config.js')
 
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
+const TOKEN_ADDRESS = addresses.fthmToken //FTHM address
 const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
 const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
 const AMOUNT_TOKEN_ETH = web3.utils.toWei('3', 'ether')

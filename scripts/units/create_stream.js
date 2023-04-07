@@ -5,7 +5,7 @@ const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const STREAM_REWARD_TOKEN_ADDRESS = ""
+const STREAM_REWARD_TOKEN_ADDRESS = addresses.fthmToken //FTHM address //SET AS NECESSARY
 const REWARD_PROPOSAL_AMOUNT = web3.utils.toWei('','ether')
 const STREAM_ID = 1//SET
 const _encodeApproveFunction = (_account, _amount) => {

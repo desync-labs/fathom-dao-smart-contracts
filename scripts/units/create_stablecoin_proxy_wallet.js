@@ -13,7 +13,6 @@ const IProxyRegistry = artifacts.require("./dao/test/stablecoin/IProxyRegistry.s
 const addressesConfig = require('../../config/config.js')
 const PROXY_WALLET_REGISTRY_ADDRESS = addressesConfig.PROXY_WALLET_REGISTRY_ADDRESS
 
-//const PROXY_WALLET_REGISTRY_ADDRESS = "0xF11994FBAa365070ce4a1505f9Ce5Ea960d0d904"
 const _encodeBuildFunction = (_account) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'build',

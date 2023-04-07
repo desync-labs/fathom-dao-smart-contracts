@@ -10,11 +10,10 @@ const addresses = JSON.parse(rawdata);
 
 const addressesConfig = require('../../config/config.js')
 
-const Token_A_Address = "0x82b4334F5CD8385f55969BAE0A863a0C6eA9F63f" //USD+
-const Token_B_Address = "0xE99500AB4A413164DA49Af83B9824749059b46ce" //WXDC
-// SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('2', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('0', 'ether')
+const Token_A_Address = addressesConfig.WETH_ADDRESS // SET AS Necessary
+const Token_B_Address = addressesConfig.FXD_ADDRESS// SET AS Necessary
+const Amount_A_Desired = web3.utils.toWei('2', 'ether')// SET AS Necessary
+const Amount_A_Minimum = web3.utils.toWei('0', 'ether')// SET AS Necessary
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')

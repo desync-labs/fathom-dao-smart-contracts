@@ -1,13 +1,13 @@
 
 const eventsHelper = require("../../tests/helpers/eventsHelper");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
+const constants = require("../../tests/helpers/testConstants");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
-
+const EMPTY_BYTES = constants.EMPTY_BYTES;
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
     
 const _encodeTransferFunction = (_account, t_to_stake) => {
 
