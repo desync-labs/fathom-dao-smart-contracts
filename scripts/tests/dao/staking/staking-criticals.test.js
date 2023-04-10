@@ -19,7 +19,6 @@ const staker_1 = accounts[1];
 const staker_2 = accounts[4];
 const staker_3 = accounts[5];
 const staker_4 = accounts[6];
-const staker_5 = accounts[7];
 const stream_manager = accounts[7];
 const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
@@ -59,6 +58,22 @@ const _convertToEtherBalance = (balance) => {
     return parseFloat(web3.utils.fromWei(balance,"ether").toString()).toFixed(5)
 }
 
+const _encodeApproveFunction = (_account, _amount) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'approve',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'spender'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, _amount]);
+
+    return toRet;
+}
+
 const _encodeTransferFunction = (_account, t_to_stake) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'transfer',
@@ -71,6 +86,47 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
             name: 'amount'
         }]
     }, [_account, t_to_stake]);
+
+    return toRet;
+}
+
+const _encodeCreateLockPositionContext = (
+    _amount,
+    _lockPeriod,
+    _account
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'createLockPositionContext',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: '_amount'
+        },{
+            type: 'uint256',
+            name: '_lockPeriod'
+        },
+        {
+            type: 'address',
+            name: '_account'
+        }]
+    }, [_amount,
+        _lockPeriod,
+        _account]);
+
+    return toRet;
+}
+
+const _encodeCreateLockWithoutEarlyWithdrawal = (
+    _requestHash
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'createLockWithoutEarlyWithdrawal',
+        type: 'function',
+        inputs: [{
+            type: 'bytes32',
+            name: '_requestHash'
+        }]
+    }, [_requestHash]);
 
     return toRet;
 }
@@ -218,6 +274,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
     const oneYear = 31556926;
     let stakingService;
     let vaultService;
+    let lockPositionContextService;
     let stakingGetterService;
     let FTHMToken;
     let vMainToken;
@@ -242,6 +299,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
     let stakingProxyAdmin;
     let vaultMigrateService;
     let snapshotToRevertTo;
+    
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
     const sumToTransfer = web3.utils.toWei('2000', 'ether');
@@ -306,6 +364,11 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         vaultMigrateService = await artifacts.initializeInterfaceAt(
             "IVault",
             "VaultProxyMigrate"
+        )
+
+        lockPositionContextService = await artifacts.initializeInterfaceAt(
+            "ILockPositionContext",
+            "LockPositionContextProxy"
         )
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -852,7 +915,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
 
 
         it("Should migrate original vault tokens to vaultMigrateService", async() => {
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            blockchain.mineBlock(await _getTimeStamp() + 100);
             const _migrateVaultTokens = async (_contract) => {
                 const result = await multiSigWallet.submitTransaction(
                     vaultService.address, 
@@ -1101,6 +1164,88 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+    })
+
+    describe("Context Lock Position test cases", async() => {
+        let requestHashForStaker_3;
+        it("Should call createLockPositionContext", async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _createLockPositionContext = async (_amount,_lockPeriod,_account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    lockPositionContextService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockPositionContext(_amount,_lockPeriod,_account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _createLockPositionContext(sumToDeposit,unlockTime,staker_3)
+        })
+
+        it("Should get requestHash for staker_3", async() => {
+            const lockPositionId = 1;//first index
+            requestHashForStaker_3 = await lockPositionContextService.getLockPositionContextHashByAccountIndex(
+                staker_3,
+                lockPositionId
+            )
+            console.log(requestHashForStaker_3)
+        })
+
+        it("Should approve requestHash for staker_3", async() => {
+            
+            await lockPositionContextService.approveLockPositionContext(
+                requestHashForStaker_3,
+                {from: staker_3}
+            )
+        })
+
+        it("Should create lock position without early withdrawal for staker_3", async() => {
+            const _approveRequiredAmount = async(
+                _spender,
+                _amount
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address, 
+                    EMPTY_BYTES, 
+                    _encodeApproveFunction(_spender, _amount),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _approveRequiredAmount(stakingService.address, sumToDeposit)
+            
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _createLockWithoutEarlyWithdrawal(requestHashForStaker_3)
         })
     })
 

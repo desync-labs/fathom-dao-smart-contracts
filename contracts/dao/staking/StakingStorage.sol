@@ -15,11 +15,8 @@ contract StakingStorage {
     uint32 internal constant ONE_YEAR = 31536000;
     uint32 internal constant ONE_DAY = 86400;
     uint32 internal constant REWARDS_TO_TREASURY_DENOMINATOR = 10000;
-    //MAX_LOCK: It is a constant. One WEEK Added as a tolerance.
 
     uint256 public maxLockPeriod;
-    ///@notice Checks if the staking is initialized
-
     uint256 public minLockPeriod;
 
     uint256 public maxLockPositions;
@@ -40,12 +37,12 @@ contract StakingStorage {
     ///_voteLockWeight the weight that determines the amount of vote tokens to release
     uint256 internal voteLockCoef;
 
-    address public mainToken;
-    address public voteToken;
-    address public vault;
-    address public rewardsCalculator;
+    address internal mainToken;
+    address internal voteToken;
+    address internal vault;
+    address internal rewardsCalculator;
     bool internal councilsInitialized;
-    address public treasury;
+    address internal treasury;
     bool internal mainStreamInitialized;
 
     ///Weighting coefficient for shares and penalties
@@ -57,5 +54,5 @@ contract StakingStorage {
     ///Mapping (user => LockedBalance) to keep locking information for each user
     mapping(address => LockedBalance[]) internal locks;
     mapping(uint256 => uint256) public streamTotalUserPendings;
-    address lockPositionContext;
+    address internal lockPositionContext;
 }
