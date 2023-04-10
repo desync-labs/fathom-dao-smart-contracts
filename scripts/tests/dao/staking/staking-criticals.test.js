@@ -557,74 +557,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             console.log(".........Unlocking All The Lock Positions created till Now..........")
         })
 
-        it('Should upgrade Staking by mulitsig and call new function getLockInfo', async() => {
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const _proposeUpgrade = async (
-                _proxy,
-                _impl
-            ) => {
-                const result = await multiSigWallet.submitTransaction(
-                    stakingProxyAdmin.address, 
-                    EMPTY_BYTES, 
-                    _encodeUpgradeFunction(
-                        _proxy,
-                        _impl
-                    ),
-                    0,
-                    {"from": accounts[0]}
-                );
-                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-    
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-    
-                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
-            }
-            const StakingUpgrade = artifacts.require('./dao/test/staking/upgrades/StakingUpgrade.sol');
-            await _proposeUpgrade(
-                stakingService.address,
-                stakingUpgrade.address
-            )
-            
-            stakingService = await StakingUpgrade.at(stakingService.address)
-            //getLockInfo New function added to StakingUpgrade.
-            console.log((await stakingService.getLockInfo(staker_1,1)).toString())
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-        })
-
-        it('Should upgrade Vault by mulitsig and call new function getSupportedToken', async() => {
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-            const _proposeUpgrade = async (
-                _proxy,
-                _impl
-            ) => {
-                const result = await multiSigWallet.submitTransaction(
-                    vaultProxyAdmin.address, 
-                    EMPTY_BYTES, 
-                    _encodeUpgradeFunction(
-                        _proxy,
-                        _impl
-                    ),
-                    0,
-                    {"from": accounts[0]}
-                );
-                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-    
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-    
-                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
-            }
-            const VaultUpgrade = artifacts.require('./dao/test/staking/upgrades/VaultUpgrade.sol');
-            await _proposeUpgrade(
-                vaultService.address,
-                vaultUpgrade.address
-            )
-            
-            vaultService = await VaultUpgrade.at(vaultService.address)
-            console.log((await vaultService.getIsSupportedToken(FTHMToken.address)).toString())
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-        })
+        
         
         it("Should unlock completely locked positions for user - staker_2", async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
@@ -754,6 +687,285 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await vaultService.withdrawExtraSupportedTokens(accounts[0], {"from": accounts[0]});
         })
     })
+
+    describe("Context Lock Position test cases", async() => {
+        let requestHashStaker3_firstPosition;
+        let requestHashStaker3_secondPosition;
+        it("Should call createLockPositionContext", async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _createLockPositionContext = async (_amount,_lockPeriod,_account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    lockPositionContextService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockPositionContext(_amount,_lockPeriod,_account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _createLockPositionContext(sumToDeposit,unlockTime,staker_3)
+        })
+        
+        it("Should get requestHash for staker_3", async() => {
+            const lockPositionId = 1;//first index
+            requestHashStaker3_firstPosition = await lockPositionContextService.getLockPositionContextHashByAccountIndex(
+                staker_3,
+                lockPositionId
+            )
+        })
+        it("Should revert execute for the hash not yet approved", async() => {
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                let errorMessage = "lock position context not approved"
+                await shouldRevert(
+                    multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
+                    errTypes.revert,
+                    errorMessage);
+                }
+
+            await _createLockWithoutEarlyWithdrawal(requestHashStaker3_firstPosition)
+            }
+        )
+
+
+        it("Should approve requestHash for staker_3", async() => {
+            await lockPositionContextService.approveLockPositionContext(
+                requestHashStaker3_firstPosition,
+                {from: staker_3}
+            )
+        })
+
+        it("Should create lock position without early withdrawal for staker_3", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _approveRequiredAmount = async(
+                _spender,
+                _amount
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address, 
+                    EMPTY_BYTES, 
+                    _encodeApproveFunction(_spender, _amount),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _approveRequiredAmount(stakingService.address, sumToDeposit)
+            
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _createLockWithoutEarlyWithdrawal(requestHashStaker3_firstPosition)
+        })
+
+        it("Should not create same lock position context for the same request hash after its executed", async() => {
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                let errorMessage = "lock position context already executed"
+                await shouldRevert(
+                    multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
+                    errTypes.revert,
+                    errorMessage);
+            }
+
+            await _createLockWithoutEarlyWithdrawal(requestHashStaker3_firstPosition)
+        })
+
+        it("Should call createLockPositionContext", async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _createLockPositionContext = async (_amount,_lockPeriod,_account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    lockPositionContextService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockPositionContext(_amount,_lockPeriod,_account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _createLockPositionContext(sumToDeposit,unlockTime,staker_3)
+        })
+
+        it("Should get requestHash for staker_3", async() => {
+            const lockPositionId = 2;//first index
+            requestHashStaker3_secondPosition = await lockPositionContextService.getLockPositionContextHashByAccountIndex(
+                staker_3,
+                lockPositionId
+            )
+        })
+
+        it("Should approve requestHash for staker_3", async() => {
+            await lockPositionContextService.approveLockPositionContext(
+                requestHashStaker3_secondPosition,
+                {from: staker_3}
+            )
+        })
+
+        it("Should create lock position without early withdrawal for staker_3", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _approveRequiredAmount = async(
+                _spender,
+                _amount
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address, 
+                    EMPTY_BYTES, 
+                    _encodeApproveFunction(_spender, _amount),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _approveRequiredAmount(stakingService.address, sumToDeposit)
+            
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _createLockWithoutEarlyWithdrawal(requestHashStaker3_secondPosition)
+        })
+
+        it("Staker_3 should not be able to early withdraw last two positions", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const locksLength = await stakingGetterService.getLocksLength(staker_3)
+            
+            const lastPositionLockId = locksLength
+            const secondLastPositionLockId = locksLength - 1
+            const errorMessage = "revert";
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(lastPositionLockId, {from: staker_3}),
+                errTypes.revert,
+                errorMessage
+            )
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(secondLastPositionLockId, {from: staker_3}),
+                errTypes.revert,
+                errorMessage
+            )
+        })
+
+        it("Should revert on approving lock position context that does not exist", async() => {
+            const errorMessage = "lock position context not created"
+            await shouldRevert(
+                lockPositionContextService.approveLockPositionContext(
+                    EMPTY_BYTES,
+                    {from: staker_3}
+                ),
+                errTypes.revert,
+                errorMessage
+            )
+        })
+
+        it("Should revert on getting out of index lock position request hash", async() =>{
+            const errorMessage = "lock position context index out of bounds"
+            await shouldRevert(
+                lockPositionContextService.getLockPositionContextHashByAccountIndex(
+                    staker_3,
+                    3
+                ),
+                errTypes.revert,
+                errorMessage
+            )
+        })
+
+        it("Should revert execute for the hash not yet approved", async() => {
+            const _createLockWithoutEarlyWithdrawal = async(
+                _requestHash
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                let errorMessage = "lock position context not created"
+                await shouldRevert(
+                    multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
+                    errTypes.revert,
+                    errorMessage);
+                }
+
+            await _createLockWithoutEarlyWithdrawal(EMPTY_BYTES)
+            }
+        )
+    })
+    
+
 
     describe('Scenario - to pause staking service in case of emergency shutdown, let users to withdraw using emergencyUnlockAndWithdraw and then pause the Vault Contract as well', async() => {
         
@@ -1167,55 +1379,20 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         })
     })
 
-    describe("Context Lock Position test cases", async() => {
-        let requestHashForStaker_3;
-        it("Should call createLockPositionContext", async() => {
-            const unlockTime =  20 * 24 * 60 * 60
-            await blockchain.mineBlock(await _getTimeStamp() + 100);
-            const _createLockPositionContext = async (_amount,_lockPeriod,_account) => {
-                const result = await multiSigWallet.submitTransaction(
-                    lockPositionContextService.address, 
-                    EMPTY_BYTES, 
-                    _encodeCreateLockPositionContext(_amount,_lockPeriod,_account),
-                    0,
-                    {"from": accounts[0]}
-                );
-                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-    
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
-                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-    
-                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
-            }
-            await _createLockPositionContext(sumToDeposit,unlockTime,staker_3)
-        })
-
-        it("Should get requestHash for staker_3", async() => {
-            const lockPositionId = 1;//first index
-            requestHashForStaker_3 = await lockPositionContextService.getLockPositionContextHashByAccountIndex(
-                staker_3,
-                lockPositionId
-            )
-            console.log(requestHashForStaker_3)
-        })
-
-        it("Should approve requestHash for staker_3", async() => {
-            
-            await lockPositionContextService.approveLockPositionContext(
-                requestHashForStaker_3,
-                {from: staker_3}
-            )
-        })
-
-        it("Should create lock position without early withdrawal for staker_3", async() => {
-            const _approveRequiredAmount = async(
-                _spender,
-                _amount
+    describe("Scenario for upgrading", async() => {
+        it('Should upgrade Staking by mulitsig and call new function getLockInfo', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const _proposeUpgrade = async (
+                _proxy,
+                _impl
             ) => {
                 const result = await multiSigWallet.submitTransaction(
-                    FTHMToken.address, 
+                    stakingProxyAdmin.address, 
                     EMPTY_BYTES, 
-                    _encodeApproveFunction(_spender, _amount),
+                    _encodeUpgradeFunction(
+                        _proxy,
+                        _impl
+                    ),
                     0,
                     {"from": accounts[0]}
                 );
@@ -1226,28 +1403,52 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
     
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
-
-            await _approveRequiredAmount(stakingService.address, sumToDeposit)
+            const StakingUpgrade = artifacts.require('./dao/test/staking/upgrades/StakingUpgrade.sol');
+            await _proposeUpgrade(
+                stakingService.address,
+                stakingUpgrade.address
+            )
             
-            const _createLockWithoutEarlyWithdrawal = async(
-                _requestHash
+            stakingService = await StakingUpgrade.at(stakingService.address)
+            //getLockInfo New function added to StakingUpgrade.
+            console.log((await stakingService.getLockInfo(staker_3,1)).toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+        })
+
+        it('Should upgrade Vault by mulitsig and call new function getSupportedToken', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const _proposeUpgrade = async (
+                _proxy,
+                _impl
             ) => {
                 const result = await multiSigWallet.submitTransaction(
-                    stakingService.address, 
+                    vaultProxyAdmin.address, 
                     EMPTY_BYTES, 
-                    _encodeCreateLockWithoutEarlyWithdrawal(_requestHash),
+                    _encodeUpgradeFunction(
+                        _proxy,
+                        _impl
+                    ),
                     0,
                     {"from": accounts[0]}
                 );
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
-
-            await _createLockWithoutEarlyWithdrawal(requestHashForStaker_3)
+            const VaultUpgrade = artifacts.require('./dao/test/staking/upgrades/VaultUpgrade.sol');
+            await _proposeUpgrade(
+                vaultService.address,
+                vaultUpgrade.address
+            )
+            
+            vaultService = await VaultUpgrade.at(vaultService.address)
+            console.log((await vaultService.getIsSupportedToken(FTHMToken.address)).toString())
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
     })
-
+    
 });
    

@@ -5,10 +5,29 @@ import "../StakingStructs.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "./ILockPositionContext.sol";
 contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
-
     bytes32 public constant CONTEXT_CREATOR_ROLE = keccak256("CONTEXT_CREATOR_ROLE");
     bytes32 public constant CONTEXT_EXECUTOR_ROLE = keccak256("CONTEXT_EXECUTOR_ROLE");
+
+    event LockPositionContextCreated(
+        bytes32 indexed requestHash, 
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address indexed account);
+    event LockPositionContextApproved(
+        bytes32 indexed requestHash, 
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address indexed account);
+
+    event LockPositionContextExecuted(
+        bytes32 indexed requestHash, 
+        uint256 amount, 
+        uint256 lockPeriod, 
+        address indexed account);
+
+    
     error ZeroAmount();
+    error ZeroAddress();
     
     mapping(bytes32 => CreateLockParams) public lockPositionContexts;
     mapping(bytes32 => bool) public createdContextKeys; 
@@ -43,9 +62,8 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
         uint256 _lockPeriod, 
         address _account) 
     external onlyContextCreator override returns (bytes32) {
-        if (_amount == 0) {
-            revert ZeroAmount();
-        }
+        require(_amount!=0,"bad amount");
+        require(_account != address(0), "bad account");
         CreateLockParams memory lockPositionContext;
         lockPositionContext = CreateLockParams(
             _amount,
@@ -57,22 +75,31 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
         require(createdContextKeys[requestHash] == false, "lock position context already used");
         lockPositionContexts[requestHash] = lockPositionContext;
         createdContextKeys[requestHash] = true; 
+        emit LockPositionContextCreated(requestHash, _amount, _lockPeriod, _account);
         return requestHash;
     }
 
     function approveLockPositionContext(bytes32 _requestHash) external  override {
-        require(lockPositionContexts[_requestHash].account != address(0), "lock position context not created");
-        require(msg.sender == lockPositionContexts[_requestHash].account,"bad caller");
         require(createdContextKeys[_requestHash], "lock position context not created");
+        CreateLockParams memory lockPositionContext = lockPositionContexts[_requestHash];
+        require(msg.sender == lockPositionContext.account,"bad caller");
         require(approvedContextKeys[_requestHash] == false, "lock position context already approved");
         approvedContextKeys[_requestHash]  = true;
+        emit LockPositionContextApproved(_requestHash, lockPositionContext.amount, lockPositionContext.lockPeriod, lockPositionContext.account);
     }
-
-    function executeLockPositionContext(bytes32 _requestHash) external onlyContextExecutor override returns(CreateLockParams memory){
+    function getAndExecuteLockPositionContext(bytes32 _requestHash) external onlyContextExecutor override returns(CreateLockParams memory){
+        
         require(createdContextKeys[_requestHash], "lock position context not created");
         require(approvedContextKeys[_requestHash], "lock position context not approved");
         require(!executedContextKeys[_requestHash], "lock position context already executed");
         executedContextKeys[_requestHash] = true;
+        
+        emit LockPositionContextExecuted(
+            _requestHash, 
+            lockPositionContexts[_requestHash].amount, 
+            lockPositionContexts[_requestHash].lockPeriod,
+            lockPositionContexts[_requestHash].account);
+
         return CreateLockParams(
             lockPositionContexts[_requestHash].amount,
             lockPositionContexts[_requestHash].lockPeriod,
@@ -84,10 +111,10 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
         return lockPositionContextsByAccount[account];
     }
 
-    function getLockPositionContextHashByAccountIndex(address account, uint256 lockPositionId) external view override returns(bytes32){
-        require(lockPositionId > 0, "lock position context index must be greater than 0");
-        require(lockPositionId <= lockPositionContextsByAccount[account].length, "lock position context index out of bounds");
-        CreateLockParams memory lockPositionContext = lockPositionContextsByAccount[account][lockPositionId -1];
-        return keccak256(abi.encode(lockPositionId,lockPositionContext.amount,lockPositionContext.lockPeriod,lockPositionContext.account));
+    function getLockPositionContextHashByAccountIndex(address account, uint256 lockPositionContextsId) external view override returns(bytes32){
+        require(lockPositionContextsId > 0, "lock position context index must be greater than 0");
+        require(lockPositionContextsId <= lockPositionContextsByAccount[account].length, "lock position context index out of bounds");
+        CreateLockParams memory lockPositionContext = lockPositionContextsByAccount[account][lockPositionContextsId -1];
+        return keccak256(abi.encode(lockPositionContextsId,lockPositionContext.amount,lockPositionContext.lockPeriod,lockPositionContext.account));
     }
 }

@@ -20,12 +20,14 @@ interface IStakingHandler {
         uint256 _minLockPeriod
     ) external;
 
-    function initializeMainStream(address _owner,
+    function initializeMainStreamAndContext(
+        address _owner,
         uint256[] calldata scheduleTimes,
         uint256[] calldata scheduleRewards,
-        address _lockPositionContext,
-        uint256 tau) external;
-
+        uint256 tau,
+        address _lockPositionContext
+    ) external;
+    
     function proposeStream(
         address streamOwner,
         address rewardToken,
@@ -42,7 +44,7 @@ interface IStakingHandler {
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
 
     function removeStream(uint256 streamId, address streamFundReceiver) external;
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
+    //function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
     function createLock(uint256 amount, uint256 lockPeriod) external;
 
     function unlockPartially(uint256 lockId, uint256 amount) external;

@@ -7,7 +7,7 @@ import "../StakingStructs.sol";
 
 interface IStakingStorage {
     function totalShares() external view returns (uint256);
-
+    
     function totalStreamShares() external view returns (uint256);
 
     function totalAmountOfVoteToken() external view returns (uint256);
