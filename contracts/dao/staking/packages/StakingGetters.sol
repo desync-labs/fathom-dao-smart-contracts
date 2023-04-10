@@ -31,8 +31,10 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
 
-    function getAllLocks(address account) external view override returns (LockedBalance[] memory) {
-        return locks[account];
+    function readBySlot(uint256 slot) external view override returns(bytes32 value) {
+        assembly {
+            value := sload(slot)
+        }
     }
 
     function getStreamSchedule(uint256 streamId) external view override returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {

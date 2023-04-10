@@ -404,6 +404,7 @@ describe("Staking Test", () => {
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             const lockInfo = await stakingGetterService.getLockInfo(staker_1,2)
+            console.log("lockInfo", lockInfo.toString())
             const actualNVFTHM = web3.utils.toBN(lockInfo.amountOfVoteToken.toString())
             //lockingVoteWeight = 365 * 24 * 60 * 60;
             const expectedNVFTHM = _calculateNumberOfVFTHM(sumToDeposit, lockingPeriod, lockingVoteWeight)
@@ -488,6 +489,7 @@ describe("Staking Test", () => {
             
             //--1day
             let result = await stakingGetterService.getLockInfo(staker_1,3);
+            console.log(result.toString())
             const amountOfVFTHMLock3 = result.amountOfVoteToken.toString()
             await stakingService.claimAllStreamRewardsForLock(1, {from: staker_1})
             await blockchain.mineBlock(10 + await _getTimeStamp())
@@ -1335,8 +1337,8 @@ describe("Staking Test", () => {
         })
 
         it('Should have no locks', async() => {
-            const result1 = await stakingService.getAllLocks(staker_4)
-            const result2 = await stakingService.getAllLocks(staker_3)
+            const result1 = await stakingGetterService.getAllLocks(staker_4)
+            const result2 = await stakingGetterService.getAllLocks(staker_3)
             assert.equal(result1.toString().length,0)
             assert.equal(result2.toString().length,0)
         })
