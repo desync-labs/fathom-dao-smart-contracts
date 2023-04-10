@@ -65,8 +65,6 @@ interface IStakingHandler {
 
     function emergencyUnlockAndWithdraw() external;
 
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
-
     function createLockWithoutEarlyWithdrawal(bytes32 _requestHash) external;
 
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;

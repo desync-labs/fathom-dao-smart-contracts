@@ -8,6 +8,8 @@ const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const blockchain = require("../../tests/helpers/blockchain");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
+const LockPositionContextProxy = artifacts.require('./common/proxy/LockPositionContextProxy.sol');
+
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp();
     return timestamp;
@@ -46,10 +48,14 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
             name: 'scheduleRewards'
         },
         {
+            type: 'address',
+            name: '_lockPositionContext'
+        },
+        {
             type: 'uint256',
             name: 'tau'
         }]
-        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, tau]);
+        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, LockPositionContextProxy.address, tau]);
 
         return toInitializeMainStream
 }

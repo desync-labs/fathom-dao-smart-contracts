@@ -5,7 +5,12 @@ import "../StakingStructs.sol";
 
 interface ILockPositionContext {
     function initialize(address _admin, address _stakingContract) external;
-    function createLockPositionContext(uint256 amount, uint256 lockPeriod, address account) external returns (bytes32);
+    function createLockPositionContext(
+        uint256 _amount, 
+        uint256 _lockPeriod, 
+        address _account) external returns (bytes32);
     function approveLockPositionContext(bytes32 _requestHash) external;
     function executeLockPositionContext(bytes32 _requestHash) external returns (CreateLockParams memory);
+    function getLockPositionContextsByAccount(address account) external view returns(CreateLockParams[] memory);
+    function getLockPositionContextHashByAccountIndex(address account, uint256 index) external view returns(bytes32);
 }

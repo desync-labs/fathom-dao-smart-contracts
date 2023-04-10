@@ -111,6 +111,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         if (mainStreamInitialized == true) {
             revert AlreadyInitialized();
         }
+        if(_lockPositionContext == address(0)) {
+            revert ZeroAddress();
+        }
         IERC20(mainToken).safeTransferFrom(msg.sender, address(this), scheduleRewards[0]);
         _validateStreamParameters(
             _owner,
@@ -290,21 +293,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    /**
-     * @dev Creating locks for council can be done by Admin only which is Multisig.
-     *      Multisig can create locks for councils
-     */
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (councilsInitialized == true) {
-            revert AlreadyInitialized();
-        }
-        councilsInitialized = true;
-        for (uint256 i; i < lockParams.length; i++) {
-            address account = lockParams[i].account;
-            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
-        }
-    }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);
@@ -449,7 +437,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         
     }
-
     /**
      * @dev This allows for setting up minimum locking period.
      *      Only admin which is Multisig at deployment can call this
