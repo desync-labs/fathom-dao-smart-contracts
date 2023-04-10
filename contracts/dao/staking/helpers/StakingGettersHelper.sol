@@ -137,18 +137,21 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         bytes32 amountOfTokenAndPositionStreamSharesBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + index * 3);
         bytes32 endAndOwnerBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + (index * 3) + 1);
         bytes32 amountOfVoteTokenBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + (index * 3) + 2);
+        
         assembly {
+            //amount of vote tokens is the last 256 bits of the lock position array
             amountOfVoteToken := amountOfVoteTokenBytes
             let value_2 := endAndOwnerBytes
-            //and by 16 byte to get the value of positionStreamShares at the end of slot
+            //and by 8 bytes to get the value of endBytes only at the end of slot 2
             end := and(value_2,0xffffffffffffffff)
-            //shift by 128 then, and by 8 bytes to get end value
+            //shift by 64 bits to get the value of owner only at the end of slot 2
             let shifted_1 := shr(64,value_2)
+            //and by 160 bits to get the value of owner only at the end of slot 2
             owner := and(shifted_1,0xffffffffffffffffffffffffffffffffffffffff)
             let value_3 := amountOfTokenAndPositionStreamSharesBytes
-            //and by  16 bytes and get value of amountOfToken
+            //and by  128 bits and get value of amountOfToken at ended of slot 3
             amountOfToken := and(value_3,0xffffffffffffffffffffffffffffffff)
-            //shift by 128 then, and by  16 bytes and get value of amountOfVoteToken
+            //shift by 128 then, and by  128 bits and get value of amountOfVoteToken at end of slot 3
             let shifted_2 := shr(128,value_3)
             positionStreamShares := and(shifted_2,0xffffffffffffffffffffffffffffffff)
         }
@@ -164,7 +167,6 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
     
     function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
         uint256 lengthOfAllLocks = _getArrayLengthForLock(LOCK_SLOT,account);
-
         LockedBalance[] memory lockedBalances = new LockedBalance[](lengthOfAllLocks);
         for(uint256 lockId = 1; lockId <= lengthOfAllLocks;lockId++){
                 lockedBalances[lockId - 1] = _getLock(account,LOCK_SLOT,lockId -1);
