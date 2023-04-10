@@ -293,6 +293,17 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (councilsInitialized == true) {
+            revert AlreadyInitialized();
+        }
+        councilsInitialized = true;
+        for (uint256 i; i < lockParams.length; i++) {
+            address account = lockParams[i].account;
+            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
+        }
+    }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);

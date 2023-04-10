@@ -42,7 +42,7 @@ interface IStakingHandler {
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external;
 
     function removeStream(uint256 streamId, address streamFundReceiver) external;
-
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
     function createLock(uint256 amount, uint256 lockPeriod) external;
 
     function unlockPartially(uint256 lockId, uint256 amount) external;
