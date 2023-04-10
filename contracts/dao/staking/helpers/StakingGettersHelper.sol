@@ -10,6 +10,8 @@ import "../../../common/access/AccessControl.sol";
 
 // solhint-disable not-rely-on-time
 contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
+    uint256 public constant LOCK_SLOT = 19;
+
     address private stakingContract;
 
     error LockOpenedError();
@@ -28,6 +30,10 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
 
     function getWeight() external view override returns (Weight memory) {
         return _getWeight();
+    }
+
+    function getAllLocks(address account) external view override returns(LockedBalance[] memory) {
+        return _getAllLocks(account);
     }
 
     function getLock(address account, uint256 lockId) external view override returns (uint128, uint128, uint64, address, uint256) {
@@ -95,9 +101,11 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return locks[lockId - 1];
     }
 
-    function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
-        return IStakingHelper(stakingContract).getAllLocks(account);
-    }
+    
+
+    // function _getAllLocks(address account) internal view returns (LockedBalance[] memory) {
+    //     return IStakingHelper(stakingContract).getAllLocks(account);
+    // }
 
     function _weightedPenalty(uint256 lockEnd, uint256 timestamp) internal view returns (uint256) {
         Weight memory weight = _getWeight();
@@ -116,5 +124,60 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
 
     function _getWeight() internal view returns (Weight memory) {
         return IStakingStorage(stakingContract).weight();
+    }
+
+    function _getLock(address account, uint256 slot, uint256 index) internal view returns (LockedBalance memory){
+        uint128 amountOfToken;
+        uint128 positionStreamShares;
+        uint64 end;
+        address owner;
+        uint256 amountOfVoteToken;
+
+        bytes32 location = keccak256(abi.encode(keccak256(abi.encode(account,slot))));
+        bytes32 amountOfTokenAndPositionStreamSharesBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + index * 3);
+        bytes32 endAndOwnerBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + (index * 3) + 1);
+        bytes32 amountOfVoteTokenBytes = IStakingHelper(stakingContract).readBySlot(uint256(location) + (index * 3) + 2);
+        assembly {
+            amountOfVoteToken := amountOfVoteTokenBytes
+            let value_2 := endAndOwnerBytes
+            //and by 16 byte to get the value of positionStreamShares at the end of slot
+            end := and(value_2,0xffffffffffffffff)
+            //shift by 128 then, and by 8 bytes to get end value
+            let shifted_1 := shr(64,value_2)
+            owner := and(shifted_1,0xffffffffffffffffffffffffffffffffffffffff)
+            let value_3 := amountOfTokenAndPositionStreamSharesBytes
+            //and by  16 bytes and get value of amountOfToken
+            amountOfToken := and(value_3,0xffffffffffffffffffffffffffffffff)
+            //shift by 128 then, and by  16 bytes and get value of amountOfVoteToken
+            let shifted_2 := shr(128,value_3)
+            positionStreamShares := and(shifted_2,0xffffffffffffffffffffffffffffffff)
+        }
+
+        return LockedBalance(
+            amountOfToken,
+            positionStreamShares,
+            end,
+            owner,
+            amountOfVoteToken
+        );
+    }
+    
+    function _getAllLocks(address account) internal view returns(LockedBalance[] memory) {
+        uint256 lengthOfAllLocks = _getArrayLengthForLock(LOCK_SLOT,account);
+
+        LockedBalance[] memory lockedBalances = new LockedBalance[](lengthOfAllLocks);
+        for(uint256 lockId = 1; lockId <= lengthOfAllLocks;lockId++){
+                lockedBalances[lockId - 1] = _getLock(account,LOCK_SLOT,lockId -1);
+        }     
+        return lockedBalances;
+    }
+
+    function _getArrayLengthForLock(uint256 slot, address account)  internal view returns (uint256 len){
+        bytes32 lengthLocation = keccak256(abi.encode(account,slot));
+        uint256 lengthLocationSlot;
+        assembly {
+            lengthLocationSlot:=lengthLocation
+        }
+        len = uint256(IStakingHelper(stakingContract).readBySlot(lengthLocationSlot));
     }
 }

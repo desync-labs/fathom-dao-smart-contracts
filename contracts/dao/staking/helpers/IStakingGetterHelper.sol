@@ -12,7 +12,8 @@ interface IStakingGetterHelper {
     function getLockInfo(address account, uint256 lockId) external view returns (LockedBalance memory);
 
     function getLock(address account, uint256 lockId) external view returns (uint128, uint128, uint64, address, uint256);
-
+    function getAllLocks(address account) external view  returns(LockedBalance[] memory);
+    
     function getUserTotalDeposit(address account) external view returns (uint256);
 
     function getStreamClaimableAmount(uint256 streamId, address account) external view returns (uint256);
