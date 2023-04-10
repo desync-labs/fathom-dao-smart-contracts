@@ -9,6 +9,7 @@ import "../interfaces/IStakingHandler.sol";
 import "../vault/interfaces/IVault.sol";
 import "../../../common/security/AdminPausable.sol";
 import "../../../common/SafeERC20Staking.sol";
+import "../context/ILockPositionContext.sol";
 
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
@@ -23,7 +24,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error ZeroLockId();
     error MaxLockPeriodExceeded();
     error MaxLockIdExceeded(uint256 _lockId, address _account);
-    error ZeroPenalty();
     error AlreadyInitialized();
     error StreamIdZero();
     error BadMaxLockPositions();
@@ -77,7 +77,16 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 _minLockPeriod
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
-        _initializeStaking(_mainToken, _voteToken, _treasury, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
+        _initializeStaking(
+            _mainToken, 
+            _voteToken,
+            _treasury, 
+            _weight, 
+            _vault, 
+            _maxLocks, 
+            voteCoef.voteShareCoef, 
+            voteCoef.voteLockCoef)
+        ;
         if (!IVault(vault).isSupportedToken(_mainToken)) {
             revert UnsupportedToken();
         }
@@ -96,6 +105,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         address _owner,
         uint256[] calldata scheduleTimes,
         uint256[] calldata scheduleRewards,
+        address _lockPositionContext,
         uint256 tau
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (mainStreamInitialized == true) {
@@ -130,6 +140,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
                 rps: 0
             })
         );
+        lockPositionContext = _lockPositionContext;
         _adminPause(0);
         mainStreamInitialized = true;
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
@@ -299,9 +310,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         _createLock(amount, lockPeriod, msg.sender);
     }
 
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external override pausable(1) {
-        prohibitedEarlyWithdraw[msg.sender][locks[msg.sender].length + 1] = true;
-        _createLock(amount, lockPeriod, msg.sender);
+    function createLockWithoutEarlyWithdrawal(bytes32 _requestHash) external override pausable(1) onlyRole(DEFAULT_ADMIN_ROLE){
+        CreateLockParams memory lockPosition = ILockPositionContext(lockPositionContext).executeLockPositionContext(_requestHash);
+        prohibitedEarlyWithdraw[lockPosition.account][locks[lockPosition.account].length + 1] = true;
+        _createLock(lockPosition.amount, lockPosition.lockPeriod, lockPosition.account);
     }
 
     function unlock(uint256 lockId) external override pausable(1) {
@@ -432,10 +444,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      *      Address with TREASURY_ROLE can access this function, which is Multisig at time of deployment
      */
     function withdrawPenalty() external override pausable(1) onlyRole(TREASURY_ROLE) {
-        if (totalPenaltyBalance == 0) {
-            revert ZeroPenalty();
+        if (totalPenaltyBalance > 0) {
+            _withdrawPenalty(treasury);
         }
-        _withdrawPenalty(treasury);
+        
     }
 
     /**
@@ -460,13 +472,15 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         maxLockPositions = newMaxLockPositions;
     }
 
-    function setTreasuryAddress(address newTreasury) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (newTreasury == address(0)) {
-            revert ZeroAddress();
+    function updateAddresses(address newTreasury, address newLockPositionContext) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newTreasury != address(0)) {
+            _revokeRole(TREASURY_ROLE, treasury);
+            _grantRole(TREASURY_ROLE, newTreasury);
+            treasury = newTreasury;
         }
-        _revokeRole(TREASURY_ROLE, treasury);
-        _grantRole(TREASURY_ROLE, newTreasury);
-        treasury = newTreasury;
+        if(newLockPositionContext != address(0)){
+            lockPositionContext = newLockPositionContext;
+        }
     }
 
     function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {

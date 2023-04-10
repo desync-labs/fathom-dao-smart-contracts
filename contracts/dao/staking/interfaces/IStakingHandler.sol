@@ -20,7 +20,11 @@ interface IStakingHandler {
         uint256 _minLockPeriod
     ) external;
 
-    function initializeMainStream(address _owner, uint256[] calldata scheduleTimes, uint256[] calldata scheduleRewards, uint256 tau) external;
+    function initializeMainStream(address _owner,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
+        address _lockPositionContext,
+        uint256 tau) external;
 
     function proposeStream(
         address streamOwner,
@@ -63,11 +67,11 @@ interface IStakingHandler {
 
     function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
 
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
+    function createLockWithoutEarlyWithdrawal(bytes32 _requestHash) external;
 
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
 
     function setMaxLockPositions(uint256 newMaxLockPositions) external;
 
-    function setTreasuryAddress(address newTreasury) external;
+    function updateAddresses(address newTreasury, address newLockPositionContext) external;
 }
