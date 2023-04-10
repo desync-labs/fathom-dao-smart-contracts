@@ -10,7 +10,7 @@ interface ILockPositionContext {
         uint256 _lockPeriod, 
         address _account) external returns (bytes32);
     function approveLockPositionContext(bytes32 _requestHash) external;
-    function executeLockPositionContext(bytes32 _requestHash) external returns (CreateLockParams memory);
+    function getAndExecuteLockPositionContext(bytes32 _requestHash) external returns (CreateLockParams memory);
     function getLockPositionContextsByAccount(address account) external view returns(CreateLockParams[] memory);
     function getLockPositionContextHashByAccountIndex(address account, uint256 index) external view returns(bytes32);
 }

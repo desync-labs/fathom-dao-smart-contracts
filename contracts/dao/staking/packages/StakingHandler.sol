@@ -101,12 +101,12 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev The function is callable only once, and it can be done only with admin,
      *       which at initial setup is Multisig
      */
-    function initializeMainStream(
+    function initializeMainStreamAndContext(
         address _owner,
         uint256[] calldata scheduleTimes,
         uint256[] calldata scheduleRewards,
-        address _lockPositionContext,
-        uint256 tau
+        uint256 tau,
+        address _lockPositionContext
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (mainStreamInitialized == true) {
             revert AlreadyInitialized();
@@ -293,24 +293,24 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (councilsInitialized == true) {
-            revert AlreadyInitialized();
-        }
-        councilsInitialized = true;
-        for (uint256 i; i < lockParams.length; i++) {
-            address account = lockParams[i].account;
-            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
-        }
-    }
+    // function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    //     if (councilsInitialized == true) {
+    //         revert AlreadyInitialized();
+    //     }
+    //     councilsInitialized = true;
+    //     for (uint256 i; i < lockParams.length; i++) {
+    //         address account = lockParams[i].account;
+    //         prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+    //         _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
+    //     }
+    // }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);
     }
 
     function createLockWithoutEarlyWithdrawal(bytes32 _requestHash) external override pausable(1) onlyRole(DEFAULT_ADMIN_ROLE){
-        CreateLockParams memory lockPosition = ILockPositionContext(lockPositionContext).executeLockPositionContext(_requestHash);
+        CreateLockParams memory lockPosition = ILockPositionContext(lockPositionContext).getAndExecuteLockPositionContext(_requestHash);
         prohibitedEarlyWithdraw[lockPosition.account][locks[lockPosition.account].length + 1] = true;
         _createLock(lockPosition.amount, lockPosition.lockPeriod, lockPosition.account);
     }

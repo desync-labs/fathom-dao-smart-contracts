@@ -33,7 +33,7 @@ const _encodeApproveFunction = (_account, _amount) => {
 
 const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards, tau) => {
     let toInitializeMainStream =  web3.eth.abi.encodeFunctionCall({
-        name: 'initializeMainStream',
+        name: 'initializeMainStreamAndContext',
         type: 'function',
         inputs: [{
             type: 'address',
@@ -48,14 +48,13 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
             name: 'scheduleRewards'
         },
         {
-            type: 'address',
-            name: '_lockPositionContext'
-        },
-        {
             type: 'uint256',
             name: 'tau'
-        }]
-        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, LockPositionContextProxy.address, tau]);
+        },{
+            type: 'address',
+            name: '_lockPositionContext'
+        },]
+        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, tau, LockPositionContextProxy.address]);
 
         return toInitializeMainStream
 }
