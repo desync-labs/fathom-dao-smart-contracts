@@ -15,6 +15,10 @@ contract StakingStorage {
     uint32 internal constant ONE_YEAR = 31536000;
     uint32 internal constant ONE_DAY = 86400;
     uint32 internal constant REWARDS_TO_TREASURY_DENOMINATOR = 10000;
+    
+    bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
+    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
+    bytes32 public constant STAKING_GETTER_HELPER_ROLE = keccak256("STAKING_GETTER_HELPER_ROLE");
 
     uint256 public maxLockPeriod;
     uint256 public minLockPeriod;
@@ -46,7 +50,7 @@ contract StakingStorage {
     bool internal mainStreamInitialized;
 
     ///Weighting coefficient for shares and penalties
-    Weight public weight;
+    Weight internal weight;
 
     mapping(address => User) public users;
 

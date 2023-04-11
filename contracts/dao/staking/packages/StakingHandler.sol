@@ -14,9 +14,7 @@ import "../context/ILockPositionContext.sol";
 // solhint-disable not-rely-on-time
 contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, AdminPausable {
     using SafeERC20Staking for IERC20;
-    bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
-    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
-
+    
     error NotPaused();
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
@@ -106,7 +104,8 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256[] calldata scheduleTimes,
         uint256[] calldata scheduleRewards,
         uint256 tau,
-        address _lockPositionContext
+        address _lockPositionContext,
+        address _stakingGetter
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (mainStreamInitialized == true) {
             revert AlreadyInitialized();
@@ -144,6 +143,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             })
         );
         lockPositionContext = _lockPositionContext;
+        _grantRole(STAKING_GETTER_HELPER_ROLE, _stakingGetter);
         _adminPause(0);
         mainStreamInitialized = true;
         emit StreamProposed(streamId, _owner, mainToken, scheduleRewards[MAIN_STREAM]);
@@ -293,17 +293,17 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         emit StreamRemoved(streamId, stream.owner, stream.rewardToken);
     }
 
-    // function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-    //     if (councilsInitialized == true) {
-    //         revert AlreadyInitialized();
-    //     }
-    //     councilsInitialized = true;
-    //     for (uint256 i; i < lockParams.length; i++) {
-    //         address account = lockParams[i].account;
-    //         prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-    //         _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
-    //     }
-    // }
+    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (councilsInitialized == true) {
+            revert AlreadyInitialized();
+        }
+        councilsInitialized = true;
+        for (uint256 i; i < lockParams.length; i++) {
+            address account = lockParams[i].account;
+            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
+        }
+    }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
         _createLock(amount, lockPeriod, msg.sender);

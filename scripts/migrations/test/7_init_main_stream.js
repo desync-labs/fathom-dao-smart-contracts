@@ -9,6 +9,7 @@ const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const blockchain = require("../../tests/helpers/blockchain");
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 const LockPositionContextProxy = artifacts.require('./common/proxy/LockPositionContextProxy.sol');
+const StakingGettersHelper = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp();
@@ -53,8 +54,12 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
         },{
             type: 'address',
             name: '_lockPositionContext'
-        },]
-        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, tau, LockPositionContextProxy.address]);
+        },{
+            type: 'address',
+            name: '_stakingGetter'
+        }
+        ]
+        },  [MultiSigWallet.address, _scheduleTimes, _scheduleRewards, tau, LockPositionContextProxy.address, StakingGettersHelper.address]);
 
         return toInitializeMainStream
 }

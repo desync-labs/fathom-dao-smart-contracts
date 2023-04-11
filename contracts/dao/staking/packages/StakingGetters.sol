@@ -7,11 +7,12 @@ pragma solidity 0.8.16;
 import "../StakingStorage.sol";
 import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
+contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals,AccessControlUpgradeable {
     error StreamInactiveError();
     error BadIndexError();
-
+    
     function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }
@@ -31,7 +32,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
 
-    function readBySlot(uint256 slot) external view override returns(bytes32 value) {
+    function readBySlot(uint256 slot) external view onlyRole(STAKING_GETTER_HELPER_ROLE) override returns(bytes32 value) {
         assembly {
             value := sload(slot)
         }

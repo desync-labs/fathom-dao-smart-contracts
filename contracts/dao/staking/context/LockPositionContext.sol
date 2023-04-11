@@ -5,9 +5,16 @@ import "../StakingStructs.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "./ILockPositionContext.sol";
 contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
+    enum LockPositionState { 
+        None, 
+        Created, 
+        Approved, 
+        Executed 
+        }
+
     bytes32 public constant CONTEXT_CREATOR_ROLE = keccak256("CONTEXT_CREATOR_ROLE");
     bytes32 public constant CONTEXT_EXECUTOR_ROLE = keccak256("CONTEXT_EXECUTOR_ROLE");
-
+    
     event LockPositionContextCreated(
         bytes32 indexed requestHash, 
         uint256 amount, 
@@ -30,11 +37,8 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
     error ZeroAddress();
     
     mapping(bytes32 => CreateLockParams) public lockPositionContexts;
-    mapping(bytes32 => bool) public createdContextKeys; 
-    mapping(bytes32 => bool) public approvedContextKeys;
-    mapping(bytes32 => bool) public executedContextKeys;
+    mapping(bytes32 => LockPositionState) public lockPositionContextStates;
     mapping(address => CreateLockParams[]) public lockPositionContextsByAccount;
-    uint256 public totalRequests;
 
     modifier onlyContextCreator() {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(CONTEXT_CREATOR_ROLE, msg.sender), "only context creator");
@@ -72,28 +76,23 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
 
         lockPositionContextsByAccount[_account].push(lockPositionContext);
         bytes32 requestHash = keccak256(abi.encode(lockPositionContextsByAccount[_account].length,_amount,_lockPeriod,_account));
-        require(createdContextKeys[requestHash] == false, "lock position context already used");
+        require(lockPositionContextStates[requestHash] == LockPositionState.None, "lock position context already used");
         lockPositionContexts[requestHash] = lockPositionContext;
-        createdContextKeys[requestHash] = true; 
+        lockPositionContextStates[requestHash] = LockPositionState.Created;
         emit LockPositionContextCreated(requestHash, _amount, _lockPeriod, _account);
         return requestHash;
     }
 
     function approveLockPositionContext(bytes32 _requestHash) external  override {
-        require(createdContextKeys[_requestHash], "lock position context not created");
+        require(lockPositionContextStates[_requestHash] == LockPositionState.Created, "lock position context not created or already approved");
         CreateLockParams memory lockPositionContext = lockPositionContexts[_requestHash];
         require(msg.sender == lockPositionContext.account,"bad caller");
-        require(approvedContextKeys[_requestHash] == false, "lock position context already approved");
-        approvedContextKeys[_requestHash]  = true;
+        lockPositionContextStates[_requestHash] = LockPositionState.Approved;
         emit LockPositionContextApproved(_requestHash, lockPositionContext.amount, lockPositionContext.lockPeriod, lockPositionContext.account);
     }
     function getAndExecuteLockPositionContext(bytes32 _requestHash) external onlyContextExecutor override returns(CreateLockParams memory){
-        
-        require(createdContextKeys[_requestHash], "lock position context not created");
-        require(approvedContextKeys[_requestHash], "lock position context not approved");
-        require(!executedContextKeys[_requestHash], "lock position context already executed");
-        executedContextKeys[_requestHash] = true;
-        
+        require(lockPositionContextStates[_requestHash] == LockPositionState.Approved, "lock position context not approved or already executed");
+        lockPositionContextStates[_requestHash] = LockPositionState.Executed;
         emit LockPositionContextExecuted(
             _requestHash, 
             lockPositionContexts[_requestHash].amount, 
@@ -104,7 +103,6 @@ contract LockPositionContext is AccessControlUpgradeable, ILockPositionContext{
             lockPositionContexts[_requestHash].amount,
             lockPositionContexts[_requestHash].lockPeriod,
             lockPositionContexts[_requestHash].account);
-
     }
 
     function getLockPositionContextsByAccount(address account) external view override returns(CreateLockParams[] memory){

@@ -733,7 +733,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-                let errorMessage = "lock position context not approved"
+                let errorMessage = "lock position context not approved or already executed"
                 await shouldRevert(
                     multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
                     errTypes.revert,
@@ -807,7 +807,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-                let errorMessage = "lock position context already executed"
+                let errorMessage = "lock position context not approved or already executed"
                 await shouldRevert(
                     multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
                     errTypes.revert,
@@ -916,7 +916,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         })
 
         it("Should revert on approving lock position context that does not exist", async() => {
-            const errorMessage = "lock position context not created"
+            const errorMessage = "lock position context not created or already approved"
             await shouldRevert(
                 lockPositionContextService.approveLockPositionContext(
                     EMPTY_BYTES,
@@ -953,7 +953,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-                let errorMessage = "lock position context not created"
+                let errorMessage = "lock position context not approved or already executed"
                 await shouldRevert(
                     multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),
                     errTypes.revert,

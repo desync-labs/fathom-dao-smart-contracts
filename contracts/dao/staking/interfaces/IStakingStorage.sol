@@ -17,6 +17,4 @@ interface IStakingStorage {
     function totalPenaltyBalance() external view returns (uint256);
 
     function streamTotalUserPendings(uint256 streamId) external view returns (uint256);
-
-    function weight() external view returns (Weight memory);
 }
