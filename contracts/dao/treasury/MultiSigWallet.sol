@@ -138,7 +138,11 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
-    constructor(address[] memory _owners, uint256 _numConfirmationsRequired, address _governor) {
+    constructor(
+        address[] memory _owners,
+        uint256 _numConfirmationsRequired,
+        address _governor
+    ) {
         if (_owners.length > MAX_OWNER_COUNT) {
             revert OwnersLimitReached();
         }
@@ -181,7 +185,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].length();
 
-        for (uint i = 0; i < nConfirmedTxnByOwner; i++) {
+        for (uint256 i = 0; i < nConfirmedTxnByOwner; i++) {
             uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i);
             Transaction storage transaction = transactions[_txIndex];
             transaction.numConfirmations -= 1;
@@ -191,9 +195,12 @@ contract MultiSigWallet is IMultiSigWallet {
         emit OwnerRemoval(owner);
     }
 
-    function addOwners(
-        address[] calldata _owners
-    ) external override onlyWallet validRequirement(owners.length() + _owners.length, numConfirmationsRequired + _owners.length) {
+    function addOwners(address[] calldata _owners)
+        external
+        override
+        onlyWallet
+        validRequirement(owners.length() + _owners.length, numConfirmationsRequired + _owners.length)
+    {
         for (uint256 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
             if (owner == address(0)) {
@@ -232,9 +239,15 @@ contract MultiSigWallet is IMultiSigWallet {
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
     }
 
-    function confirmTransaction(
-        uint256 _txIndex
-    ) external override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) notExpired(_txIndex) {
+    function confirmTransaction(uint256 _txIndex)
+        external
+        override
+        onlyOwnerOrGov
+        txExists(_txIndex)
+        notExecuted(_txIndex)
+        notConfirmed(_txIndex)
+        notExpired(_txIndex)
+    {
         Transaction storage transaction = transactions[_txIndex];
 
         _requireTargetCodeNotChanged(transaction.to);
@@ -285,13 +298,18 @@ contract MultiSigWallet is IMultiSigWallet {
         return transactions.length;
     }
 
-    function getTransaction(
-        uint256 _txIndex
-    )
+    function getTransaction(uint256 _txIndex)
         external
         view
         override
-        returns (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expireTimestamp)
+        returns (
+            address to,
+            uint256 value,
+            bytes memory data,
+            bool executed,
+            uint256 numConfirmations,
+            uint256 expireTimestamp
+        )
     {
         Transaction memory transaction = transactions[_txIndex];
 

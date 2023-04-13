@@ -61,7 +61,11 @@ abstract contract IGovernor is IERC165 {
 
     function castVote(uint256 proposalId, uint8 support) external virtual returns (uint256 balance);
 
-    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external virtual returns (uint256 balance);
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) external virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParams(
         uint256 proposalId,
@@ -70,7 +74,13 @@ abstract contract IGovernor is IERC165 {
         bytes calldata params
     ) external virtual returns (uint256 balance);
 
-    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external virtual returns (uint256 balance);
+    function castVoteBySig(
+        uint256 proposalId,
+        uint8 support,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
@@ -82,7 +92,15 @@ abstract contract IGovernor is IERC165 {
         bytes32 s
     ) external virtual returns (uint256 balance);
 
-    function getProposals(uint256 _numIndexes) external view virtual returns (string[] memory, string[] memory, string[] memory);
+    function getProposals(uint256 _numIndexes)
+        external
+        view
+        virtual
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        );
 
     function getDescription(uint256 _proposalId) external view virtual returns (string memory);
 
@@ -100,7 +118,11 @@ abstract contract IGovernor is IERC165 {
 
     function getVotes(address account, uint256 blockNumber) external view virtual returns (uint256);
 
-    function getVotesWithParams(address account, uint256 blockNumber, bytes calldata params) external view virtual returns (uint256);
+    function getVotesWithParams(
+        address account,
+        uint256 blockNumber,
+        bytes calldata params
+    ) external view virtual returns (uint256);
 
     function hasVoted(uint256 proposalId, address account) external view virtual returns (bool);
 

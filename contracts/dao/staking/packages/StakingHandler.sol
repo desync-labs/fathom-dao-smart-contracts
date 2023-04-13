@@ -285,7 +285,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function createFixedLocksOnBehalfOfUserByAdmin(CreateLockParams[] calldata lockPositions) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i; i < lockPositions.length; i++) {
             address account = lockPositions[i].account;
-            if(account == address(0)) {
+            if (account == address(0)) {
                 revert ZeroAddress();
             }
             prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
@@ -462,7 +462,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         treasury = newTreasury;
     }
 
-    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
+    function _createLock(
+        uint256 amount,
+        uint256 lockPeriod,
+        address account
+    ) internal {
         if (lockPeriod < minLockPeriod) {
             revert MinLockPeriodNotMet();
         }

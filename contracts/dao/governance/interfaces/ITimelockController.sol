@@ -4,9 +4,21 @@
 pragma solidity 0.8.16;
 
 interface ITimelockController {
-    function initialize(uint256 minDelay, address admin, address[] calldata proposers, address[] calldata executors) external;
+    function initialize(
+        uint256 minDelay,
+        address admin,
+        address[] calldata proposers,
+        address[] calldata executors
+    ) external;
 
-    function schedule(address target, uint256 value, bytes calldata data, bytes32 predecessor, bytes32 salt, uint256 delay) external;
+    function schedule(
+        address target,
+        uint256 value,
+        bytes calldata data,
+        bytes32 predecessor,
+        bytes32 salt,
+        uint256 delay
+    ) external;
 
     function scheduleBatch(
         address[] calldata targets,
@@ -19,7 +31,13 @@ interface ITimelockController {
 
     function cancel(bytes32 id) external;
 
-    function execute(address target, uint256 value, bytes calldata payload, bytes32 predecessor, bytes32 salt) external payable;
+    function execute(
+        address target,
+        uint256 value,
+        bytes calldata payload,
+        bytes32 predecessor,
+        bytes32 salt
+    ) external payable;
 
     function executeBatch(
         address[] calldata targets,

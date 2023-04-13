@@ -23,7 +23,11 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
     }
 
-    function _moveRewardsToPending(address account, uint256 streamId, uint256 lockId) internal {
+    function _moveRewardsToPending(
+        address account,
+        uint256 streamId,
+        uint256 lockId
+    ) internal {
         if (streams[streamId].status != StreamStatus.ACTIVE) {
             revert InactiveStreamError();
         }

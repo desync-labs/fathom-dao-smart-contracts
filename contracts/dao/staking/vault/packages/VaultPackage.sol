@@ -46,7 +46,11 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
     }
 
-    function payRewards(address _user, address _token, uint256 _amount) external override pausable(1) {
+    function payRewards(
+        address _user,
+        address _token,
+        uint256 _amount
+    ) external override pausable(1) {
         if (!hasRole(REWARDS_OPERATOR_ROLE, msg.sender)) revert NoRewardsOperatorRole();
         if (!isSupportedToken[_token]) revert UnsupportedToken();
         if (_amount == 0) revert AmountZero();
@@ -94,7 +98,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     }
 
     function withdrawExtraSupportedTokens(address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint i = 0; i < listOfSupportedTokens.length; i++) {
+        for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             uint256 balanceToWithdraw;
             address _token = listOfSupportedTokens[i];
             uint256 balanceInContract = IERC20(_token).balanceOf(address(this));

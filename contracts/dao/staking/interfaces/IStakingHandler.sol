@@ -20,7 +20,12 @@ interface IStakingHandler {
         uint256 _minLockPeriod
     ) external;
 
-    function initializeMainStream(address _owner, uint256[] calldata scheduleTimes, uint256[] calldata scheduleRewards, uint256 tau) external;
+    function initializeMainStream(
+        address _owner,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
+        uint256 tau
+    ) external;
 
     function proposeStream(
         address streamOwner,
