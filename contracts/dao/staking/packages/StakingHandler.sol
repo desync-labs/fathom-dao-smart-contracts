@@ -280,27 +280,18 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     /**
-     * @dev Creating locks for council can be done by Admin only which is Multisig.
-     *      Multisig can create locks for councils
+     * @dev Admin can create a lock on behalf of a user without early withdrawal
      */
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (councilsInitialized == true) {
-            revert AlreadyInitialized();
+    function createFixedLockOnBehalfOfUserByAdmin(CreateLockParams calldata lockPosition) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        address account = lockPosition.account;
+        if(account == address(0)){
+            revert ZeroAddress();
         }
-        councilsInitialized = true;
-        for (uint256 i; i < lockParams.length; i++) {
-            address account = lockParams[i].account;
-            prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
-        }
+        prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+        _createLock(lockPosition.amount, lockPosition.lockPeriod, lockPosition.account);
     }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
-        _createLock(amount, lockPeriod, msg.sender);
-    }
-
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external override pausable(1) {
-        prohibitedEarlyWithdraw[msg.sender][locks[msg.sender].length + 1] = true;
         _createLock(amount, lockPeriod, msg.sender);
     }
 
