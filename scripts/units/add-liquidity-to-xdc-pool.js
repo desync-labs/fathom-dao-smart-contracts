@@ -6,16 +6,15 @@ const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol"
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
-const WETH_ADDRESS = addressesExternal.WETH_ADDRESS
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //FTHM address
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
+const addressesConfig = require('../../config/config.js')
+const WETH_ADDRESS = addressesConfig.WETH_ADDRESS
+const TOKEN_ADDRESS = addresses.fthmToken //FTHM address
+
 const AMOUNT_ETH = web3.utils.toWei('100', 'ether')
 const AMOUNT_ETH_MIN = web3.utils.toWei('50', 'ether')
 const SLIPPAGE = 0.05
 //const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
-const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
+const DEX_ROUTER_ADDRESS = addressesConfig.DEX_ROUTER_ADDRESS
 
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
@@ -83,7 +82,7 @@ const _encodeAddLiqudityFunction = (
 module.exports = async function(deployer) {
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     const deadline =  await getDeadlineTimestamp(10000)
-    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    const uniswapRouter = await IUniswapRouter.at(addressesConfig.DEX_ROUTER_ADDRESS)
 
     //ReserveA/ReserveB = (ReserveA + QTYA)/(ReserveB + QTYB)
     //ReserveA*ReserveB + ReserveA*QTYB = ReserveA*ReserveB +ReserveB*QRYA

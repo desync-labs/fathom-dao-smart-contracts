@@ -9,18 +9,17 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const rawDataStablecoin = fs.readFileSync('../../config/stablecoin-addresses-proxy-wallet.json');
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
-const XDC_COL = web3.utils.toWei('20','ether')
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
 
-//xdcBe6f6500C3e45a78E17818570b99a7646F8b59F3
+const XDC_COL = web3.utils.toWei('20','ether')
+const addressesConfig = require('../../config/config.js')
+
 const PROXY_WALLET = addressesStableCoin.proxyWallet
 
-const positionMananger = addressesExternal.positionManager
-const stabilityFeeCollector = addressesExternal.stabilityFeeCollector
-const xdcAdapter = addressesExternal.xdcAdapter
-const stablecoinAdapter = addressesExternal.stablecoinAdapter
-const collateralPoolId = addressesExternal.collateralPoolId
+const positionMananger = addressesConfig.POSITION_MANAGER_ADDRESS
+const stabilityFeeCollector = addressesConfig.STABILIITY_FEE_COLLECTOR_ADDRESS
+const xdcAdapter = addressesConfig.COLLATERAL_TOKEN_ADAPTER_ADDRESS
+const stablecoinAdapter = addressesConfig.STABLE_COIN_ADAPTER_ADDRESS
+const collateralPoolId = addressesConfig.collateralPoolId
 
 const stablecoinAmount = web3.utils.toWei('5')
 const data  = "0x00"

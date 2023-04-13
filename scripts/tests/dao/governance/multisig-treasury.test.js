@@ -1,5 +1,6 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
+const constants = require("../../helpers/testConstants");
 const {
     shouldRevert,
     errTypes,
@@ -7,9 +8,9 @@ const {
 } = require('../../helpers/expectThrow');
 
 // constants
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 // event
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 // Token variables
 const AMOUNT_OUT_TREASURY = "1000";

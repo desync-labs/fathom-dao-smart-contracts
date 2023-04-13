@@ -1,10 +1,10 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../../../config/config.js')
 
 const CAGE_COOL_DOWN =1 
-const SHOW_STOPPER_ADDRESS =addressesExternal.SHOW_STOPPER_ADDRESS
+const SHOW_STOPPER_ADDRESS =addressesConfig.SHOW_STOPPER_ADDRESS
 
 const _encodeSetCageCooldown = (_cageCoolDown) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({

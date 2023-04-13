@@ -1,9 +1,9 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
 
-const SYSTEM_DEBT_ENGINE_ADDRESS =addressesExternal.SYSTEM_DEBT_ENGINE_ADDRSESS
+const addressesConfig = require('../../../../config/config.js')
+
+const SYSTEM_DEBT_ENGINE_ADDRESS =addressesConfig.SYSTEM_DEBT_ENGINE_ADDRSESS
 const COLLATERAL_POOL_ID = ''
 const ADAPTER = ''
 const TO = ''

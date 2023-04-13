@@ -1,12 +1,22 @@
 const fs = require('fs');
+const path = require('path');
+
+const filePath = '../../../config/newly-generated-transaction-index.json';
+const dirPath = path.dirname(filePath);
 
 let rawdata;
-if (fs.existsSync('../../../config/newly-generated-transaction-index.json')) {
-  rawdata = fs.readFileSync('../../../config/newly-generated-transaction-index.json');
-} else {
+if (fs.existsSync(filePath)) {
+  rawdata = fs.readFileSync(filePath);
+} else if (!fs.existsSync(dirPath)) {
+    // create new directory
+    fs.mkdirSync(dirPath, { recursive: true });
+    // create new file
+    fs.writeFileSync(filePath, '{}');
+    rawdata = fs.readFileSync(filePath);
+} else{
   // create new file
-  fs.writeFileSync('../../../config/newly-generated-transaction-index.json', '{}');
-  rawdata = fs.readFileSync('../../../config/newly-generated-transaction-index.json');
+  fs.writeFileSync(filePath, '{}');
+  rawdata = fs.readFileSync(filePath);
 }
 
 const constants = require('./constants')
@@ -17,7 +27,7 @@ async function saveTxnIndex(
 )
 {
     let newTxnStore;
-
+    console.log("Transaction Saving : .................", TransactionName)
     if(rawdata.length <=0){
         //if no data present just create a new object and have idx as 1
         let object = {}
@@ -56,9 +66,8 @@ async function saveTxnIndex(
     fs.writeFileSync(constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX,data, function(err){
         if(err){
             console.log(err)
-        }
+        } 
     })
-
 }
 
 module.exports = {
