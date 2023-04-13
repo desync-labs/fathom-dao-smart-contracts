@@ -8,11 +8,11 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
-const STABLE_SWAP_ADDRESS = addressesExternal.STABLE_SWAP_ADDRESS
-const USDAddress = addressesExternal.USD_ADDRESS
-const FXDAddress = addressesExternal.FXD_ADDRESS
+
+const addressesConfig = require('../../config/config.js')
+const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
+const USDAddress = addressesConfig.USD_ADDRESS
+const FXDAddress = addressesConfig.FXD_ADDRESS
 //const STABLE_SWAP_ADDRESS = "";
 const USDDepositAmount = web3.utils.toWei('400000','ether')
 const FXDDepositAmount = web3.utils.toWei('400000','ether')

@@ -64,7 +64,12 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
     // solhint-disable-next-line comprehensive-interface
     receive() external payable {}
 
-    function initialize(uint256 minDelay, address admin, address[] memory proposers, address[] memory executors) public override initializer {
+    function initialize(
+        uint256 minDelay,
+        address admin,
+        address[] memory proposers,
+        address[] memory executors
+    ) public override initializer {
         if (minDelay == 0) {
             revert ZeroValue();
         }
@@ -266,7 +271,11 @@ contract TimelockController is AccessControl, Initializable, ITimelockController
         return keccak256(abi.encode(targets, values, payloads, predecessor, salt));
     }
 
-    function _execute(address target, uint256 value, bytes memory data) internal virtual {
+    function _execute(
+        address target,
+        uint256 value,
+        bytes memory data
+    ) internal virtual {
         (bool success, ) = target.call{ value: value }(data);
         emit ExecuteTransaction(msg.sender, success, data);
     }

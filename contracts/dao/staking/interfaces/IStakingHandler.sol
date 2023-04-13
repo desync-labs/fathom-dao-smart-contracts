@@ -10,6 +10,7 @@ interface IStakingHandler {
     function initializeStaking(
         address _admin,
         address _vault,
+        address _treasury,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
@@ -19,11 +20,17 @@ interface IStakingHandler {
         uint256 _minLockPeriod
     ) external;
 
-    function initializeMainStream(address _owner, uint256[] calldata scheduleTimes, uint256[] calldata scheduleRewards, uint256 tau) external;
+    function initializeMainStream(
+        address _owner,
+        uint256[] calldata scheduleTimes,
+        uint256[] calldata scheduleRewards,
+        uint256 tau
+    ) external;
 
     function proposeStream(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] calldata scheduleTimes,
@@ -53,17 +60,17 @@ interface IStakingHandler {
 
     function withdrawAllStreams() external;
 
-    function withdrawPenalty(address penaltyReceiver) external;
+    function withdrawPenalty() external;
 
     function updateVault(address _vault) external;
 
     function emergencyUnlockAndWithdraw() external;
 
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external;
-
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external;
+    function createFixedLocksOnBehalfOfUserByAdmin(CreateLockParams[] calldata lockPosition) external;
 
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
 
     function setMaxLockPositions(uint256 newMaxLockPositions) external;
+
+    function setTreasuryAddress(address newTreasury) external;
 }

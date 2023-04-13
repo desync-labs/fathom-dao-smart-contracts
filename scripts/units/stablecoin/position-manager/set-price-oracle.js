@@ -1,10 +1,10 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../../../config/config.js')
 
 const PRICE_ORACLE = ""
-const POSITION_MANAGER_ADDRESS =addressesExternal.POSITION_MANAGER_ADDRESS
+const POSITION_MANAGER_ADDRESS =addressesConfig.POSITION_MANAGER_ADDRESS
 
 const _encodeSetPriceOracle = (_priceOracle) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({

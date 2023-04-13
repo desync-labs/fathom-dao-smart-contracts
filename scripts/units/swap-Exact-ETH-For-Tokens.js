@@ -8,15 +8,15 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
-const WETH_ADDRESS = addressesExternal.WETH_ADDRESS
-const TOKEN_ADDRESS = "0x3f680943866a8b6DBb61b4712c27AF736BD2fE9A" //WXDC
+
+const addressesConfig = require('../../config/config.js')
+const WETH_ADDRESS = addressesConfig.WETH_ADDRESS
+const TOKEN_ADDRESS = addresses.fthmToken //fthm
 
 const AMOUNT_IN_ETH = '2'
 const SLIPPAGE = 0.05
 
-const DEX_ROUTER_ADDRESS = addressesExternal.DEX_ROUTER_ADDRESS
+const DEX_ROUTER_ADDRESS = addressesConfig.DEX_ROUTER_ADDRESS
 
 const _encodeSwapExactETHForTokens = (
     _amountOutMin,
@@ -57,7 +57,7 @@ const _encodeSwapExactETHForTokens = (
 module.exports = async function(deployer) {
     //we want to swap exact eth for tokens
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
-    const uniswapRouter = await IUniswapRouter.at(addressesExternal.DEX_ROUTER_ADDRESS)
+    const uniswapRouter = await IUniswapRouter.at(addressesConfig.DEX_ROUTER_ADDRESS)
     //we set path to swap from WETH and receive Token
     const path = [WETH_ADDRESS, TOKEN_ADDRESS] 
     // we set exact eth that we want to swap

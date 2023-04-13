@@ -30,7 +30,18 @@ contract StakingGettersHelper is IStakingGetterHelper, AccessControl {
         return _getWeight();
     }
 
-    function getLock(address account, uint256 lockId) external view override returns (uint128, uint128, uint64, address, uint256) {
+    function getLock(address account, uint256 lockId)
+        external
+        view
+        override
+        returns (
+            uint128,
+            uint128,
+            uint64,
+            address,
+            uint256
+        )
+    {
         LockedBalance memory lock = getLockInfo(account, lockId);
         return (lock.amountOfToken, lock.positionStreamShares, lock.end, lock.owner, lock.amountOfVoteToken);
     }

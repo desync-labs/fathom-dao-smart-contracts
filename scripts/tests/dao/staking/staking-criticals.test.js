@@ -4,7 +4,7 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-
+const constants = require("../../helpers/testConstants");
 
 const maxGasForTxn = 600000
 const {
@@ -23,10 +23,10 @@ const staker_5 = accounts[7];
 const stream_manager = accounts[7];
 const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
-
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const percentToTreasury = 50;
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 // event
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 
 const _getTimeStamp = async () => {
@@ -107,6 +107,32 @@ const _encodeUpgradeFunction = (_proxy, _impl) => {
     return toRet;
 }
 
+const _encodeUpdateVault = (_vault) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'updateVault',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_vault'
+        }]
+    }, [_vault]);
+
+    return toRet;
+}
+
+const _encodeMigrate = (_newVaultPackage) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'migrate',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'newVaultPackage'
+        }]
+    }, [_newVaultPackage]);
+
+    return toRet;
+}
+
 const _encodeAddSupportedTokenFunction = (_token) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'addSupportedToken',
@@ -120,9 +146,22 @@ const _encodeAddSupportedTokenFunction = (_token) => {
     return toRet;
 }
 
+const _encodeAdminPause = (flag) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'adminPause',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'flags'
+        }]}, [flag]);
+
+    return toRet;
+}
+
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -138,6 +177,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -157,6 +200,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -167,7 +211,9 @@ const _encodeProposeStreamFunction = (
     return toRet;
 }
 
-describe("Staking Test and Upgrade Test", () => {
+
+
+describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
 
     const oneYear = 31556926;
     let stakingService;
@@ -194,12 +240,13 @@ describe("Staking Test and Upgrade Test", () => {
     let proxyAddress;
     let vaultProxyAdmin;
     let stakingProxyAdmin;
-
+    let vaultMigrateService;
+    let snapshotToRevertTo;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
-    const sumToTransfer = web3.utils.toWei('4000', 'ether');
-    const sumToApprove = web3.utils.toWei('3000','ether');
-    const sumForProposer = web3.utils.toWei('3000','ether')
+    const sumToTransfer = web3.utils.toWei('2000', 'ether');
+    const sumToApprove = web3.utils.toWei('2000','ether');
+    const sumForProposer = web3.utils.toWei('20000','ether')
     const vMainTokensToApprove = web3.utils.toWei('500000', 'ether')
 
     before(async() => {
@@ -254,6 +301,11 @@ describe("Staking Test and Upgrade Test", () => {
         stakingProxyAdmin = await artifacts.initializeInterfaceAt(
             "StakingProxyAdmin",
             "StakingProxyAdmin"
+        )
+
+        vaultMigrateService = await artifacts.initializeInterfaceAt(
+            "IVault",
+            "VaultProxyMigrate"
         )
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -539,7 +591,7 @@ describe("Staking Test and Upgrade Test", () => {
     });
     
     describe('Creating Streams and Rewards Calculations', async() => {
-        it("Should propose a second stream, stream - 1", async() => {
+        it("Should propose first stream, stream - 1", async() => {
             console.log("A protocol wanting to collaborate with us, proposes a stream")
             console.log("They provide us their native tokens that they want to distribute to the community")
             console.log(".........Creating a Proposal for a stream..........")
@@ -558,8 +610,9 @@ describe("Staking Test and Upgrade Test", () => {
             ];
 
             const _proposeStreamFromMultiSigTreasury = async (
-                _stream_rewarder_2,
-                _streamReward2Address,
+                _stream_rewarder_1,
+                _streamReward1Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -570,8 +623,9 @@ describe("Staking Test and Upgrade Test", () => {
                     stakingService.address, 
                     EMPTY_BYTES, 
                     _encodeProposeStreamFunction(
-                        _stream_rewarder_2,
-                        _streamReward2Address,
+                        _stream_rewarder_1,
+                        _streamReward1Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -590,8 +644,9 @@ describe("Staking Test and Upgrade Test", () => {
             }
     
             await _proposeStreamFromMultiSigTreasury(
-                stream_rewarder_2,
-                streamReward2Address,
+                stream_rewarder_1,
+                streamReward1Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -607,8 +662,8 @@ describe("Staking Test and Upgrade Test", () => {
             console.log(".........Creating the stream proposed.........")
             console.log("Once create stream is called, the proposal will become live once start time is reached")
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
-            await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
-            await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_2});
+            await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
+            await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_1});
         })
 
         it("Should grant admin role to accounts[0] and withdraw extra supported tokens", async() =>{
@@ -635,18 +690,419 @@ describe("Staking Test and Upgrade Test", () => {
 
             await vaultService.withdrawExtraSupportedTokens(accounts[0], {"from": accounts[0]});
         })
+    })
+
+    describe('Scenario - to pause staking service in case of emergency shutdown, let users to withdraw using emergencyUnlockAndWithdraw and then pause the Vault Contract as well', async() => {
+        
+        it('Should make lock position staker_4 - here we create snapshot', async() => {
+            snapshotToRevertTo = await blockchain.createSnapshot()
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_4})
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_4', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+
+        it("Should pause the staking in case of emergency", async() => {
+            const toPauseFlag = 1
+            const _pauseContract = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    _contract.address, 
+                    EMPTY_BYTES, 
+                    _encodeAdminPause(toPauseFlag),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _pauseContract(stakingService)
+            
+        })
+        
+
+        it("Should emergency unlock locked position for staker_3 - emergency unlock will be available for certain time", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await stakingService.emergencyUnlockAndWithdraw({"from": staker_3, gas: 30000000});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should add support for tokens for new VaultPackageMigrate", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultMigrateService.address, 
+                    EMPTY_BYTES, 
+                    _encodeAddSupportedTokenFunction(_token),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            
+
+            await _addSupportedTokenFromMultiSigTreasury(streamReward1Address)
+            await _addSupportedTokenFromMultiSigTreasury(streamReward2Address)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
 
         
 
-        it('Should not be initalizable twice', async() => {
-            const errorMessage = "Initializable: contract is already initialized";
-            shouldRevert(
-                vMainToken.initToken(multiSigWallet.address, stakingService.address, {gas: 8000000}),
-                errTypes.revert,
-                errorMessage
-            ); 
-            
+        it("Should grant role of rewards operator to new vaultMigrateService", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const roleHash = web3.utils.soliditySha3('REWARDS_OPERATOR_ROLE');
+            const _grantRoleMultisig = async (_role, _account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultMigrateService.address, 
+                    EMPTY_BYTES, 
+                    _encodeGrantRole(_role, _account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(txIndex, {"from": accounts[1]});
+            }
+
+            await _grantRoleMultisig(
+                roleHash,
+                vaultService.address
+            )
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should pause the vault in case of emergency", async() => {
+            const toPauseFlag = 1
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _pauseContract = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    _contract.address, 
+                    EMPTY_BYTES, 
+                    _encodeAdminPause(toPauseFlag),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _pauseContract(vaultService)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+
+        it("Should migrate original vault tokens to vaultMigrateService", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _migrateVaultTokens = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultService.address, 
+                    EMPTY_BYTES, 
+                    _encodeMigrate(_contract),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _migrateVaultTokens(vaultMigrateService.address)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should revert emergency unlock as vault does not have enough tokens after migration", async() => {
+            let errorMessage = "revert";
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await shouldRevertAndHaveSubstring(
+                stakingService.emergencyUnlockAndWithdraw(
+                    {"from": staker_4, gas: 30000000}),
+                    errTypes.revert,
+                    errorMessage);
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
     })
+
+    describe('Scenario - when the vault is compromised and we need to pause the vault and update vault to new address', async() => {
+        it('Should make lock position staker_4 - here we revert to previous snapshot', async() => {
+            await blockchain.revertToSnapshot(snapshotToRevertTo);
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_4})
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_4', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should pause the vault in case of emergency", async() => {
+            const toPauseFlag = 1
+            const _pauseContract = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    _contract.address, 
+                    EMPTY_BYTES, 
+                    _encodeAdminPause(toPauseFlag),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _pauseContract(vaultService)
+            
+        })
+
+        it("Should revert on creating locks and vault is paused", async() => {
+            let errorMessage = "paused contract";
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await shouldRevert(
+                stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn}),
+                    errTypes.revert,
+                    errorMessage);
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should pause the staking contract to update vault", async() => {
+            const toPauseFlag = 1
+            const _pauseContract = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    _contract.address, 
+                    EMPTY_BYTES, 
+                    _encodeAdminPause(toPauseFlag),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _pauseContract(stakingService)
+            
+        })
+
+        it("Should revert emergency unlock as vault is paused", async() => {
+            let errorMessage = "revert";
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await shouldRevertAndHaveSubstring(
+                stakingService.emergencyUnlockAndWithdraw(
+                    {"from": staker_4, gas: 30000000}),
+                    errTypes.revert,
+                    errorMessage);
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        
+        it("Should add support for tokens for new VaultPackageMigrate", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _addSupportedTokenFromMultiSigTreasury = async (_token) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultMigrateService.address, 
+                    EMPTY_BYTES, 
+                    _encodeAddSupportedTokenFunction(_token),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            
+
+            await _addSupportedTokenFromMultiSigTreasury(streamReward1Address)
+            await _addSupportedTokenFromMultiSigTreasury(streamReward2Address)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+
+        it("Should grant role of rewards operator to old vault service for new vault package", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const roleHash = web3.utils.soliditySha3('REWARDS_OPERATOR_ROLE');
+            const _grantRoleMultisig = async (_role, _account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultMigrateService.address, 
+                    EMPTY_BYTES, 
+                    _encodeGrantRole(_role, _account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                txIndex = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(txIndex, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(txIndex, {"from": accounts[1]});
+            }
+
+            await _grantRoleMultisig(
+                roleHash,
+                vaultService.address
+            )
+
+            await _grantRoleMultisig(
+                roleHash,
+                stakingService.address
+            )
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+
+        it("Should migrate original vault tokens to vaultMigrateService", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _migrateVaultTokens = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    vaultService.address, 
+                    EMPTY_BYTES, 
+                    _encodeMigrate(_contract),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _migrateVaultTokens(vaultMigrateService.address)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should update vault", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            const _updateVault = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address, 
+                    EMPTY_BYTES, 
+                    _encodeUpdateVault(_contract),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _updateVault(vaultMigrateService.address)
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should unpause staking and the normal create locking should work", async() => {
+            const toUnpauseFlag = 0
+            const _unpauseContract = async (_contract) => {
+                const result = await multiSigWallet.submitTransaction(
+                    _contract.address, 
+                    EMPTY_BYTES, 
+                    _encodeAdminPause(toUnpauseFlag),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _unpauseContract(stakingService)
+        })
+
+        it('Should make lock position staker_3', async() => {
+            const unlockTime =  20 * 24 * 60 * 60
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            let result3 = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_3, gas: maxGasForTxn});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+    })
+
 });
    

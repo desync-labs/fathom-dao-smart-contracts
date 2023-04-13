@@ -1,10 +1,10 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../../../config/config.js')
 
 const _destination = ""
-const STABLE_SWAP_ADDRESS =addressesExternal.STABLE_SWAP_ADDRESS
+const STABLE_SWAP_ADDRESS =addressesConfig.STABLE_SWAP_ADDRESS
 
 const _encodeWithdrawFees = (_destination) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({

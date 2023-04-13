@@ -33,7 +33,14 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         _delegate(_msgSender(), delegatee);
     }
 
-    function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external virtual override {
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual override {
         // solhint-disable-next-line not-rely-on-time
         if (block.timestamp > expiry) {
             revert SignatureExpired();
@@ -91,7 +98,11 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         _writeCheckpoint(_totalSupplyCheckpoints, _subtract, amount);
     }
 
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override {
         super._afterTokenTransfer(from, to, amount);
 
         _moveVotingPower(delegates(from), delegates(to), amount);
@@ -111,7 +122,11 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         return type(uint224).max;
     }
 
-    function _moveVotingPower(address src, address dst, uint256 amount) private {
+    function _moveVotingPower(
+        address src,
+        address dst,
+        uint256 amount
+    ) private {
         if (src != dst && amount > 0) {
             if (src != address(0)) {
                 (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(_checkpoints[src], _subtract, amount);

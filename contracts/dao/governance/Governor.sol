@@ -44,11 +44,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     event ConfirmProposal(address indexed signer, uint256 indexed proposalId);
     event RevokeConfirmation(address indexed signer, uint256 indexed proposalId);
-    event ExecuteProposal(address indexed signer, uint256 indexed proposalId);
+    event ExecuteProposal(address indexed owner, bool indexed success, bytes data);
     event MultiSigUpdated(address newMultiSig, address oldMultiSig);
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
-    event ExecuteTransaction(address indexed owner, bool indexed success, bytes data);
     event ProposalLifetimeUpdated(uint256 newProposalLifetime, uint256 oldProposalLifetime);
     event EmergencyStop();
 
@@ -228,7 +227,11 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _castVote(proposalId, voter, support, "");
     }
 
-    function castVoteWithReason(uint256 proposalId, uint8 support, string memory reason) public virtual override returns (uint256) {
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string memory reason
+    ) public virtual override returns (uint256) {
         if (live != 1) {
             revert NotLive();
         }
@@ -249,7 +252,13 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _castVote(proposalId, voter, support, reason, params);
     }
 
-    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) public virtual override returns (uint256) {
+    function castVoteBySig(
+        uint256 proposalId,
+        uint8 support,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual override returns (uint256) {
         if (live != 1) {
             revert NotLive();
         }
@@ -368,7 +377,16 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         isBlocklisted[account] = blocklistStatus;
     }
 
-    function getProposals(uint256 _numIndexes) public view override returns (string[] memory, string[] memory, string[] memory) {
+    function getProposals(uint256 _numIndexes)
+        public
+        view
+        override
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         uint256 len = _proposalIds.length;
 
         if (len == 0) {
@@ -395,7 +413,11 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return _getVotes(account, blockNumber, _defaultParams());
     }
 
-    function getVotesWithParams(address account, uint256 blockNumber, bytes memory params) public view virtual override returns (uint256) {
+    function getVotesWithParams(
+        address account,
+        uint256 blockNumber,
+        bytes memory params
+    ) public view virtual override returns (uint256) {
         return _getVotes(account, blockNumber, params);
     }
 
@@ -503,10 +525,16 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         emit EmergencyStop();
     }
 
-    function _countVote(uint256 proposalId, address account, uint8 support, uint256 weight, bytes memory params) internal virtual;
+    function _countVote(
+        uint256 proposalId,
+        address account,
+        uint8 support,
+        uint256 weight,
+        bytes memory params
+    ) internal virtual;
 
     function _execute(
-        uint256 /*proposalId*/,
+        uint256, /*proposalId*/
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
@@ -514,14 +542,14 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     ) internal virtual {
         for (uint256 i = 0; i < targets.length; ++i) {
             (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(calldatas[i]);
-            emit ExecuteTransaction(msg.sender, success, returndata);
+            emit ExecuteProposal(msg.sender, success, returndata);
         }
     }
 
     function _beforeExecute(
-        uint256 /* proposalId */,
+        uint256, /* proposalId */
         address[] memory targets,
-        uint256[] memory /* values */,
+        uint256[] memory, /* values */
         bytes[] memory calldatas,
         bytes32 /*descriptionHash*/
     ) internal virtual {
@@ -535,10 +563,10 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     }
 
     function _afterExecute(
-        uint256 /* proposalId */,
-        address[] memory /* targets */,
-        uint256[] memory /* values */,
-        bytes[] memory /* calldatas */,
+        uint256, /* proposalId */
+        address[] memory, /* targets */
+        uint256[] memory, /* values */
+        bytes[] memory, /* calldatas */
         bytes32 /*descriptionHash*/
     ) internal virtual {
         if (_executor() != address(this)) {
@@ -567,7 +595,12 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return proposalId;
     }
 
-    function _castVote(uint256 proposalId, address account, uint8 support, string memory reason) internal virtual returns (uint256) {
+    function _castVote(
+        uint256 proposalId,
+        address account,
+        uint8 support,
+        string memory reason
+    ) internal virtual returns (uint256) {
         return _castVote(proposalId, account, support, reason, _defaultParams());
     }
 
@@ -602,7 +635,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         nextAcceptableProposalTimestamp[account] = block.timestamp + proposalTimeDelay;
     }
 
-    function _getProposals1(uint256 _numIndexes) internal view returns (string[] memory, string[] memory, string[] memory) {
+    function _getProposals1(uint256 _numIndexes)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory statuses = new string[](_numIndexes);
         string[] memory descriptionsArray = new string[](_numIndexes);
         string[] memory proposalIds = new string[](_numIndexes);
@@ -635,7 +676,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return (proposalIds, descriptionsArray, statuses);
     }
 
-    function _getProposalsAll(uint256 len) internal view returns (string[] memory, string[] memory, string[] memory) {
+    function _getProposalsAll(uint256 len)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory statuses = new string[](len);
         string[] memory descriptionsArray = new string[](len);
         string[] memory proposalIds = new string[](len);
@@ -656,7 +705,15 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
         return (proposalIds, descriptionsArray, statuses);
     }
 
-    function _getProposals(uint256 _numIndexes, uint256 len) internal view returns (string[] memory, string[] memory, string[] memory) {
+    function _getProposals(uint256 _numIndexes, uint256 len)
+        internal
+        view
+        returns (
+            string[] memory,
+            string[] memory,
+            string[] memory
+        )
+    {
         string[] memory statuses = new string[](_numIndexes);
         string[] memory descriptionsArray = new string[](_numIndexes);
         string[] memory proposalIds = new string[](_numIndexes);
@@ -699,7 +756,11 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
 
     function _voteSucceeded(uint256 proposalId) internal view virtual returns (bool);
 
-    function _getVotes(address account, uint256 blockNumber, bytes memory params) internal view virtual returns (uint256);
+    function _getVotes(
+        address account,
+        uint256 blockNumber,
+        bytes memory params
+    ) internal view virtual returns (uint256);
 
     function _defaultParams() internal view virtual returns (bytes memory) {
         return "";

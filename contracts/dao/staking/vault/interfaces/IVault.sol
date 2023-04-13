@@ -12,7 +12,11 @@ interface IVault {
 
     function removeSupportedToken(address _token) external;
 
-    function payRewards(address _user, address _token, uint256 _deposit) external;
+    function payRewards(
+        address _user,
+        address _token,
+        uint256 _deposit
+    ) external;
 
     function migrate(address vaultPackageMigrateTo) external;
 

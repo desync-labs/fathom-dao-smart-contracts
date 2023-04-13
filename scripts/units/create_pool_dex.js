@@ -8,12 +8,13 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../config/config.js')
 
 
-const Token_A_Address = "0x08B5860daD9947677F2a9d7DE563cBec9980E44c" //FXD
-const Token_B_Address = "0xC3047F0dF34216860448D848f3419CDCF73c6165" //FTHM
+const Token_A_Address = addressesConfig.USD_ADDRESS //USD
+const Token_B_Address =  addressesConfig.WETH_ADDRESS //WXDC
+
 // SET AS Necessary
 const Amount_A_Desired = web3.utils.toWei('2', 'ether')
 const Amount_B_Desired = web3.utils.toWei('38', 'ether')
@@ -25,7 +26,7 @@ const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
 // const Amount_A_Minimum = web3.utils.toWei('200000', 'ether')
 // const Amount_B_Minimum = web3.utils.toWei('9000000', 'ether')
 //What should
-const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95" //SET NEW ROUTER
+const DEX_ROUTER_ADDRESS = addressesConfig.DEX_ROUTER_ADDRESS
 const _encodeApproveFunction = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'approve',

@@ -1,22 +1,23 @@
 const fs = require('fs');
 const txnSaver = require('./helpers/transactionSaver')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
+const addressesConfig = require('../../config/config.js')
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const constants = require('./helpers/constants')
-
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const REWARD_TOKEN_ADDRESS = ""
-const STREAM_OWNER = ""
+const REWARD_TOKEN_ADDRESS = addresses.fthmToken //set as needed
+const STREAM_OWNER = addressesConfig.COUNCIL_1 //set as needed
 const MAX_DEPOSIT_AMOUNT = web3.utils.toWei('','ether')
 const MIN_DEPOSIT_AMOUNT = web3.utils.toWei('','ether')
-
+const PERCENT_TO_TREASURY = 0
 
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -32,6 +33,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -51,6 +56,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -90,6 +96,7 @@ module.exports = async function(deployer) {
         _encodeProposeStreamFunction(
             STREAM_OWNER,
             REWARD_TOKEN_ADDRESS,
+            PERCENT_TO_TREASURY,
             MAX_DEPOSIT_AMOUNT,
             MIN_DEPOSIT_AMOUNT,
             scheduleTimes,

@@ -19,6 +19,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error NotPaused();
     error VaultNotSupported(address _vault);
     error VaultNotMigrated(address _vault);
+    error VaultMigrated(address _vault);
     error ZeroLockId();
     error MaxLockPeriodExceeded();
     error MaxLockIdExceeded(uint256 _lockId, address _account);
@@ -46,6 +47,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error MaxLockPositionsReached();
     error ZeroAmount();
     error NotLockOwner();
+    error BadRewardsAmount();
 
     constructor() {
         _disableInitializers();
@@ -65,6 +67,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function initializeStaking(
         address _admin,
         address _vault,
+        address _treasury,
         address _mainToken,
         address _voteToken,
         Weight calldata _weight,
@@ -74,13 +77,13 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         uint256 _minLockPeriod
     ) external override initializer {
         rewardsCalculator = _rewardsContract;
-        _initializeStaking(_mainToken, _voteToken, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
+        _initializeStaking(_mainToken, _voteToken, _treasury, _weight, _vault, _maxLocks, voteCoef.voteShareCoef, voteCoef.voteLockCoef);
         if (!IVault(vault).isSupportedToken(_mainToken)) {
             revert UnsupportedToken();
         }
         pausableInit(1, _admin);
         _grantRole(STREAM_MANAGER_ROLE, _admin);
-        _grantRole(TREASURY_ROLE, _admin);
+        _grantRole(TREASURY_ROLE, _treasury);
         maxLockPeriod = ONE_YEAR;
         minLockPeriod = _minLockPeriod;
     }
@@ -99,13 +102,23 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             revert AlreadyInitialized();
         }
         IERC20(mainToken).safeTransferFrom(msg.sender, address(this), scheduleRewards[0]);
-        _validateStreamParameters(_owner, mainToken, scheduleRewards[MAIN_STREAM], scheduleRewards[MAIN_STREAM], scheduleTimes, scheduleRewards, tau);
+        _validateStreamParameters(
+            _owner,
+            mainToken,
+            0,
+            scheduleRewards[MAIN_STREAM],
+            scheduleRewards[MAIN_STREAM],
+            scheduleTimes,
+            scheduleRewards,
+            tau
+        );
         uint256 streamId = 0;
         Schedule memory schedule = Schedule(scheduleTimes, scheduleRewards);
         streams.push(
             Stream({
                 owner: _owner,
                 manager: _owner,
+                percentToTreasury: 0,
                 rewardToken: mainToken,
                 maxDepositAmount: 0,
                 minDepositAmount: 0,
@@ -144,13 +157,23 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     function proposeStream(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] calldata scheduleTimes,
         uint256[] calldata scheduleRewards,
         uint256 tau
     ) external override onlyRole(STREAM_MANAGER_ROLE) {
-        _validateStreamParameters(streamOwner, rewardToken, maxDepositAmount, minDepositAmount, scheduleTimes, scheduleRewards, tau);
+        _validateStreamParameters(
+            streamOwner,
+            rewardToken,
+            percentToTreasury,
+            maxDepositAmount,
+            minDepositAmount,
+            scheduleTimes,
+            scheduleRewards,
+            tau
+        );
         if (!IVault(vault).isSupportedToken(rewardToken)) {
             revert UnsupportedToken();
         }
@@ -160,6 +183,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
             Stream({
                 owner: streamOwner,
                 manager: msg.sender,
+                percentToTreasury: percentToTreasury,
                 rewardToken: rewardToken,
                 maxDepositAmount: maxDepositAmount,
                 minDepositAmount: minDepositAmount,
@@ -180,25 +204,42 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      */
     function createStream(uint256 streamId, uint256 rewardTokenAmount) external override pausable(1) {
         Stream storage stream = streams[streamId];
-        _verifyStream(stream, rewardTokenAmount);
-
-        IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
+        _verifyStream(stream);
 
         stream.status = StreamStatus.ACTIVE;
 
-        stream.rewardDepositAmount = rewardTokenAmount;
-        if (rewardTokenAmount < stream.maxDepositAmount) {
-            _updateStreamsRewardsSchedules(streamId, rewardTokenAmount);
+        if (rewardTokenAmount < REWARDS_TO_TREASURY_DENOMINATOR) {
+            revert BadRewardsAmount();
         }
+        uint256 rewardsTokenToTreasury = (stream.percentToTreasury * rewardTokenAmount) / REWARDS_TO_TREASURY_DENOMINATOR;
+
+        stream.rewardDepositAmount = rewardTokenAmount - rewardsTokenToTreasury;
+
+        if (stream.rewardDepositAmount < stream.maxDepositAmount) {
+            _updateStreamsRewardsSchedules(streamId, stream.rewardDepositAmount);
+        }
+
         if (stream.schedule.reward[0] != stream.rewardDepositAmount) {
             revert BadStart();
         }
 
+        if (stream.rewardDepositAmount > stream.maxDepositAmount) {
+            revert RewardsTooHigh();
+        }
+        if (stream.rewardDepositAmount < stream.minDepositAmount) {
+            revert RewardsTooLow();
+        }
+
         emit StreamCreated(streamId, stream.owner, stream.rewardToken, stream.tau);
-        _transfer(rewardTokenAmount, stream.rewardToken);
+
+        IERC20(stream.rewardToken).safeTransferFrom(msg.sender, address(this), rewardTokenAmount);
+        if (rewardsTokenToTreasury > 0) {
+            IERC20(stream.rewardToken).safeTransfer(treasury, rewardsTokenToTreasury);
+        }
+        _transfer(stream.rewardDepositAmount, stream.rewardToken);
     }
 
-    /**
+    /*
      * @dev Proposed stream can be cancelled by Stream Manager, which at the time of deployment is Multisig
      */
     function cancelStreamProposal(uint256 streamId) external override onlyRole(STREAM_MANAGER_ROLE) {
@@ -213,7 +254,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
 
     /**
      * @dev A stream can be removed after all the rewards pending have been withdrawn.
-     *      Stream can be removed by the Stream Manager which is Multisig as time of deployment.
+     *      Stream can be removed by the Stream Manager which is Multisig at time of deployment.
      */
     function removeStream(uint256 streamId, address streamFundReceiver) external override onlyRole(STREAM_MANAGER_ROLE) {
         if (streamId == 0) {
@@ -239,27 +280,20 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     /**
-     * @dev Creating locks for council can be done by Admin only which is Multisig.
-     *      Multisig can create locks for councils
+     * @dev Admin can create a lock on behalf of a user without early withdrawal
      */
-    function createLocksForCouncils(CreateLockParams[] calldata lockParams) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (councilsInitialized == true) {
-            revert AlreadyInitialized();
-        }
-        councilsInitialized = true;
-        for (uint256 i; i < lockParams.length; i++) {
-            address account = lockParams[i].account;
+    function createFixedLocksOnBehalfOfUserByAdmin(CreateLockParams[] calldata lockPositions) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i; i < lockPositions.length; i++) {
+            address account = lockPositions[i].account;
+            if (account == address(0)) {
+                revert ZeroAddress();
+            }
             prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
-            _createLock(lockParams[i].amount, lockParams[i].lockPeriod, account);
+            _createLock(lockPositions[i].amount, lockPositions[i].lockPeriod, account);
         }
     }
 
     function createLock(uint256 amount, uint256 lockPeriod) external override pausable(1) {
-        _createLock(amount, lockPeriod, msg.sender);
-    }
-
-    function createLockWithoutEarlyWithdrawal(uint256 amount, uint256 lockPeriod) external override pausable(1) {
-        prohibitedEarlyWithdraw[msg.sender][locks[msg.sender].length + 1] = true;
         _createLock(amount, lockPeriod, msg.sender);
     }
 
@@ -343,12 +377,19 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     }
 
     /**
-     * @dev Disregard rewards for emergency unlock and withdraw
+     * @dev In case of emergency, unlock your tokens and withdraw all your position
+     * @notice This function neglects all the rewards
+     * @notice This can be executed only if the contract is at paused state.
+     * @notice This function can only be called if VaultContract is not compromised and vault is not at paused state.
      */
     function emergencyUnlockAndWithdraw() external override {
         if (paused == 0) {
             revert NotPaused();
         }
+        if (IVault(vault).migrated()) {
+            revert VaultMigrated(vault);
+        }
+        //unlock all locks
         uint256 numberOfLocks = locks[msg.sender].length;
         for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
             uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
@@ -383,11 +424,11 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Penalty accrued due to early unlocking can be withdrawn to some address, most likely the treasury.
      *      Address with TREASURY_ROLE can access this function, which is Multisig at time of deployment
      */
-    function withdrawPenalty(address penaltyReceiver) external override pausable(1) onlyRole(TREASURY_ROLE) {
+    function withdrawPenalty() external override pausable(1) onlyRole(TREASURY_ROLE) {
         if (totalPenaltyBalance == 0) {
             revert ZeroPenalty();
         }
-        _withdrawPenalty(penaltyReceiver);
+        _withdrawPenalty(treasury);
     }
 
     /**
@@ -412,11 +453,24 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         maxLockPositions = newMaxLockPositions;
     }
 
-    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
+    function setTreasuryAddress(address newTreasury) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newTreasury == address(0)) {
+            revert ZeroAddress();
+        }
+        _revokeRole(TREASURY_ROLE, treasury);
+        _grantRole(TREASURY_ROLE, newTreasury);
+        treasury = newTreasury;
+    }
+
+    function _createLock(
+        uint256 amount,
+        uint256 lockPeriod,
+        address account
+    ) internal {
         if (lockPeriod < minLockPeriod) {
             revert MinLockPeriodNotMet();
         }
-        if (locks[account].length > maxLockPositions) {
+        if (locks[account].length >= maxLockPositions) {
             revert MaxLockPositionsReached();
         }
         if (amount == 0) {
@@ -437,7 +491,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         IVault(vault).deposit(_token, _amount);
     }
 
-    function _verifyStream(Stream memory stream, uint256 rewardTokenAmount) internal view {
+    function _verifyStream(Stream memory stream) internal view {
         if (stream.status != StreamStatus.PROPOSED) {
             revert NotProposed();
         }
@@ -446,13 +500,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         if (stream.owner != msg.sender) {
             revert NotOwner();
-        }
-
-        if (rewardTokenAmount > stream.maxDepositAmount) {
-            revert RewardsTooHigh();
-        }
-        if (rewardTokenAmount < stream.minDepositAmount) {
-            revert RewardsTooLow();
         }
     }
 

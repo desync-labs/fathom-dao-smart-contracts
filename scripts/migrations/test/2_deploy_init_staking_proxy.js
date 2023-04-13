@@ -88,6 +88,10 @@ module.exports = async function(deployer) {
             },
             {
                 type: 'address',
+                name: '_treasury'
+            },
+            {
+                type: 'address',
                 name: '_mainToken'
             },
             {
@@ -125,7 +129,7 @@ module.exports = async function(deployer) {
                 type: 'uint256',
                 name: '_minLockPeriod'
             }]
-            },  [MultiSigWallet.address, vaultService.address, MainToken.address, VMainToken.address, 
+            },  [MultiSigWallet.address, vaultService.address,MultiSigWallet.address, MainToken.address, VMainToken.address, 
                 weightObject, voteObject, maxNumberOfLocks, RewardsCalculator.address,minimumLockingPeriod]);
         
         await deployer.deploy(StakingProxyAdmin, {gas:8000000});

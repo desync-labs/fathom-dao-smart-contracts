@@ -9,6 +9,10 @@ const TokenTimelock = artifacts.require("./dao/test/token-timelock/TokenTimelock
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
 
 const oneYr = 365 * 24 * 60 * 60;
+const VaultProxyAdmin = artifacts.require('./dao/test/VaultProxyAdminMigrate.sol');
+const VaultProxy = artifacts.require('./dao/test/VaultProxyMigrate.sol')
+const Vault = artifacts.require('./dao/staking/vault/packages/VaultPackage.sol');
+const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 
 const _getTimeStamp = async () => {
     const timestamp = await blockchain.getLatestBlockTimestamp()
@@ -30,4 +34,21 @@ module.exports =  async function(deployer) {
     ];
 
     await Promise.all(promises);
+
+    let toInitialize =  web3.eth.abi.encodeFunctionCall({
+        name: 'initVault',
+        type: 'function',
+        inputs: [{
+                type: 'address',
+                name: '_admin'
+            },
+            {
+                type: 'address[]',
+                name: 'supportedTokens'
+            }
+          ]
+        },  [MultiSigWallet.address,[MainToken.address]]);
+
+    await deployer.deploy(VaultProxyAdmin, {gas:8000000});
+    await deployer.deploy(VaultProxy, Vault.address, VaultProxyAdmin.address, toInitialize, {gas:8000000});
 };

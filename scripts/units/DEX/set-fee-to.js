@@ -1,9 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
+const addressesConfig = require('../../../config/config.js')
 
-const DEX_FACTORY_ADDRESS =addressesExternal.DEX_FACTORY_ADDRESS
+const DEX_FACTORY_ADDRESS =addressesConfig.DEX_FACTORY_ADDRESS
 const TO_BE_WHITELISTED = "0x"
 const FEE_TO = ""
 const _encodeSetFeeTo = (_feeTo) => {

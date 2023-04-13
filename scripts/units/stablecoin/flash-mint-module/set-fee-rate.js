@@ -1,9 +1,9 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
-const rawdataExternal = fs.readFileSync('../../../../config/external-addresses.json');
-const addressesExternal = JSON.parse(rawdataExternal);
+
+const addressesConfig = require('../../../../config/config.js')
 const FEE_RATE =1
-const FLASH_MINT_MODULE_ADDRESS = addressesExternal.FLASH_MINT_MODULE_ADDRESS
+const FLASH_MINT_MODULE_ADDRESS = addressesConfig.FLASH_MINT_MODULE_ADDRESS
 
 const _encodeSetFeeRate = (_data) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({

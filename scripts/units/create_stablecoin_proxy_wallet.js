@@ -1,4 +1,6 @@
 const fs = require('fs');
+const path = require('path');
+
 const constants = require('./helpers/constants') 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const txnSaver = require('./helpers/transactionSaver')
@@ -7,10 +9,10 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const IProxyRegistry = artifacts.require("./dao/test/stablecoin/IProxyRegistry.sol");
-const rawdataExternal = fs.readFileSync(constants.PATH_TO_ADDRESSES_EXTERNAL);
-const addressesExternal = JSON.parse(rawdataExternal);
-const PROXY_WALLET_REGISTRY_ADDRESS = addressesExternal.PROXY_WALLET_REGISTRY_ADDRESS
-//const PROXY_WALLET_REGISTRY_ADDRESS = "0xF11994FBAa365070ce4a1505f9Ce5Ea960d0d904"
+
+const addressesConfig = require('../../config/config.js')
+const PROXY_WALLET_REGISTRY_ADDRESS = addressesConfig.PROXY_WALLET_REGISTRY_ADDRESS
+
 const _encodeBuildFunction = (_account) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'build',
@@ -45,11 +47,22 @@ module.exports = async function(deployer) {
     }
     let data = JSON.stringify(addressesStableCoin);
 
-    fs.writeFileSync('./config/stablecoin-addresses-proxy-wallet.json',data, function(err){
-        if(err){
-            console.log(err)
-        }
-    })
+    const filePath = ('./config/stablecoin-addresses-proxy-wallet.json')
+    const dirPath = path.dirname(filePath)
+
+    if (fs.existsSync(filePath)) {
+        rawdata = fs.readFileSync(filePath);
+      } else if (!fs.existsSync(dirPath)) {
+          // create new directory
+          fs.mkdirSync(dirPath, { recursive: true });
+          // create new file
+          fs.writeFileSync(filePath, data);
+          rawdata = fs.readFileSync(filePath);
+      } else{
+        // create new file
+        fs.writeFileSync(filePath, data)
+        rawdata = fs.readFileSync(filePath);
+      }
 
     await txnSaver.saveTxnIndex("proxyWalletTxn", txIndexBuild)   
 }
