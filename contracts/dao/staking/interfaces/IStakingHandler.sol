@@ -61,7 +61,7 @@ interface IStakingHandler {
 
     function emergencyUnlockAndWithdraw() external;
 
-    function createFixedLockOnBehalfOfUserByAdmin(CreateLockParams calldata lockPosition) external;
+    function createFixedLocksOnBehalfOfUserByAdmin(CreateLockParams[] calldata lockPosition) external;
 
     function setMinimumLockPeriod(uint256 _minLockPeriod) external;
 

@@ -50,11 +50,11 @@ const _encodeApproveFunction = (_account, _amount) => {
 
 const _encodeCreateLocksForCouncils = (_createLockParam) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
-        name:'createFixedLockOnBehalfOfUserByAdmin',
+        name:'createFixedLocksOnBehalfOfUserByAdmin',
         type:'function',
         inputs: [{
-                type: 'tuple',
-                name: 'lockPosition',
+                type: 'tuple[]',
+                name: 'lockPositions',
                 components: [
                     {"type":"uint256", "name":"amount"},
                     {"type":"uint256", "name":"lockPeriod"},
@@ -80,20 +80,14 @@ module.exports = async function(deployer) {
     const LockPositionForCouncil_2 =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_2)
     const LockPositionForCouncil_3 =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_3)
    
+    const LockParamObjectForAllCouncils = [
+        LockPositionForCouncil_1,
+        LockPositionForCouncil_2,
+        LockPositionForCouncil_3
+    ]
+    
     await txnHelper.submitAndExecute(
-        _encodeCreateLocksForCouncils(LockPositionForCouncil_1),
-        stakingService.address,
-        "createLocksForCouncilTxn"
-    )
-
-    await txnHelper.submitAndExecute(
-        _encodeCreateLocksForCouncils(LockPositionForCouncil_2),
-        stakingService.address,
-        "createLocksForCouncilTxn"
-    )
-
-    await txnHelper.submitAndExecute(
-        _encodeCreateLocksForCouncils(LockPositionForCouncil_3),
+        _encodeCreateLocksForCouncils(LockParamObjectForAllCouncils),
         stakingService.address,
         "createLocksForCouncilTxn"
     )

@@ -150,11 +150,11 @@ const _encodeTransferFunction = (_account, t_to_stake) => {
 const _encodeCreateLockWithoutEarlyWithdrawal = (_createLockParam) => {
     // encoded transfer function call for staking on behalf of someone else from treasury.
     let toRet = web3.eth.abi.encodeFunctionCall({
-        name:'createFixedLockOnBehalfOfUserByAdmin',
+        name:'createFixedLocksOnBehalfOfUserByAdmin',
         type:'function',
         inputs: [{
-                type: 'tuple',
-                name: 'lockPosition',
+                type: 'tuple[]',
+                name: 'lockPositions',
                 components: [
                     {"type":"uint256", "name":"amount"},
                     {"type":"uint256", "name":"lockPeriod"},
@@ -990,6 +990,7 @@ describe("DAO Demo", () => {
             
             const lockPositionForCommityOne = _createLockParamObject(amount,oneYr,comity_1)
             const lockPositionForCommityTwo =  _createLockParamObject(amount,oneYr,comity_2)
+            const allLockPositions = [lockPositionForCommityOne, lockPositionForCommityTwo]
 
             const _createLockWithoutEarlyWithdrawal = async(
                 lockParamObject
@@ -1012,9 +1013,7 @@ describe("DAO Demo", () => {
                 await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
             }
             await blockchain.mineBlock(await _getTimeStamp() + 100)
-            await _createLockWithoutEarlyWithdrawal(lockPositionForCommityOne);
-            await blockchain.mineBlock(await _getTimeStamp() + 100)
-            await _createLockWithoutEarlyWithdrawal(lockPositionForCommityTwo)
+            await _createLockWithoutEarlyWithdrawal(allLockPositions);
             await blockchain.mineBlock(await _getTimeStamp() + 100)
         })
 

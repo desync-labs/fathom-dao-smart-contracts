@@ -46,11 +46,11 @@ const _encodeApproveFunction = (_account, _amount) => {
 
 const _encodeCreateLocksForCouncils = (_createLockParam) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
-        name:'createFixedLockOnBehalfOfUserByAdmin',
+        name:'createFixedLocksOnBehalfOfUserByAdmin',
         type:'function',
         inputs: [{
-                type: 'tuple',
-                name: 'lockPosition',
+                type: 'tuple[]',
+                name: 'lockPositions',
                 components: [
                     {"type":"uint256", "name":"amount"},
                     {"type":"uint256", "name":"lockPeriod"},
@@ -71,7 +71,7 @@ module.exports = async function(deployer) {
         "ApproveFathomTxn"
     )
     
-    const LockPositionForStaker =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,ACCOUNT_TO_STAKE_FOR)
+    const LockPositionForStaker =  [_createLockParamObject(T_TO_STAKE,LOCK_PERIOD,ACCOUNT_TO_STAKE_FOR)]
    
     await txnHelper.submitAndExecute(
         _encodeCreateLocksForCouncils(LockPositionForStaker),
