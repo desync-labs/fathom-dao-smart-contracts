@@ -283,11 +283,10 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
      * @dev Admin can create a lock on behalf of a user without early withdrawal
      */
     function createFixedLockOnBehalfOfUserByAdmin(CreateLockParams calldata lockPosition) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        address account = lockPosition.account;
-        if(account == address(0)){
+        if(lockPosition.account == address(0)){
             revert ZeroAddress();
         }
-        prohibitedEarlyWithdraw[account][locks[account].length + 1] = true;
+        prohibitedEarlyWithdraw[lockPosition.account][locks[lockPosition.account].length + 1] = true;
         _createLock(lockPosition.amount, lockPosition.lockPeriod, lockPosition.account);
     }
 
