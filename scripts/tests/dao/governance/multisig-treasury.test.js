@@ -1,14 +1,16 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
+const constants = require("../../helpers/testConstants");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 // constants
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 // event
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 // Token variables
 const AMOUNT_OUT_TREASURY = "1000";
@@ -119,16 +121,16 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to directly remove or add an owner', async() => {
-            let errorMessage = "MultiSig: Only this wallet can use this funciton";
+            let errorMessage = "revert";
             initial_owners = await multiSigWallet.getOwners();
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.removeOwner(initial_owners[1], {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
             );
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.addOwners([accounts[3]], {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -142,9 +144,9 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Shoud revert when trying to execute a transaction without enough signers', async() => {
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex1, {from: accounts[0]}),
                 errTypes.revert,
                 errorMessage
@@ -161,9 +163,9 @@ describe('MultiSig Wallet', () => {
 
             await multiSigWallet.revokeConfirmation(txIndex1, {from: accounts[1]});
 
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex1, {from: accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -190,9 +192,9 @@ describe('MultiSig Wallet', () => {
 
             await multiSigWallet.revokeConfirmation(txIndex3, {from: accounts[1]});
 
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex3, {from: accounts[1]}),
                 errTypes.revert,
                 errorMessage
@@ -202,9 +204,9 @@ describe('MultiSig Wallet', () => {
         });
 
         it('Fail xecute the transaction to remove third signer because min number of confirmations not reached', async() => {
-            let errorMessage = "cannot execute tx";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 multiSigWallet.executeTransaction(txIndex2, {from: accounts[0]}),
                 errTypes.revert,
                 errorMessage
@@ -284,6 +286,25 @@ describe('MultiSig Wallet', () => {
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
     });
+
+    describe("Maximum Lifetime", async() => {
+        it("Should revert for maximum lifetime", async() => {
+            let errorMessage = "revert";
+            const SEVENTY_DAYS = 70 * 86400;
+            await shouldRevertAndHaveSubstring(
+                multiSigWallet.submitTransaction(
+                    multiSigWallet.address, 
+                    EMPTY_BYTES, 
+                    encoded_add_owners_function,
+                    SEVENTY_DAYS,
+                    {"from": accounts[0]}
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+        
+    })
 });
 
 

@@ -1,5 +1,5 @@
-// Copyright SECURRENCY INC.
 // SPDX-License-Identifier: AGPL 3.0
+// Copyright Fathom 2022
 pragma solidity 0.8.16;
 
 import "../StakingStructs.sol";
@@ -31,5 +31,6 @@ interface IStakingGetterHelper {
     function getFeesForEarlyUnlock(uint256 lockId, address account) external view returns (uint256);
 
     function getLocksLength(address account) external view returns (uint256);
-    function getWeight() external view  returns (Weight memory);
+
+    function getWeight() external view returns (Weight memory);
 }

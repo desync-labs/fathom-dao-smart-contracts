@@ -19,7 +19,7 @@ module.exports = async function(deployer) {
         rewardsCalculator: RewardsCalculator.address,
     }
     
-    let data = JSON.stringify(addresses);
+    let data = JSON.stringify(addresses, null, " ");
     fs.writeFileSync('./addresses.json',data, function(err){
         if(err){
             console.log(err)

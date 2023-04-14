@@ -17,7 +17,7 @@ module.exports = async function(deployer) {
     }
 
     
-    let data = JSON.stringify(newAddresses);
+    let data = JSON.stringify(newAddresses, null, " ");
     fs.writeFileSync('./addresses.json',data, function(err){
         if(err){
             console.log(err)

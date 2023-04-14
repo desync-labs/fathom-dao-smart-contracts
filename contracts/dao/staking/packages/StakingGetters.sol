@@ -9,16 +9,24 @@ import "../interfaces/IStakingGetter.sol";
 import "./StakingInternals.sol";
 
 contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
-    function getUsersPendingRewards(address account, uint256 streamId) external override view returns (uint256) {
+    error StreamInactiveError();
+    error BadIndexError();
+
+    function getUsersPendingRewards(address account, uint256 streamId) external view override returns (uint256) {
         return users[account].pendings[streamId];
     }
+
     function getStreamClaimableAmountPerLock(
         uint256 streamId,
         address account,
         uint256 lockId
     ) external view override returns (uint256) {
-        require(streams[streamId].status == StreamStatus.ACTIVE, "stream inactive");
-        require(lockId <= locks[account].length, "bad index");
+        if (streams[streamId].status != StreamStatus.ACTIVE) {
+            revert StreamInactiveError();
+        }
+        if (lockId > locks[account].length) {
+            revert BadIndexError();
+        }
         uint256 latestRps = _getLatestRewardsPerShare(streamId);
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
@@ -27,19 +35,18 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
 
-    
-    function getAllLocks(address account) external override view returns (LockedBalance[] memory) {
+    function getAllLocks(address account) external view override returns (LockedBalance[] memory) {
         return locks[account];
     }
-    function getStreamSchedule(uint256 streamId) external override view returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {
+
+    function getStreamSchedule(uint256 streamId) external view override returns (uint256[] memory scheduleTimes, uint256[] memory scheduleRewards) {
         return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
     }
 
-    function getStream(
-        uint256 streamId
-    )
+    function getStream(uint256 streamId)
         external
         view
+        override
         returns (
             uint256 rewardDepositAmount,
             uint256 rewardClaimedAmount,
@@ -48,11 +55,6 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         )
     {
         Stream storage stream = streams[streamId];
-        return (
-            stream.rewardDepositAmount,
-            stream.rewardClaimedAmount,
-            stream.rps,
-            stream.status
-        );
+        return (stream.rewardDepositAmount, stream.rewardClaimedAmount, stream.rps, stream.status);
     }
 }

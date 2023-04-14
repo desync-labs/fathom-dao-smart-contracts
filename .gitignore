@@ -9,7 +9,5 @@ privateKey
 yarn.lock
 package-lock.json
 bin
-
-subgraph/build/
-subgraph/generated/
-subgraph/node_modules/
+addresses.json
+/config

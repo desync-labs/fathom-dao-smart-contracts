@@ -4,12 +4,13 @@ const chai = require("chai");
 const { expect } = chai.use(require('chai-bn')(BN));
 const eventsHelper = require("../../helpers/eventsHelper");
 const blockchain = require("../../helpers/blockchain");
-
+const constants = require("../../helpers/testConstants");
 
 const maxGasForTxn = 600000
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
 const SYSTEM_ACC = accounts[0];
@@ -25,7 +26,7 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 
 let vault_test_address;
-
+const percentToTreasury = 50
 
 const _createVoteWeights = (
     voteShareCoef,
@@ -36,9 +37,9 @@ const _createVoteWeights = (
     }
 }
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 // event
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 const _createWeightObject = (
     maxWeightShares,
@@ -95,6 +96,7 @@ const _convertToEtherBalance = (balance) => {
 const _encodeProposeStreamFunction = (
     _owner,
     _rewardToken,
+    _percentToTreasury,
     _maxDepositedAmount,
     _minDepositedAmount,
     _scheduleTimes,
@@ -110,6 +112,10 @@ const _encodeProposeStreamFunction = (
         },{
             type: 'address',
             name: 'rewardToken'
+        },
+        ,{
+            type: 'uint256',
+            name: 'percentToTreasury'
         },{
             type: 'uint256',
             name: 'maxDepositAmount'
@@ -129,6 +135,7 @@ const _encodeProposeStreamFunction = (
     }, [
         _owner,
         _rewardToken,
+        _percentToTreasury,
         _maxDepositedAmount,
         _minDepositedAmount,
         _scheduleTimes,
@@ -163,11 +170,8 @@ const _encodeWithdrawPenaltyFunction = (_account) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'withdrawPenalty',
         type: 'function',
-        inputs: [{
-            type: 'address',
-            name: 'penaltyReceiver'
-        }]
-    }, [_account]);
+        inputs: []
+    }, []);
 
     return toRet;
 }
@@ -193,6 +197,18 @@ const _encodeAdminPause = (flag) => {
             type: 'uint256',
             name: 'flags'
         }]}, [flag]);
+
+    return toRet;
+}
+
+const _encodeSetMaxLockPositions = (newMaxLockPositions) => {
+    let toRet = web3.eth.abi.encodeFunctionCall({
+        name: 'setMaxLockPositions',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'newMaxLockPositions'
+        }]}, [newMaxLockPositions]);
 
     return toRet;
 }
@@ -440,9 +456,9 @@ describe("Staking Test", () => {
 
         it("Should not unlock locked position before the end of the lock possition's lock period - staker_1", async() => {
             
-            const errorMessage = "lock close";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingService.unlock(1, {from: staker_1}),
                 errTypes.revert,  
                 errorMessage
@@ -476,9 +492,9 @@ describe("Staking Test", () => {
             await stakingService.claimAllStreamRewardsForLock(1, {from: staker_1})
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.unlock(1, {from : staker_1});
-            const errorMessage = "out of index";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingGetterService.getLockInfo(staker_1,3),
                 errTypes.revert,  
                 errorMessage
@@ -502,9 +518,9 @@ describe("Staking Test", () => {
             
             const differenceInBalance = _calculateRemainingBalance(afterVOTEBalance,beforeVOTEBalance)
             amountOfVFTHMLock3.should.be.bignumber.equal(differenceInBalance.toString())
-            const errorMessage = "out of index";
+            const errorMessage = "revert";
             // The last lock possition should no longer be accesible
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingGetterService.getLockInfo(staker_2,1),
                 errTypes.revert,  
                 errorMessage
@@ -516,9 +532,9 @@ describe("Staking Test", () => {
             await stakingService.claimAllStreamRewardsForLock(1, {from: staker_3})
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.unlock(1, {from: staker_3});
-            const errorMessage = "out of index";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingGetterService.getLockInfo(staker_3,1),
                 errTypes.revert,  
                 errorMessage
@@ -531,9 +547,9 @@ describe("Staking Test", () => {
             await stakingService.claimAllStreamRewardsForLock(1, {from: staker_4})
             await blockchain.mineBlock(10 + await _getTimeStamp())
             await stakingService.unlock(1, {from: staker_4});
-            const errorMessage = "out of index";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingGetterService.getLockInfo(staker_4,1),
                 errTypes.revert,  
                 errorMessage
@@ -603,6 +619,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_1,
                 _streamReward1Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -615,6 +632,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_1,
                         _streamReward1Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -634,6 +652,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_1,
                 streamReward1Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -650,6 +669,10 @@ describe("Staking Test", () => {
             await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(1,RewardProposalAmountForAStream, {from: stream_rewarder_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('4', 'ether');// 800 * 50/10000 = 4
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward1.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(),ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it("Should propose a second stream, stream - 2", async() => {
@@ -672,6 +695,7 @@ describe("Staking Test", () => {
             const _proposeStreamFromMultiSigTreasury = async (
                 _stream_rewarder_2,
                 _streamReward2Address,
+                _percentToTreasury,
                 _maxRewardProposalAmountForAStream,
                 _minRewardProposalAmountForAStream,
                 _scheduleTimes,
@@ -684,6 +708,7 @@ describe("Staking Test", () => {
                     _encodeProposeStreamFunction(
                         _stream_rewarder_2,
                         _streamReward2Address,
+                        _percentToTreasury,
                         _maxRewardProposalAmountForAStream,
                         _minRewardProposalAmountForAStream,
                         _scheduleTimes,
@@ -703,6 +728,7 @@ describe("Staking Test", () => {
             await _proposeStreamFromMultiSigTreasury(
                 stream_rewarder_2,
                 streamReward2Address,
+                percentToTreasury,
                 maxRewardProposalAmountForAStream,
                 minRewardProposalAmountForAStream,
                 scheduleTimes,
@@ -717,6 +743,9 @@ describe("Staking Test", () => {
             const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
             await streamReward2.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_2})
             await stakingService.createStream(2,RewardProposalAmountForAStream, {from: stream_rewarder_2});
+            const ShouldBeBalanceOfMultisigAfterCreatingStream = web3.utils.toWei('5', 'ether');// 1000 * 50/10000 = 5
+            const ActualBalanceOfMultisigAfterCreatingStream = await streamReward2.balanceOf(multiSigWallet.address);
+            assert.equal(ActualBalanceOfMultisigAfterCreatingStream.toString(), ShouldBeBalanceOfMultisigAfterCreatingStream.toString())
         })
 
         it('Setup Locks for staker_3 and staker_4 reward tests', async() => {
@@ -1108,9 +1137,9 @@ describe("Staking Test", () => {
             pendingStakedFTHM = await stakingService.getUsersPendingRewards(staker_3,streamId)
             console.log("Pending user accounts with early withdrawal: ",_convertToEtherBalance(pendingStakedFTHM.toString()))
 
-            const errorMessage = "out of index";
+            const errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 stakingGetterService.getLockInfo(staker_3,lockId),
                 errTypes.revert,  
                 errorMessage
@@ -1184,8 +1213,8 @@ describe("Staking Test", () => {
         it('Should not make lock position with 0 lock period', async() => {
             const unlockTime =  0;
             await blockchain.mineBlock(await _getTimeStamp() + 100);
-            const errorMessage = "min lock" 
-            await shouldRevert(
+            const errorMessage = "revert" 
+            await shouldRevertAndHaveSubstring(
                 stakingService.createLock(sumToDeposit,unlockTime,{from: staker_4, gas: maxGasForTxn}),
                 errTypes.revert,
                 errorMessage
@@ -1355,6 +1384,62 @@ describe("Staking Test", () => {
             ); 
             
         })
+
+        it('Should set Max Lock Positions', async() => {
+
+            const _setMaxLockPositions = async(
+                newMaxLockPositions
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeSetMaxLockPositions(
+                        newMaxLockPositions
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await _setMaxLockPositions(15)
+            
+        })
+
+        it('Should not set Max Lock Positions', async() => {
+
+            const _setMaxLockPositionsBad = async(
+                newMaxLockPositions
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeSetMaxLockPositions(
+                        newMaxLockPositions
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await shouldRevert(multiSigWallet.executeTransaction(tx, {"from": accounts[1]}),errTypes.revert);
+            }
+            await _setMaxLockPositionsBad(10)
+            
+        })
+
+        
     })
+
+    
 });
    

@@ -16,15 +16,20 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         uint224 votes;
     }
 
-    bytes32 private constant _DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
-
     mapping(address => address) private _delegates;
     mapping(address => Checkpoint[]) private _checkpoints;
     Checkpoint[] private _totalSupplyCheckpoints;
 
+    bytes32 private constant _DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
+
+    error InvalidNonce();
+    error SignatureExpired();
+    error BlockNotYetMined();
+    error TotalSupplyOverflowsVotes();
+
     constructor(string memory name_, string memory symbol_) ERC20Permit(name_, symbol_) {}
 
-    function delegate(address delegatee) public virtual override {
+    function delegate(address delegatee) external virtual override {
         _delegate(_msgSender(), delegatee);
     }
 
@@ -35,44 +40,54 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual override {
-        // solhint-disable-next-line
-        require(block.timestamp <= expiry, "ERC20Votes: signature expired");
+    ) external virtual override {
+        // solhint-disable-next-line not-rely-on-time
+        if (block.timestamp > expiry) {
+            revert SignatureExpired();
+        }
         address signer = ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(_DELEGATION_TYPEHASH, delegatee, nonce, expiry))), v, r, s);
-        require(nonce == _useNonce(signer), "ERC20Votes: invalid nonce");
+        if (nonce != _useNonce(signer)) {
+            revert InvalidNonce();
+        }
         _delegate(signer, delegatee);
     }
 
-    function checkpoints(address account, uint32 pos) public view virtual returns (Checkpoint memory) {
+    function checkpoints(address account, uint32 pos) external view virtual returns (Checkpoint memory) {
         return _checkpoints[account][pos];
     }
 
-    function numCheckpoints(address account) public view virtual returns (uint32) {
+    function numCheckpoints(address account) external view virtual returns (uint32) {
         return SafeCast.toUint32(_checkpoints[account].length);
+    }
+
+    function getVotes(address account) external view virtual override returns (uint256) {
+        uint256 pos = _checkpoints[account].length;
+        return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
+    }
+
+    function getPastVotes(address account, uint256 blockNumber) external view virtual override returns (uint256) {
+        if (blockNumber >= block.number) {
+            revert BlockNotYetMined();
+        }
+        return _checkpointsLookup(_checkpoints[account], blockNumber);
+    }
+
+    function getPastTotalSupply(uint256 blockNumber) external view virtual override returns (uint256) {
+        if (blockNumber >= block.number) {
+            revert BlockNotYetMined();
+        }
+        return _checkpointsLookup(_totalSupplyCheckpoints, blockNumber);
     }
 
     function delegates(address account) public view virtual override returns (address) {
         return _delegates[account];
     }
 
-    function getVotes(address account) public view virtual override returns (uint256) {
-        uint256 pos = _checkpoints[account].length;
-        return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
-    }
-
-    function getPastVotes(address account, uint256 blockNumber) public view virtual override returns (uint256) {
-        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
-        return _checkpointsLookup(_checkpoints[account], blockNumber);
-    }
-
-    function getPastTotalSupply(uint256 blockNumber) public view virtual override returns (uint256) {
-        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
-        return _checkpointsLookup(_totalSupplyCheckpoints, blockNumber);
-    }
-
     function _mint(address account, uint256 amount) internal virtual override {
         super._mint(account, amount);
-        require(totalSupply() <= _maxSupply(), "ERC20Votes: total supply risks overflowing votes");
+        if (totalSupply() > _maxSupply()) {
+            revert TotalSupplyOverflowsVotes();
+        }
 
         _writeCheckpoint(_totalSupplyCheckpoints, _add, amount);
     }

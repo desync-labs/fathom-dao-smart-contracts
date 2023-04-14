@@ -10,64 +10,68 @@ import "./IVMainToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC20Votes {
+    // Mapping to keep track of who is allowed to transfer voting tokens
+    mapping(address => bool) public isAllowListed;
+
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
-    // Mapping to keep track of who is allowed to transfer voting tokens
-    mapping(address => bool) public isWhiteListed;
+    bytes32 public constant ALLOWLISTER_ROLE = keccak256("ALLOWLISTER_ROLE");
+
+    error AdminShouldBeDifferentThanMsgSender();
+    error VMainTokenIsIntransferableUnlessTheSenderIsAllowlisted();
 
     constructor(string memory name_, string memory symbol_) ERC20Votes(name_, symbol_) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function initToken(address _admin, address _minter) public override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_admin != msg.sender, "initToken: Admin should be different than msg.sender");
+    function initToken(address _admin, address _minter) external override initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_admin == msg.sender) revert AdminShouldBeDifferentThanMsgSender();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
         _grantRole(MINTER_ROLE, _minter);
-        _grantRole(WHITELISTER_ROLE, _admin);
+        _grantRole(ALLOWLISTER_ROLE, _admin);
 
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        isWhiteListed[_minter] = true;
-        emit MemberAddedToWhitelist(_minter);
+        isAllowListed[_minter] = true;
+        emit MemberAddedToAllowlist(_minter);
     }
 
-    function grantMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+    function grantMinterRole(address _minter) external override onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _grantRole(MINTER_ROLE, _minter);
-        _addToWhitelist(_minter);
+        _addToAllowlist(_minter);
     }
 
-    function revokeMinterRole(address _minter) public override onlyRole(getRoleAdmin(MINTER_ROLE)) {
+    function revokeMinterRole(address _minter) external override onlyRole(getRoleAdmin(MINTER_ROLE)) {
         _revokeRole(MINTER_ROLE, _minter);
-        _removeFromWhitelist(_minter);
+        _removeFromAllowlist(_minter);
     }
 
-    function _addToWhitelist(address _toAdd) internal {
-        isWhiteListed[_toAdd] = true;
-        emit MemberAddedToWhitelist(_toAdd);
-    }
-
-    function _removeFromWhitelist(address _toRemove) internal {
-        isWhiteListed[_toRemove] = false;
-        emit MemberRemovedFromWhitelist(_toRemove);
-    }
-
-    function pause() public override onlyRole(PAUSER_ROLE) {
+    function pause() external override onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public override onlyRole(PAUSER_ROLE) {
+    function unpause() external override onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    function mint(address to, uint256 amount) public override onlyRole(MINTER_ROLE) {
+    function mint(address to, uint256 amount) external override onlyRole(MINTER_ROLE) {
         _mint(to, amount);
         _delegate(to, to);
     }
 
-    function burn(address account, uint256 amount) public override onlyRole(MINTER_ROLE) {
+    function burn(address account, uint256 amount) external override onlyRole(MINTER_ROLE) {
         _burn(account, amount);
+    }
+
+    function _addToAllowlist(address _toAdd) internal {
+        isAllowListed[_toAdd] = true;
+        emit MemberAddedToAllowlist(_toAdd);
+    }
+
+    function _removeFromAllowlist(address _toRemove) internal {
+        isAllowListed[_toRemove] = false;
+        emit MemberRemovedFromAllowlist(_toRemove);
     }
 
     function _beforeTokenTransfer(
@@ -75,7 +79,7 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         address to,
         uint256 amount
     ) internal override whenNotPaused {
-        require(isWhiteListed[msg.sender], "VMainToken: is intransferable unless the sender is whitelisted");
+        if (!isAllowListed[msg.sender]) revert VMainTokenIsIntransferableUnlessTheSenderIsAllowlisted();
         super._beforeTokenTransfer(from, to, amount);
     }
 

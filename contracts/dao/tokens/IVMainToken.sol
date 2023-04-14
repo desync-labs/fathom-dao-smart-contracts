@@ -5,8 +5,8 @@
 pragma solidity 0.8.16;
 
 interface IVMainToken {
-    event MemberAddedToWhitelist(address _member);
-    event MemberRemovedFromWhitelist(address _member);
+    event MemberAddedToAllowlist(address _member);
+    event MemberRemovedFromAllowlist(address _member);
 
     function initToken(address _admin, address _minter) external;
 

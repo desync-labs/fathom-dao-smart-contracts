@@ -6,10 +6,16 @@ pragma solidity 0.8.16;
 import "../StakingStorage.sol";
 import "../interfaces/IStakingEvents.sol";
 import "../interfaces/IRewardsHandler.sol";
-//import "../../../common/math/FullMath.sol";
 
 contract RewardsInternals is StakingStorage, IStakingEvents {
     // solhint-disable not-rely-on-time
+
+    error InactiveStreamError();
+    error NoStakeError();
+    error InsufficientRewardsError();
+    error NoLockError();
+    error NoSharesError();
+
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
         for (uint256 i; i < streamScheduleRewardLength; i++) {
@@ -22,19 +28,28 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         uint256 streamId,
         uint256 lockId
     ) internal {
+        if (streams[streamId].status != StreamStatus.ACTIVE) {
+            revert InactiveStreamError();
+        }
         LockedBalance storage lock = locks[account][lockId - 1];
-        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
+        if (lock.amountOfToken == 0) {
+            revert NoStakeError();
+        }
+
         User storage userAccount = users[account];
-        require(lock.amountOfToken != 0, "No Stake");
+
         uint256 reward = ((streams[streamId].rps - userAccount.rpsDuringLastClaimForLock[lockId][streamId]) * lock.positionStreamShares) /
             RPS_MULTIPLIER;
         if (reward == 0) return; // All rewards claimed or stream schedule didn't start
+        if (streams[streamId].rewardClaimedAmount + reward > streams[streamId].rewardDepositAmount) {
+            revert InsufficientRewardsError();
+        }
+
         userAccount.pendings[streamId] += reward;
         streamTotalUserPendings[streamId] += reward;
         userAccount.rpsDuringLastClaimForLock[lockId][streamId] = streams[streamId].rps;
         userAccount.releaseTime[streamId] = block.timestamp + streams[streamId].tau;
-        // If the stream is blacklisted, remaining unclaimed rewards will be transfered out.
-        require(streams[streamId].rewardClaimedAmount + reward <= streams[streamId].rewardDepositAmount, "insufficient rewards");
+        // If the stream is blocklisted, remaining unclaimed rewards will be transfered out.
         streams[streamId].rewardClaimedAmount += reward;
         emit Pending(streamId, account, userAccount.pendings[streamId]);
     }
@@ -47,10 +62,14 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     }
 
     function _moveAllLockPositionRewardsToPending(address account, uint256 streamId) internal {
-        require(streams[streamId].status == StreamStatus.ACTIVE, "inactive");
+        if (streams[streamId].status != StreamStatus.ACTIVE) {
+            revert InactiveStreamError();
+        }
         LockedBalance[] storage locksOfAccount = locks[account];
         uint256 locksLength = locksOfAccount.length;
-        require(locksLength > 0, "no lock");
+        if (locksLength == 0) {
+            revert NoLockError();
+        }
         for (uint256 i = 1; i <= locksLength; i++) {
             _moveRewardsToPending(account, streamId, i);
         }
@@ -71,6 +90,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     function _validateStreamParameters(
         address streamOwner,
         address rewardToken,
+        uint256 percentToTreasury,
         uint256 maxDepositAmount,
         uint256 minDepositAmount,
         uint256[] memory scheduleTimes,
@@ -80,6 +100,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         IRewardsHandler(rewardsCalculator).validateStreamParameters(
             streamOwner,
             rewardToken,
+            percentToTreasury,
             maxDepositAmount,
             minDepositAmount,
             scheduleTimes,
@@ -93,7 +114,9 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     }
 
     function _getLatestRewardsPerShare(uint256 streamId) internal view returns (uint256) {
-        require(totalStreamShares != 0, "No Shares");
+        if (totalStreamShares == 0) {
+            revert NoSharesError();
+        }
         return streams[streamId].rps + (_getRewardsAmount(streamId, touchedAt) * RPS_MULTIPLIER) / totalStreamShares;
     }
 }

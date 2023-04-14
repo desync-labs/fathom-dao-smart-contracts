@@ -11,7 +11,9 @@ abstract contract GovernorVotes is Governor {
     IVotes public immutable token;
 
     constructor(IVotes tokenAddress) {
-        require(address(tokenAddress) != address(0), "tokenAddress cant be zero address");
+        if (address(tokenAddress) == address(0)) {
+            revert ZeroAddress();
+        }
         token = tokenAddress;
     }
 
