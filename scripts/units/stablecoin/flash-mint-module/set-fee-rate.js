@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 const FEE_RATE =1
 const FLASH_MINT_MODULE_ADDRESS = addressesConfig.FLASH_MINT_MODULE_ADDRESS
 

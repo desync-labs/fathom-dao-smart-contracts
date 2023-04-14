@@ -8,7 +8,7 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
-const addressesConfig = require('../../config/config.js')
+const addressesConfig = require('../../config/config')
 //SET VALUE AS HOW MUCH ETH YOU WANT TO SPEND FOR THE WHOLE TRANSACTION(msg.value)
 const value = constants.EMPTY_BYTES;
 

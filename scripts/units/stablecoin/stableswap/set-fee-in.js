@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 const FEE_IN = 1
 const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
 

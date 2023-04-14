@@ -6,7 +6,7 @@ const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol"
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const addressesConfig = require('../../config/config.js')
+const addressesConfig = require('../../config/config')
 const WETH_ADDRESS = addressesConfig.WETH_ADDRESS
 const TOKEN_ADDRESS = addresses.fthmToken //FTHM address
 

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 const COLLATERAL_POOL_ID = ''
 const DATA = ''
 const COLLATERAL_POOL_CONFIG_ADDRESS =addressesConfig.COLLATERAL_POOL_CONFIG_ADDRESS
