@@ -44,7 +44,12 @@ async function submitAndExecute(encodedFunction, targetAddress, TransactionName,
             console.log(`Transaction executed successfully for ${TransactionName}. TxHash: ${resultExecuteTransaction.transactionHash}`);
         }
 
-        await txnSaver.saveTxnIndex(TransactionName,tx)
+        await txnSaver.saveTxnIndex(
+            TransactionName,
+            tx,
+            resultSubmitTransaction.transactionHash,
+            resultConfirmTransaction.transactionHash,
+            resultExecuteTransaction.transactionHash)
     }
 
     await _submitAndExecute()

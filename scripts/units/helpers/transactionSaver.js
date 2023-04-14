@@ -23,7 +23,10 @@ const constants = require('./constants')
 
 async function saveTxnIndex(
     TransactionName,
-    txnIndex
+    txnIndex,
+    submitTransactionHash,
+    confirmationTransactionHash,
+    executeTransactionHash
 )
 {
     let newTxnStore;
@@ -35,7 +38,10 @@ async function saveTxnIndex(
         [
             {
                 "id":1,
-                "txnIndex": txnIndex
+                "txnIndex": txnIndex,
+                "submitTransactionHash": submitTransactionHash,
+                "confirmationTransactionHash": confirmationTransactionHash,
+                "executeTransactionHash": executeTransactionHash
             }
         ]
         newTxnStore = object
@@ -46,7 +52,10 @@ async function saveTxnIndex(
             object[TransactionName].push(
                 {
                     "id": object[TransactionName].length+1,
-                    "txnIndex": txnIndex
+                    "txnIndex": txnIndex,
+                    "submitTransactionHash": submitTransactionHash,
+                    "confirmationTransactionHash": confirmationTransactionHash,
+                    "executeTransactionHash": executeTransactionHash
                 }
             )
         }else{
@@ -54,7 +63,10 @@ async function saveTxnIndex(
             object[TransactionName] = [
                 {
                     "id":1,
-                    "txnIndex": txnIndex
+                    "txnIndex": txnIndex,
+                    "submitTransactionHash": submitTransactionHash,
+                    "confirmationTransactionHash": confirmationTransactionHash,
+                    "executeTransactionHash": executeTransactionHash
                 }
             ]
         }
