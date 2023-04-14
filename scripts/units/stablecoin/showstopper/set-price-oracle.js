@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 
 const PRICE_ORACLE = ""
 const SHOW_STOPPER_ADDRESS =addressesConfig.SHOW_STOPPER_ADDRESS

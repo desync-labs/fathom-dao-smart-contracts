@@ -8,7 +8,7 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 
-const addressesConfig = require('../../config/config.js')
+const addressesConfig = require('../../config/config')
 
 const Token_A_Address = addressesConfig.WETH_ADDRESS // SET AS Necessary
 const Token_B_Address = addressesConfig.FXD_ADDRESS// SET AS Necessary

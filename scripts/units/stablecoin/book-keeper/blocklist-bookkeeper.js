@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 
 const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
 const TO_BE_BLOCKLISTED = "0x"

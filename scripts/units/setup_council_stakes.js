@@ -5,7 +5,7 @@ const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
-const addressesConfig = require('../../config/config.js')
+const addressesConfig = require('../../config/config')
 
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED

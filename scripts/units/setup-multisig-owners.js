@@ -2,7 +2,7 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-const addressesConfig = require('../../config/config.js')
+const addressesConfig = require('../../config/config')
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);

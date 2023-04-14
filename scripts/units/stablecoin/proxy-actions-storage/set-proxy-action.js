@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config.js')
+const addressesConfig = require('../../../../config/config')
 
 const PROXY_ACTION_STORAGE_ADDRESS =addressesConfig.PROXY_ACTION_STORAGE_ADDRESS
 const PROXY_ACTION_ADDRESS = "0x"
