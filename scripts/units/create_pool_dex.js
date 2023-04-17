@@ -12,14 +12,14 @@ const addresses = JSON.parse(rawdata);
 const addressesConfig = require('../../config/config')
 
 
-const Token_A_Address = addressesConfig.USD_ADDRESS //USD
-const Token_B_Address =  addressesConfig.WETH_ADDRESS //WXDC
+const Token_A_Address = "0xfbf03b959b9836ac1cC13a8B30f228056dBa7b9a" //USD
+const Token_B_Address =  "0xCBB5e38427F102Fdb08d76Bb592e85d454A31d05" //WXDC
 
 // SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('2', 'ether')
-const Amount_B_Desired = web3.utils.toWei('38', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
+const Amount_A_Desired = web3.utils.toWei('100000', 'ether')
+const Amount_B_Desired = web3.utils.toWei('100000', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('95000', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('95000', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
@@ -131,7 +131,7 @@ module.exports = async function(deployer) {
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-        "ApproveToken",
+        "CreatePoolLiquidty",
         0
     )
 }
