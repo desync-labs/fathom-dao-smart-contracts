@@ -22,12 +22,15 @@ abstract contract GovernorCountingSimple is Governor {
 
     mapping(uint256 => ProposalVote) private _proposalVotes;
 
-    function hasVoted(uint256 proposalId, address account) public view virtual override returns (bool) {
+    error VoteCasted();
+    error WrongVoteType();
+
+    function hasVoted(uint256 proposalId, address account) external view virtual override returns (bool) {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
     function proposalVotes(uint256 proposalId)
-        public
+        external
         view
         virtual
         returns (
@@ -49,7 +52,9 @@ abstract contract GovernorCountingSimple is Governor {
     ) internal virtual override {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
 
-        require(!proposalvote.hasVoted[account], "GovernorVotingSimple: vote already cast");
+        if (proposalvote.hasVoted[account]) {
+            revert VoteCasted();
+        }
         proposalvote.hasVoted[account] = true;
 
         if (support == uint8(VoteType.Against)) {
@@ -59,7 +64,7 @@ abstract contract GovernorCountingSimple is Governor {
         } else if (support == uint8(VoteType.Abstain)) {
             proposalvote.abstainVotes += weight;
         } else {
-            revert("GovernorVotingSimple: invalid value for enum VoteType");
+            revert WrongVoteType();
         }
     }
 

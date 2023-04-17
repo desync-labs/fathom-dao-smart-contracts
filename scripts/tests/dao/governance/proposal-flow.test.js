@@ -1,12 +1,14 @@
 const blockchain = require("../../helpers/blockchain");
 const eventsHelper = require("../../helpers/eventsHelper");
+const constants = require("../../helpers/testConstants");
 const { assert } = require("chai");
 const {
     shouldRevert,
-    errTypes
+    errTypes,
+    shouldRevertAndHaveSubstring
 } = require('../../helpers/expectThrow');
 
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const EMPTY_BYTES = constants.EMPTY_BYTES;
 const TRUE_EVENT_RETURN_IN_HEX = "0x0000000000000000000000000000000000000000000000000000000000000001"
 // Proposal 1
 const PROPOSAL_DESCRIPTION = "Proposal #1: Store 1 in the Box contract";
@@ -15,10 +17,11 @@ const NEW_STORE_VALUE = "5";
 // / proposal 2
 const PROPOSAL_DESCRIPTION_2 = "Proposal #2: Distribute funds from treasury to accounts[5]";
 const AMOUNT_OUT_TREASURY = "1000";
-
+const SUCCEEDED_PROPOSAL_STATE = "4"
+const DEFEATED_PROPOSAL_STATE = "3"
 // Events
 const PROPOSAL_CREATED_EVENT = "ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)"
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 const EXECUTE_TRANSACTION_EVENT = "ExecuteTransaction(address,bool,bytes)";
 
 const _encodeConfirmation = async (_proposalId) => {
@@ -41,10 +44,10 @@ const _encodeEmergencyStop = () => {
         },[]);
 }
 
-const _encodeBlacklistProposer = (_account,_blacklistStatus) =>{
+const _encodeBlocklistProposer = (_account,_blocklistStatus) =>{
     return web3.eth.abi.encodeFunctionCall(
         {   
-            name: 'setBlacklistStatusForProposer',
+            name: 'setBlocklistStatusForProposer',
             type: 'function',
             inputs: [
                 {
@@ -53,18 +56,20 @@ const _encodeBlacklistProposer = (_account,_blacklistStatus) =>{
                 },
                 {
                     type: 'bool',
-                    name: 'blacklistStatus'
+                    name: 'blocklistStatus'
                 }
             ]
-        },[_account,_blacklistStatus]);
+        },[_account,_blocklistStatus]);
 }
 
-const T_TO_STAKE = web3.utils.toWei('2000', 'ether');
+const T_TO_STAKE = web3.utils.toWei('50000', 'ether');
 const STAKED_MIN = web3.utils.toWei('1900', 'ether');
 let streamReward1;
 let proposalIdForAddingSupportedToken;
 let proposalIdForERC20elayFunction
 let proposalIdForETHRelayFunction
+let proposalIdToFailWithoutEnoughVotes
+
 const STAKER_1 = accounts[5];
 const STAKER_2 = accounts[6];
 const NOT_STAKER = accounts[7];
@@ -264,11 +269,11 @@ describe('Proposal flow', () => {
         });
 
 
-        it('Should revert transfer if holder is not whitelisted to transfer', async() => {
+        it('Should revert transfer if holder is not allowlisted to transfer', async() => {
 
-            let errorMessage = "VMainToken: is intransferable unless the sender is whitelisted";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 vMainToken.transfer(
                     accounts[2],
                     "10",
@@ -283,10 +288,9 @@ describe('Proposal flow', () => {
     describe("Update Parameter Through Governer", async() => {
 
         it('Should revert proposal if: proposer votes below proposal threshold', async() => {
+            let errorMessage = "revert";
 
-            let errorMessage = "Governor: proposer votes below threshold";
-
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [box.address],
                     [0],
@@ -365,7 +369,7 @@ describe('Proposal flow', () => {
                 nextBlock++;              
             }
 
-            expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("4");
+            expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal(SUCCEEDED_PROPOSAL_STATE);
         });
 
         
@@ -394,7 +398,7 @@ describe('Proposal flow', () => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
         });
 
-        it('Queue the proposal', async() => {
+        it('Queue the proposal and do not wait for minDelay and try to execute', async() => {
 
             // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
             //      description parameter, which we need to hash.
@@ -412,18 +416,54 @@ describe('Proposal flow', () => {
                 description_hash,
                 {"from": accounts[0]}
             );  
+            expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
+            const errorMessage = "revert";
             
+            await shouldRevertAndHaveSubstring(
+                mainTokenGovernor.execute(      
+                    [box.address],
+                    [0],
+                    [encoded_function],
+                    description_hash,
+                    {"from": accounts[0]}
+                ),
+                errTypes.revert,
+                errorMessage
+            ); 
+            
+            
+        });
+
+        it('Wait for 15 blocks and still fail and then another 15 blocks', async() => {
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             const timestamp = block.timestamp;
             
             var nextBlock = 1;
-            while (nextBlock <= 40) {   
+            
+            while (nextBlock <= 15) {   
                 await blockchain.mineBlock(timestamp + nextBlock); 
                 nextBlock++;              
             }
-            expect((await mainTokenGovernor.state(proposalId)).toString()).to.equal("5");
-        });
+            const errorMessage = "revert";
+              
+            await shouldRevertAndHaveSubstring(
+                mainTokenGovernor.execute(      
+                    [box.address],
+                    [0],
+                    [encoded_function],
+                    description_hash,
+                    {"from": accounts[0]}
+                ),
+                errTypes.revert,
+                errorMessage
+            ); 
+
+            while (nextBlock <= 30) {   
+                await blockchain.mineBlock(timestamp + nextBlock); 
+                nextBlock++;              
+            }
+        })
 
         it('Execute the proposal', async() => {
 
@@ -479,8 +519,8 @@ describe('Proposal flow', () => {
         }
 
         it('Create proposal to send VC funds from MultiSig treasury to account 5', async() => {
-            const eightHours = 28800
-            await blockchain.mineBlock(await _getTimeStamp() + eightHours);  
+            const proposalTimeDelay = 5
+            await blockchain.mineBlock(await _getTimeStamp() + proposalTimeDelay);  
             // create a proposal in MainToken governor
             result = await mainTokenGovernor.propose(
                 [multiSigWallet.address],
@@ -493,6 +533,23 @@ describe('Proposal flow', () => {
             // retrieve the proposal id
             proposalId2 = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];
    
+        });
+
+        it('Should revert on creating another proposal too soon', async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 1);
+            const errorMessage = "revert";
+            
+            await shouldRevertAndHaveSubstring(
+                mainTokenGovernor.propose(
+                    [multiSigWallet.address],
+                    [0],
+                    [encoded_treasury_function],
+                    PROPOSAL_DESCRIPTION,
+                    {"from": STAKER_1}
+                ),
+                errTypes.revert,
+                errorMessage
+            )
         });
 
         it("Should retrieve voting weights", async () => {
@@ -528,9 +585,9 @@ describe('Proposal flow', () => {
         });
 
         it("Should not allow an account to vote twice on the same proposal", async () => {
-            const errorMessage = "GovernorVotingSimple: vote already cast";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
                 errTypes.revert,
                 errorMessage
@@ -539,9 +596,9 @@ describe('Proposal flow', () => {
         });
 
         it("Should not vote outside of option range", async () => {
-            const errorMessage = "GovernorVotingSimple: invalid value for enum VoteType";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "3", {"from": STAKER_2}),
                 errTypes.revert,
                 errorMessage
@@ -560,14 +617,14 @@ describe('Proposal flow', () => {
                 nextBlock++;              
             }
             // Check that the proposal is succesful:
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("4"); 
+            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal(SUCCEEDED_PROPOSAL_STATE); 
         });
 
 
         it("Should not accept votes outside of the voting period", async () => {
-            const errorMessage = "Governor: vote inactive";
+            const errorMessage = "revert";
               
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.castVote(proposalId2, "1", {"from": STAKER_1}),
                 errTypes.revert,
                 errorMessage
@@ -607,6 +664,7 @@ describe('Proposal flow', () => {
                 description_hash_2,
                 {"from": accounts[0]}
             );
+            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
             
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
@@ -617,7 +675,7 @@ describe('Proposal flow', () => {
                 await blockchain.mineBlock(timestamp + nextBlock); 
                 nextBlock++;              
             }
-            expect((await mainTokenGovernor.state(proposalId2)).toString()).to.equal("5");
+            
             
         });
 
@@ -670,154 +728,161 @@ describe('Proposal flow', () => {
             await _stakeMainGetVe(accounts[9]);
             await _stakeMainGetVe(accounts[9]);
 
+            });
         });
 
-        it('Propose to add supporting Token', async() => {
-            const eightHours = 28800
-            await blockchain.increaseTime(eightHours)
-            encoded_function_add_supporting_token = web3.eth.abi.encodeFunctionCall({
-                name: 'addSupportingToken',
-                type: 'function',
-                inputs: [{
-                    type: 'address',
-                    name: '_token'
-                }]
-            }, [streamReward1.address]);
-            // create a proposal in MainToken governor
-            result = await mainTokenGovernor.propose(
-                [mainTokenGovernor.address],
-                [0],
-                [encoded_function_add_supporting_token],
-                PROPOSAL_DESCRIPTION,
-                {"from": STAKER_1}
-            );
-            // retrieve the proposal id
-            proposalIdForAddingSupportedToken = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
-        });
 
-        it('Wait two blocks and then check that the proposal status is: Active', async() => {
-
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
+        describe('#Add Supporting Tokens to the Governor', () => {
+            it('Propose to add supporting Token', async() => {
+                const proposalTimeDelay = 5
+                await blockchain.increaseTime(proposalTimeDelay)
+                encoded_function_add_supporting_token = web3.eth.abi.encodeFunctionCall({
+                    name: 'addSupportingToken',
+                    type: 'function',
+                    inputs: [{
+                        type: 'address',
+                        name: '_token'
+                    }]
+                }, [streamReward1.address]);
+                // create a proposal in MainToken governor
+                result = await mainTokenGovernor.propose(
+                    [mainTokenGovernor.address],
+                    [0],
+                    [encoded_function_add_supporting_token],
+                    PROPOSAL_DESCRIPTION,
+                    {"from": STAKER_1}
+                );
+                // retrieve the proposal id
+                proposalIdForAddingSupportedToken = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
+            });
+    
+            it('Wait two blocks and then check that the proposal status is: Active', async() => {
+    
+                const currentNumber = await web3.eth.getBlockNumber();
+                const block = await web3.eth.getBlock(currentNumber);
+                const timestamp = block.timestamp;
+                
+                var nextBlock = 1;    
+                while (nextBlock <= 2) {   
+                    await blockchain.mineBlock(timestamp + nextBlock);    
+                    nextBlock++;              
+                }
+                // Check that the proposal is open for voting
+                expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("1");
+            });
+    
+            it('Vote on the proposal', async() => {
+    
+                // enum VoteType {
+                //     Against,
+                //     For,
+                //     Abstain
+                // }
+                // =>  0 = Against, 1 = For, 2 = Abstain 
+    
+                const currentNumber = await web3.eth.getBlockNumber();
+                const block = await web3.eth.getBlock(currentNumber);
+                const timestamp = block.timestamp;
+                
+                var nextBlock = 1;
+                while (nextBlock <= 2) {   
+                    await blockchain.mineBlock(timestamp + nextBlock);    
+                    nextBlock++;              
+                }
+                // Vote:
+                await mainTokenGovernor.castVote(proposalIdForAddingSupportedToken, "1", {"from": STAKER_1});
+            });
+    
+            it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
+                const currentNumber = await web3.eth.getBlockNumber();
+                const block = await web3.eth.getBlock(currentNumber);
+                const timestamp = block.timestamp;
+                
+                var nextBlock = 1;
+                while (nextBlock <= 40) {   
+                    await blockchain.mineBlock(timestamp + nextBlock);
+                    nextBlock++;              
+                }
+    
+                expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal(SUCCEEDED_PROPOSAL_STATE);
+            });
+    
             
-            var nextBlock = 1;    
-            while (nextBlock <= 2) {   
-                await blockchain.mineBlock(timestamp + nextBlock);    
-                nextBlock++;              
-            }
-            // Check that the proposal is open for voting
-            expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("1");
-        });
-
-        it('Vote on the proposal', async() => {
-
-            // enum VoteType {
-            //     Against,
-            //     For,
-            //     Abstain
-            // }
-            // =>  0 = Against, 1 = For, 2 = Abstain 
-
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
+            it('Create multiSig transaction to confirm proposal for adding supported tokens', async() => {
+                encodedConfirmation1 = _encodeConfirmation(proposalIdForAddingSupportedToken);
+    
+                const result = await multiSigWallet.submitTransaction(
+                    mainTokenGovernor.address, 
+                    EMPTY_BYTES, 
+                    encodedConfirmation1,
+                    0,
+                    {"from": accounts[0]}
+                );
+                txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+            })
+    
+            it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+                await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
+            });
+    
             
-            var nextBlock = 1;
-            while (nextBlock <= 2) {   
-                await blockchain.mineBlock(timestamp + nextBlock);    
-                nextBlock++;              
-            }
-            // Vote:
-            await mainTokenGovernor.castVote(proposalIdForAddingSupportedToken, "1", {"from": STAKER_1});
-        });
-
-        it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock);
-                nextBlock++;              
-            }
-
-            expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("4");
-        });
-
-        
-        it('Create multiSig transaction to confirm proposal for adding supported tokens', async() => {
-            encodedConfirmation1 = _encodeConfirmation(proposalIdForAddingSupportedToken);
-
-            const result = await multiSigWallet.submitTransaction(
-                mainTokenGovernor.address, 
-                EMPTY_BYTES, 
-                encodedConfirmation1,
-                0,
-                {"from": accounts[0]}
-            );
-            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+            it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+                await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+            });
+    
+            it('Queue the proposal and wait for minDelay', async() => {
+    
+                // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+                //      description parameter, which we need to hash.
+                //
+                // A proposal can only be executed if the proposalId is the same as the one stored 
+                //      in the governer contract that has passed a vote.
+                // In the Governor.sol contract, the proposalId is created using all information used 
+                //      in to create the proposal:
+                // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+    
+                const result = await mainTokenGovernor.queue(      
+                    [mainTokenGovernor.address],
+                    [0],
+                    [encoded_function_add_supporting_token],
+                    description_hash,
+                    {"from": accounts[0]}
+                );  
+                expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("5");
+                const currentNumber = await web3.eth.getBlockNumber();
+                const block = await web3.eth.getBlock(currentNumber);
+                const timestamp = block.timestamp;
+                
+                
+                var nextBlock = 1;
+                while (nextBlock <= 40) {   
+                    await blockchain.mineBlock(timestamp + nextBlock); 
+                    nextBlock++;              
+                }
+                
+            });
+    
+            it('Execute the proposal', async() => {
+    
+                const result = await mainTokenGovernor.execute(      
+                    [mainTokenGovernor.address],
+                    [0],
+                    [encoded_function_add_supporting_token],
+                    description_hash,
+                    {"from": accounts[0]}
+                );
+                const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
+                expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
+            });
         })
 
-        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
-            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-        });
-
-        
-        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
-            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
-        });
-
-        it('Queue the proposal', async() => {
-
-            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-            //      description parameter, which we need to hash.
-            //
-            // A proposal can only be executed if the proposalId is the same as the one stored 
-            //      in the governer contract that has passed a vote.
-            // In the Governor.sol contract, the proposalId is created using all information used 
-            //      in to create the proposal:
-            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
-            const result = await mainTokenGovernor.queue(      
-                [mainTokenGovernor.address],
-                [0],
-                [encoded_function_add_supporting_token],
-                description_hash,
-                {"from": accounts[0]}
-            );  
-            const currentNumber = await web3.eth.getBlockNumber();
-            const block = await web3.eth.getBlock(currentNumber);
-            const timestamp = block.timestamp;
-            
-            
-            var nextBlock = 1;
-            while (nextBlock <= 40) {   
-                await blockchain.mineBlock(timestamp + nextBlock); 
-                nextBlock++;              
-            }
-            expect((await mainTokenGovernor.state(proposalIdForAddingSupportedToken)).toString()).to.equal("5");
-        });
-
-        it('Execute the proposal', async() => {
-
-            const result = await mainTokenGovernor.execute(      
-                [mainTokenGovernor.address],
-                [0],
-                [encoded_function_add_supporting_token],
-                description_hash,
-                {"from": accounts[0]}
-            );
-            const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
-            expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
-        });
-        /// ------------- Relay Token -------///
-        it('Propose to add relay Token to other address', async() => {
-            await streamReward1.transfer(mainTokenGovernor.address,web3.utils.toWei("10000","ether"),{from: accounts[0]});
-            const eightHours = 28800
-            await blockchain.increaseTime(eightHours)
+        describe('#Relay the supported token to other address', () => {
+                    /// ------------- Relay Token -------///
+        it('Propose to relay Token to other address', async() => {
+            await streamReward1.transfer(mainTokenGovernor.address,web3.utils.toWei("1000000","ether"),{from: accounts[0]});
+            const proposalTimeDelay = 5
+            await blockchain.increaseTime(proposalTimeDelay)
             encoded_function_ERC20_relay = web3.eth.abi.encodeFunctionCall({
                 name: 'relayERC20',
                 type: 'function',
@@ -889,7 +954,7 @@ describe('Proposal flow', () => {
                 nextBlock++;              
             }
 
-            expect((await mainTokenGovernor.state(proposalIdForERC20elayFunction)).toString()).to.equal("4");
+            expect((await mainTokenGovernor.state(proposalIdForERC20elayFunction)).toString()).to.equal(SUCCEEDED_PROPOSAL_STATE);
         });
         
         it('Create multiSig transaction to confirm proposal for relaying supported tokens', async() => {
@@ -915,7 +980,7 @@ describe('Proposal flow', () => {
             await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
         });
 
-        it('Queue the proposal', async() => {
+        it('Queue the proposal and wait for minDelay', async() => {
 
             // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
             //      description parameter, which we need to hash.
@@ -933,6 +998,8 @@ describe('Proposal flow', () => {
                 description_hash,
                 {"from": accounts[0]}
             );  
+            expect((await mainTokenGovernor.state(proposalIdForERC20elayFunction)).toString()).to.equal("5");         
+
             const currentNumber = await web3.eth.getBlockNumber();
             const block = await web3.eth.getBlock(currentNumber);
             
@@ -942,7 +1009,6 @@ describe('Proposal flow', () => {
                 await blockchain.mineBlock(timestamp + nextBlock); 
                 nextBlock++;              
             }
-            expect((await mainTokenGovernor.state(proposalIdForERC20elayFunction)).toString()).to.equal("5");         
         });
 
         it('Execute the proposal', async() => {
@@ -958,194 +1024,357 @@ describe('Proposal flow', () => {
 
             const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
             expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
+            
+        });
+    })
+
+    describe('Relay Eth to an address', () => {
+        it('Propose to add relay Token to other address', async() => {
+            const proposalTimeDelay = 5
+            await blockchain.increaseTime(proposalTimeDelay)
+            encoded_function_ETH_relay = web3.eth.abi.encodeFunctionCall({
+                name: 'relayNativeToken',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: 'target'
+                },{
+                    type: 'uint256',
+                    name: 'value'
+                },{
+                    type: 'bytes',
+                    name: 'data'
+                }]
+            }, [accounts[0], EMPTY_BYTES, _encodeTransferFunction(accounts[0])]);
+            // create a proposal in MainToken governor
+            result = await mainTokenGovernor.propose(
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_ETH_relay],
+                PROPOSAL_DESCRIPTION,
+                {"from": STAKER_1}
+            );
+            // retrieve the proposal id
+            proposalIdForETHRelayFunction = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
         });
 
-        //relay ETH
+        it('Wait two blocks and then check that the proposal status is: Active', async() => {
 
-                /// ------------- Relay Token -------///
-                it('Propose to add relay Token to other address', async() => {
-                    const eightHours = 28800
-                    await blockchain.increaseTime(eightHours)
-                    encoded_function_ETH_relay = web3.eth.abi.encodeFunctionCall({
-                        name: 'relayNativeToken',
-                        type: 'function',
-                        inputs: [{
-                            type: 'address',
-                            name: 'target'
-                        },{
-                            type: 'uint256',
-                            name: 'value'
-                        },{
-                            type: 'bytes',
-                            name: 'data'
-                        }]
-                    }, [accounts[0], EMPTY_BYTES, _encodeTransferFunction(accounts[0])]);
-                    // create a proposal in MainToken governor
-                    result = await mainTokenGovernor.propose(
-                        [mainTokenGovernor.address],
-                        [0],
-                        [encoded_function_ETH_relay],
-                        PROPOSAL_DESCRIPTION,
-                        {"from": STAKER_1}
-                    );
-                    // retrieve the proposal id
-                    proposalIdForETHRelayFunction = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
-                });
-        
-                it('Wait two blocks and then check that the proposal status is: Active', async() => {
-        
-                    const currentNumber = await web3.eth.getBlockNumber();
-                    const block = await web3.eth.getBlock(currentNumber);
-                    const timestamp = block.timestamp;
-                    
-                    var nextBlock = 1;    
-                    while (nextBlock <= 2) {   
-                        await blockchain.mineBlock(timestamp + nextBlock);    
-                        nextBlock++;              
-                    }
-                    // Check that the proposal is open for voting
-                    expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal("1");
-                });
-        
-                it('Vote on the proposal', async() => {
-        
-                    // enum VoteType {
-                    //     Against,
-                    //     For,
-                    //     Abstain
-                    // }
-                    // =>  0 = Against, 1 = For, 2 = Abstain 
-        
-                    const currentNumber = await web3.eth.getBlockNumber();
-                    const block = await web3.eth.getBlock(currentNumber);
-                    const timestamp = block.timestamp;
-                    
-                    var nextBlock = 1;
-                    while (nextBlock <= 2) {   
-                        await blockchain.mineBlock(timestamp + nextBlock);    
-                        nextBlock++;              
-                    }
-                    // Vote:
-                    await mainTokenGovernor.castVote(proposalIdForETHRelayFunction, "1", {"from": STAKER_1});
-                });
-        
-                it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
-                    const currentNumber = await web3.eth.getBlockNumber();
-                    const block = await web3.eth.getBlock(currentNumber);
-                    const timestamp = block.timestamp;
-                    
-                    var nextBlock = 1;
-                    while (nextBlock <= 40) {   
-                        await blockchain.mineBlock(timestamp + nextBlock);
-                        nextBlock++;              
-                    }
-        
-                    expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal("4");
-                });
-                
-                it('Create multiSig transaction to confirm proposal for relaying supported tokens', async() => {
-                    encodedConfirmation1 = _encodeConfirmation(proposalIdForETHRelayFunction);
-        
-                    const result = await multiSigWallet.submitTransaction(
-                        mainTokenGovernor.address, 
-                        EMPTY_BYTES, 
-                        encodedConfirmation1,
-                        0,
-                        {"from": accounts[0]}
-                    );
-                    txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-                })
-        
-                it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
-                    await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
-                    await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
-                });
-        
-                
-                it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
-                    await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
-                });
-        
-                it('Queue the proposal', async() => {
-        
-                    // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
-                    //      description parameter, which we need to hash.
-                    //
-                    // A proposal can only be executed if the proposalId is the same as the one stored 
-                    //      in the governer contract that has passed a vote.
-                    // In the Governor.sol contract, the proposalId is created using all information used 
-                    //      in to create the proposal:
-                    // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-        
-                    const result = await mainTokenGovernor.queue(      
-                        [mainTokenGovernor.address],
-                        [0],
-                        [encoded_function_ETH_relay],
-                        description_hash,
-                        {"from": accounts[0]}
-                    );  
-                    const currentNumber = await web3.eth.getBlockNumber();
-                    const block = await web3.eth.getBlock(currentNumber);
-                    
-                    const timestamp = block.timestamp;
-                    var nextBlock = 1;
-                    while (nextBlock <= 40) {   
-                        await blockchain.mineBlock(timestamp + nextBlock); 
-                        nextBlock++;              
-                    }
-                    expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal("5");         
-                });
-        
-                it('Execute the proposal', async() => {
-        
-                    const result = await mainTokenGovernor.execute(      
-                        [mainTokenGovernor.address],
-                        [0],
-                        [encoded_function_ETH_relay],
-                        description_hash,
-                        {"from": accounts[0],
-                        }
-                    );
-        
-                    const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
-                    expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
-            });
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;    
+            while (nextBlock <= 2) {   
+                await blockchain.mineBlock(timestamp + nextBlock);    
+                nextBlock++;              
+            }
+            // Check that the proposal is open for voting
+            expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal("1");
+        });
 
-            it('Should blacklist a proposer', async() =>{
-                const _blacklistAProposer = async(account, blacklistStatus) => {
-                    const result = await multiSigWallet.submitTransaction(
-                        mainTokenGovernor.address,
-                        EMPTY_BYTES,
-                        _encodeBlacklistProposer(account, blacklistStatus),
-                        0,
-                        {"from": accounts[0]}
-                    )
+        it('Vote on the proposal', async() => {
+
+            // enum VoteType {
+            //     Against,
+            //     For,
+            //     Abstain
+            // }
+            // =>  0 = Against, 1 = For, 2 = Abstain 
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 2) {   
+                await blockchain.mineBlock(timestamp + nextBlock);    
+                nextBlock++;              
+            }
+            // Vote:
+            await mainTokenGovernor.castVote(proposalIdForETHRelayFunction, "1", {"from": STAKER_1});
+        });
+
+        it('Wait 40 blocks and then check that the proposal status is: Succeeded', async() => {
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 40) {   
+                await blockchain.mineBlock(timestamp + nextBlock);
+                nextBlock++;              
+            }
+
+            expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal(SUCCEEDED_PROPOSAL_STATE);
+        });
         
-                    const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
-                    await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
-                    await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
-                    await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+        it('Create multiSig transaction to confirm proposal for relaying supported tokens', async() => {
+            encodedConfirmation1 = _encodeConfirmation(proposalIdForETHRelayFunction);
+
+            const result = await multiSigWallet.submitTransaction(
+                mainTokenGovernor.address, 
+                EMPTY_BYTES, 
+                encodedConfirmation1,
+                0,
+                {"from": accounts[0]}
+            );
+            txIndex1 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+        })
+
+        it('Should confirm transaction 1 from accounts[0], the first signer and accounts[1], the second signer', async() => {
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex1, {"from": accounts[1]});
+        });
+
+        
+        it('Execute the multiSig confirmation of proposal 1 and wait 40 blocks', async() => {
+            await multiSigWallet.executeTransaction(txIndex1, {"from": accounts[0]});
+        });
+
+        it('Queue the proposal and wait for minDelay', async() => {
+
+            // Functions mainTokenGovernor.propose and mainTokenGovernor.queue have the same input, except for the
+            //      description parameter, which we need to hash.
+            //
+            // A proposal can only be executed if the proposalId is the same as the one stored 
+            //      in the governer contract that has passed a vote.
+            // In the Governor.sol contract, the proposalId is created using all information used 
+            //      in to create the proposal:
+            // uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
+
+            const result = await mainTokenGovernor.queue(      
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_ETH_relay],
+                description_hash,
+                {"from": accounts[0]}
+            );  
+            expect((await mainTokenGovernor.state(proposalIdForETHRelayFunction)).toString()).to.equal("5");         
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            
+            const timestamp = block.timestamp;
+            var nextBlock = 1;
+            while (nextBlock <= 40) {   
+                await blockchain.mineBlock(timestamp + nextBlock); 
+                nextBlock++;              
+            }
+        });
+
+        it('Execute the proposal', async() => {
+
+            const result = await mainTokenGovernor.execute(      
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_ETH_relay],
+                description_hash,
+                {"from": accounts[0],
                 }
+            );
+
+            const successStatus = eventsHelper.getIndexedEventArgs(result, EXECUTE_TRANSACTION_EVENT)[1];
+            expect(successStatus.toString()).to.equal(TRUE_EVENT_RETURN_IN_HEX)
+        });
+     })
+
+     describe('#TestCases for vote balance check and black list check', () => {
+
+        const _transferFromMultiSigTreasury = async (_account) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account),
+                0,
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
+        it('Should not have enough vote balance to propose', async() => {
+            const proposalTimeDelay = 5
+            await blockchain.increaseTime(proposalTimeDelay)
+            encoded_function_add_supporting_token = web3.eth.abi.encodeFunctionCall({
+                name: 'addSupportingToken',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: '_token'
+                }]
+            }, [streamReward1.address]);
+            // create a proposal in MainToken governor
+
+            let errorMessage = "revert";
+            await FTHMToken.approve(stakingService.address,T_TO_STAKE, {from: NOT_STAKER})
+            await _transferFromMultiSigTreasury(NOT_STAKER)
+            //get 1VOTE Token only.
+            await stakingService.createLock(web3.utils.toWei('999','ether'),lockingPeriod,{from: NOT_STAKER});
+            await shouldRevertAndHaveSubstring(
+                mainTokenGovernor.propose(
+                    [stakingService.address],
+                    [0],
+                    [encoded_function],
+                    PROPOSAL_DESCRIPTION,
+                    {"from": NOT_STAKER}
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+            
+            // retrieve the proposal id
+            proposalIdToFailWithoutEnoughVotes = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
+        });
+
+        it('Proposal created to relay ETH to accounts[1] which should fail without enough vote threshold reached', async() => {
+            const proposalTimeDelay = 5
+            await blockchain.increaseTime(proposalTimeDelay)
+            encoded_function_ETH_relay = web3.eth.abi.encodeFunctionCall({
+                name: 'relayNativeToken',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: 'target'
+                },{
+                    type: 'uint256',
+                    name: 'value'
+                },{
+                    type: 'bytes',
+                    name: 'data'
+                }]
+            }, [accounts[1], EMPTY_BYTES, _encodeTransferFunction(accounts[0])]);
+            // create a proposal in MainToken governor
+            result = await mainTokenGovernor.propose(
+                [mainTokenGovernor.address],
+                [0],
+                [encoded_function_ETH_relay],
+                PROPOSAL_DESCRIPTION,
+                {"from": STAKER_1}
+            );
+            // retrieve the proposal id
+            proposalIdToFailWithoutEnoughVotes = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
+        });
+
+        it('Wait two blocks and then check that the proposal status is: Active', async() => {
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;    
+            while (nextBlock <= 2) {   
+                await blockchain.mineBlock(timestamp + nextBlock);    
+                nextBlock++;              
+            }
+            // Check that the proposal is open for voting
+            expect((await mainTokenGovernor.state(proposalIdToFailWithoutEnoughVotes)).toString()).to.equal("1");
+        });
+
+        it('Vote on the proposal', async() => {
+
+            // enum VoteType {
+            //     Against,
+            //     For,
+            //     Abstain
+            // }
+            // =>  0 = Against, 1 = For, 2 = Abstain 
+
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 2) {   
+                await blockchain.mineBlock(timestamp + nextBlock);    
+                nextBlock++;              
+            }
+            // Vote:
+            await mainTokenGovernor.castVote(proposalIdToFailWithoutEnoughVotes, "1", {"from": NOT_STAKER});
+        });
+
+        it('Wait 40 blocks and then check that the proposal status is: DEFEATED as not enough votes were cast', async() => {
+            const currentNumber = await web3.eth.getBlockNumber();
+            const block = await web3.eth.getBlock(currentNumber);
+            const timestamp = block.timestamp;
+            
+            var nextBlock = 1;
+            while (nextBlock <= 40) {   
+                await blockchain.mineBlock(timestamp + nextBlock);
+                nextBlock++;              
+            }
+
+            expect((await mainTokenGovernor.state(proposalIdToFailWithoutEnoughVotes)).toString()).to.equal(DEFEATED_PROPOSAL_STATE);
+        });
+
+        it('Should have enough vote balance to propose after creating lock for NOT_STAKER', async() => {
+            const proposalTimeDelay = 5
+            await blockchain.increaseTime(proposalTimeDelay)
+            encoded_function_add_supporting_token = web3.eth.abi.encodeFunctionCall({
+                name: 'addSupportingToken',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: '_token'
+                }]
+            }, [streamReward1.address]);
+            // create a proposal in MainToken governor
+
+            await FTHMToken.approve(stakingService.address,T_TO_STAKE, {from: NOT_STAKER})
+            await _transferFromMultiSigTreasury(NOT_STAKER)
+            await stakingService.createLock(T_TO_STAKE,lockingPeriod,{from: NOT_STAKER});
+            await mainTokenGovernor.propose(
+                    [stakingService.address],
+                    [0],
+                    [encoded_function],
+                    "PROPOSAL_DESCRIPTION",
+                    {"from": NOT_STAKER}
+                ),
     
-                await _blacklistAProposer(accounts[5], true)
-            })
+            // retrieve the proposal id
+            proposalIdForAddingSupportedToken = eventsHelper.getIndexedEventArgs(result, PROPOSAL_CREATED_EVENT)[0];    
+        });
+
+
+        it('Should blocklist a proposer', async() =>{
+            const _blocklistAProposer = async(account, blocklistStatus) => {
+                const result = await multiSigWallet.submitTransaction(
+                    mainTokenGovernor.address,
+                    EMPTY_BYTES,
+                    _encodeBlocklistProposer(account, blocklistStatus),
+                    0,
+                    {"from": accounts[0]}
+                )
     
-            it('Should revert on propose by blacklisted msg.sender', async() =>{
-                let errorMessage = "Proposer is blacklisted";
-    
-                await shouldRevert(
-                    mainTokenGovernor.propose(
-                        [box.address],
-                        [0],
-                        [encoded_function],
-                        PROPOSAL_DESCRIPTION,
-                        {"from": accounts[5]}
-                    ),
-                    errTypes.revert,
-                    errorMessage
-                );
-            })
-    });
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _blocklistAProposer(accounts[5], true)
+        })
+
+        it('Should revert on propose by blocklisted msg.sender', async() =>{
+            let errorMessage = "revert";
+            await shouldRevertAndHaveSubstring(
+                mainTokenGovernor.propose(
+                    [box.address],
+                    [0],
+                    [encoded_function],
+                    PROPOSAL_DESCRIPTION,
+                    {"from": accounts[5]}
+                ),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+     })
+
 
     describe("Emergency Stop through multisig", async() => {
         it('Emergency stop the governor', async() =>{
@@ -1169,9 +1398,9 @@ describe('Proposal flow', () => {
         })
 
         it('Should fail to propose on emergency stop', async() =>{
-            let errorMessage = "not live";
+            let errorMessage = "revert";
 
-            await shouldRevert(
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.propose(
                     [box.address],
                     [0],
@@ -1185,8 +1414,8 @@ describe('Proposal flow', () => {
         })
 
         it('Should fail to execute on emergency stop', async() =>{
-            let errorMessage = "not live";
-            await shouldRevert(
+            let errorMessage = "revert";
+            await shouldRevertAndHaveSubstring(
                 mainTokenGovernor.execute(      
                     [mainTokenGovernor.address],
                     [0],

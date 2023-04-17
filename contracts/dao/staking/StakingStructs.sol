@@ -54,6 +54,7 @@ struct LockedBalance {
 struct Stream {
     address owner; // stream owned by the ERC-20 reward token owner
     address manager; // stream manager handled by Main stream manager role
+    uint256 percentToTreasury;
     address rewardToken;
     StreamStatus status;
     uint256 rewardDepositAmount; // the reward amount that has been deposited by third party

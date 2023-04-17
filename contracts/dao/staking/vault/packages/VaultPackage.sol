@@ -13,11 +13,23 @@ import "../../../../common/introspection/ERC165.sol";
 // solhint-disable not-rely-on-time
 contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     using SafeERC20 for IERC20;
-    bytes32 public constant REWARDS_OPERATOR_ROLE = keccak256("REWARDS_OPERATOR_ROLE");
+
     mapping(address => uint256) public deposited;
     mapping(address => bool) public override isSupportedToken;
     address[] public listOfSupportedTokens;
     bool public override migrated;
+
+    bytes32 public constant REWARDS_OPERATOR_ROLE = keccak256("REWARDS_OPERATOR_ROLE");
+
+    error NoRewardsOperatorRole();
+    error UnsupportedToken();
+    error AmountZero();
+    error InsufficientDeposit();
+    error VaultMigrated();
+    error TokenAlreadyExists();
+    error TokenInUse();
+    error ZeroAddress();
+    error RequiredPause();
 
     constructor() {
         _disableInitializers();
@@ -39,11 +51,11 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         address _token,
         uint256 _amount
     ) external override pausable(1) {
-        require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "payRewards: No role");
-        require(isSupportedToken[_token], "Unsupported token");
-        require(_amount != 0, "amount zero");
-        require(deposited[_token] >= _amount, "payRewards: not enough deposit");
-        require(!migrated,"vault already migrated");
+        if (!hasRole(REWARDS_OPERATOR_ROLE, msg.sender)) revert NoRewardsOperatorRole();
+        if (!isSupportedToken[_token]) revert UnsupportedToken();
+        if (_amount == 0) revert AmountZero();
+        if (deposited[_token] < _amount) revert InsufficientDeposit();
+        if (migrated) revert VaultMigrated();
 
         uint256 previousBalance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_user, _amount);
@@ -52,14 +64,11 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         deposited[_token] -= trueDeposit;
     }
 
-    function deposit(
-        address _token,
-        uint256 _amount
-    ) external override pausable(1) {
-        require(hasRole(REWARDS_OPERATOR_ROLE, msg.sender), "deposit: No role");
-        require(isSupportedToken[_token], "Unsupported token");
-        require(!migrated,"vault already migrated");
-        
+    function deposit(address _token, uint256 _amount) external override pausable(1) {
+        if (!hasRole(REWARDS_OPERATOR_ROLE, msg.sender)) revert NoRewardsOperatorRole();
+        if (!isSupportedToken[_token]) revert UnsupportedToken();
+        if (migrated) revert VaultMigrated();
+
         uint256 previousBalance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         uint256 newBalance = IERC20(_token).balanceOf(address(this));
@@ -69,52 +78,53 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
 
     /// @notice adds token as a supported rewards token by Vault
     /// supported tokens means any future stream token should be
-    /// whitelisted here
+    /// allowlisted here
     /// @param _token stream ERC20 token address
     function addSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!migrated,"vault already migrated");
+        if (migrated) revert VaultMigrated();
         _addSupportedToken(_token);
     }
 
     /// @notice removed token as a supported rewards token by Treasury
     /// @param _token stream ERC20 token address
     function removeSupportedToken(address _token) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!migrated,"vault already migrated");
-        require(isSupportedToken[_token], "Token does not exist");
-        require(deposited[_token] == 0, "Token is still in use");
-        
+        if (migrated) revert VaultMigrated();
+        if (!isSupportedToken[_token]) revert UnsupportedToken();
+        if (deposited[_token] > 0) revert TokenInUse();
+
         isSupportedToken[_token] = false;
         _removeToken(_token);
         emit TokenRemoved(_token, msg.sender, block.timestamp);
     }
 
     function withdrawExtraSupportedTokens(address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        for(uint i = 0; i < listOfSupportedTokens.length;i++){
+        for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             uint256 balanceToWithdraw;
             address _token = listOfSupportedTokens[i];
             uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
-            if(balanceInContract > deposited[_token]){
-                balanceToWithdraw =  balanceInContract - deposited[_token];
+            if (balanceInContract > deposited[_token]) {
+                balanceToWithdraw = balanceInContract - deposited[_token];
             }
-            if(balanceToWithdraw > 0){
+            if (balanceToWithdraw > 0) {
                 IERC20(_token).safeTransfer(_withdrawTo, balanceToWithdraw);
-            }  
-        }  
+            }
+        }
     }
 
-    function withdrawExtraUnsupportedToken(address _token,address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!isSupportedToken[_token],"token is supported");
+    function withdrawExtraUnsupportedToken(address _token, address _withdrawTo) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (isSupportedToken[_token]) revert TokenAlreadyExists();
         uint256 balanceInContract = IERC20(_token).balanceOf(address(this));
-        if(balanceInContract > 0){
+        if (balanceInContract > 0) {
             IERC20(_token).safeTransfer(_withdrawTo, balanceInContract);
         }
     }
 
     /// @notice we believe newVaultPackage is safe
     function migrate(address newVaultPackage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!migrated, "vault already migrated");
-        require(paused != 0, "required pause");
-        require(newVaultPackage != address(0), "withdrawTo: Zero addr");
+        if (migrated) revert VaultMigrated();
+        if (paused == 0) revert RequiredPause();
+        if (newVaultPackage == address(0)) revert ZeroAddress();
+
         for (uint256 i = 0; i < listOfSupportedTokens.length; i++) {
             address token = listOfSupportedTokens[i];
             deposited[token] = 0;
@@ -125,12 +135,11 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
     }
 
     function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IERC165).interfaceId ||
-               interfaceId == type(IVault).interfaceId;
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IVault).interfaceId;
     }
 
     function _addSupportedToken(address _token) internal {
-        require(!isSupportedToken[_token], "Token already exists");
+        if (isSupportedToken[_token]) revert TokenAlreadyExists();
         isSupportedToken[_token] = true;
         listOfSupportedTokens.push(_token);
         emit TokenAdded(_token, msg.sender, block.timestamp);
@@ -145,6 +154,4 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         }
         listOfSupportedTokens.pop();
     }
-
-    
 }

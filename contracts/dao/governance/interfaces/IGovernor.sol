@@ -39,40 +39,40 @@ abstract contract IGovernor is IERC165 {
     event VoteCastWithParams(address indexed voter, uint256 indexed proposalId, uint8 support, uint256 weight, string reason, bytes params);
 
     function propose(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        string memory description
-    ) public virtual returns (uint256 proposalId);
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas,
+        string calldata description
+    ) external virtual returns (uint256 proposalId);
 
     function cancelProposal(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas,
         bytes32 descriptionHash
-    ) public virtual returns (uint256);
+    ) external virtual returns (uint256);
 
     function execute(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas,
         bytes32 descriptionHash
-    ) public payable virtual returns (uint256 proposalId);
+    ) external payable virtual returns (uint256 proposalId);
 
-    function castVote(uint256 proposalId, uint8 support) public virtual returns (uint256 balance);
+    function castVote(uint256 proposalId, uint8 support) external virtual returns (uint256 balance);
 
     function castVoteWithReason(
         uint256 proposalId,
         uint8 support,
-        string memory reason
-    ) public virtual returns (uint256 balance);
+        string calldata reason
+    ) external virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParams(
         uint256 proposalId,
         uint8 support,
-        string memory reason,
-        bytes memory params
-    ) public virtual returns (uint256 balance);
+        string calldata reason,
+        bytes calldata params
+    ) external virtual returns (uint256 balance);
 
     function castVoteBySig(
         uint256 proposalId,
@@ -80,20 +80,20 @@ abstract contract IGovernor is IERC165 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual returns (uint256 balance);
+    ) external virtual returns (uint256 balance);
 
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
         uint8 support,
-        string memory reason,
-        bytes memory params,
+        string calldata reason,
+        bytes calldata params,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual returns (uint256 balance);
+    ) external virtual returns (uint256 balance);
 
     function getProposals(uint256 _numIndexes)
-        public
+        external
         view
         virtual
         returns (
@@ -102,35 +102,30 @@ abstract contract IGovernor is IERC165 {
             string[] memory
         );
 
-    function getDescription(uint256 _proposalId) public view virtual returns (string memory);
+    function getDescription(uint256 _proposalId) external view virtual returns (string memory);
 
-    function getProposalIds() public view virtual returns (uint256[] memory);
+    function getProposalIds() external view virtual returns (uint256[] memory);
 
-    function name() public view virtual returns (string memory);
+    function name() external view virtual returns (string memory);
 
-    function version() public view virtual returns (string memory);
+    function version() external view virtual returns (string memory);
 
-    function state(uint256 proposalId) public view virtual returns (ProposalState);
+    function state(uint256 proposalId) external view virtual returns (ProposalState);
 
-    function proposalSnapshot(uint256 proposalId) public view virtual returns (uint256);
+    function proposalSnapshot(uint256 proposalId) external view virtual returns (uint256);
 
-    function proposalDeadline(uint256 proposalId) public view virtual returns (uint256);
+    function proposalDeadline(uint256 proposalId) external view virtual returns (uint256);
 
-    function votingDelay() public view virtual returns (uint256);
-
-    function votingPeriod() public view virtual returns (uint256);
-
-    function quorum(uint256 blockNumber) public view virtual returns (uint256);
-
-    function getVotes(address account, uint256 blockNumber) public view virtual returns (uint256);
+    function getVotes(address account, uint256 blockNumber) external view virtual returns (uint256);
 
     function getVotesWithParams(
         address account,
         uint256 blockNumber,
-        bytes memory params
-    ) public view virtual returns (uint256);
+        bytes calldata params
+    ) external view virtual returns (uint256);
 
-    function hasVoted(uint256 proposalId, address account) public view virtual returns (bool);
+    function hasVoted(uint256 proposalId, address account) external view virtual returns (bool);
+
     /**
      * @dev A description of the possible `support` values for {castVote} and the way these votes are counted, meant to
      * be consumed by UIs to show correct vote options and interpret the results. The string is a URL-encoded
@@ -154,9 +149,15 @@ abstract contract IGovernor is IERC165 {
      */
 
     function hashProposal(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas,
         bytes32 descriptionHash
-    ) public pure virtual returns (uint256);
+    ) external pure virtual returns (uint256);
+
+    function votingDelay() public view virtual returns (uint256);
+
+    function votingPeriod() public view virtual returns (uint256);
+
+    function quorum(uint256 blockNumber) public view virtual returns (uint256);
 }

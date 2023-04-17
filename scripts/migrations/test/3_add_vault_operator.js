@@ -1,15 +1,15 @@
 const eventsHelper = require("../../tests/helpers/eventsHelper");
-
+const constants = require("../../tests/helpers/testConstants");
 
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const EMPTY_BYTES = '0x0000000000000000000000000000000000000000000000000000000000000000';
-const SUBMIT_TRANSACTION_EVENT = "SubmitTransaction(uint256,address,address,uint256,bytes)";
+const EMPTY_BYTES = constants.EMPTY_BYTES;
+const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 
-const _encodeTransferFunction = (_account, _amount) => {
+const _encodeAddRewardsOpertor = (_account, _amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'addRewardsOperator',
         type: 'function',
@@ -28,7 +28,7 @@ module.exports = async function(deployer) {
     let result = await multiSigWallet.submitTransaction(
         VaultProxy.address, 
         EMPTY_BYTES, 
-        _encodeTransferFunction(StakingProxy.address),
+        _encodeAddRewardsOpertor(StakingProxy.address),
         0,
         {gas: 8000000}
     );

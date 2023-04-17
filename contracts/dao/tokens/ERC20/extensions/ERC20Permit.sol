@@ -16,17 +16,15 @@ abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712 {
     mapping(address => Counters.Counter) private _nonces;
 
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
-    // solhint-disable-next-line var-name-mixedcase
     bytes32 private _PERMIT_TYPEHASH_DEPRECATED_SLOT;
 
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) EIP712(name_, "1") {}
+    // solhint-disable-next-line var-name-mixedcase
+    bytes32 private constant _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
-        return _domainSeparatorV4();
-    }
+    error ExpiredDeadline();
+    error InvalidSignature();
+
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) EIP712(name_, "1") {}
 
     function permit(
         address owner,
@@ -36,21 +34,30 @@ abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual override {
-        // solhint-disable-next-line
-        require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
+    ) external virtual override {
+        // solhint-disable-next-line not-rely-on-time
+        if (block.timestamp > deadline) {
+            revert ExpiredDeadline();
+        }
 
         bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
         address signer = ECDSA.recover(hash, v, r, s);
-        require(signer == owner, "ERC20Permit: invalid signature");
+        if (signer != owner) {
+            revert InvalidSignature();
+        }
 
         _approve(owner, spender, value);
     }
 
-    function nonces(address owner) public view virtual override returns (uint256) {
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    function nonces(address owner) external view virtual override returns (uint256) {
         return _nonces[owner].current();
     }
 
