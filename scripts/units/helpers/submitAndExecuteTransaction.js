@@ -5,7 +5,12 @@ const txnSaver = require('./transactionSaver')
 const eventsHelper = require("../../tests/helpers/eventsHelper");
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const rawdata = fs.readFileSync('../../../addresses.json');
+
+// Load the appropriate addresses file based on the NODE_ENV environment variable
+const env = process.env.NODE_ENV || 'dev';
+const addressesFilePath = `../../../addresses.${env}.json`;
+
+const rawdata = fs.readFileSync(addressesFilePath);
 const addresses = JSON.parse(rawdata);
 
 async function submitAndExecute(encodedFunction, targetAddress, TransactionName, ETH_AMOUNT=0) {
