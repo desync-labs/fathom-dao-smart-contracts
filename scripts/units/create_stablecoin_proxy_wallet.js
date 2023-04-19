@@ -48,7 +48,7 @@ module.exports = async function(deployer) {
     }
     let data = JSON.stringify(addressesStableCoin);
 
-    const filePath = ('./config/stablecoin-addresses-proxy-wallet.json')
+    const filePath = (`./config/stablecoin-addresses-proxy-wallet.${env}.json`)
     const dirPath = path.dirname(filePath)
 
     if (fs.existsSync(filePath)) {

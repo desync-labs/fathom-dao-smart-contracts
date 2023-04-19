@@ -4,14 +4,14 @@ const eventsHelper = require("../tests/helpers/eventsHelper");
 const txnSaver = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-
+const env = process.env.NODE_ENV || 'dev';
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
-const rawDataStablecoin = fs.readFileSync('../../config/stablecoin-addresses-proxy-wallet.json');
+
+const rawDataStablecoin = fs.readFileSync(`../../config/stablecoin-addresses-proxy-wallet.${env}.json`);
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
 
 const XDC_COL = web3.utils.toWei('20','ether')
-const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`)
 
 const PROXY_WALLET = addressesStableCoin.proxyWallet

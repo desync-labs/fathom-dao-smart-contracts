@@ -13,7 +13,7 @@ const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`)
 
 
-const Token_A_Address = addressesConfig.USD_ADDRESS //USD
+const Token_A_Address = "0x764687eA66dCaf68Fb5246C29739221cfef3Bb46" //FTHM
 const Token_B_Address =  addressesConfig.WETH_ADDRESS //WXDC
 // SET AS Necessary
 const Amount_A_Desired = web3.utils.toWei('100000', 'ether')
