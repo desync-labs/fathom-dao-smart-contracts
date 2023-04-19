@@ -9,6 +9,7 @@ const addresses = JSON.parse(rawdata);
 
 
 const addressesConfig = require('../../config/config')
+const SLIPPAGE = 0.05
 
 const Token_A_Address = addressesConfig.WETH_ADDRESS // SET AS Necessary
 const Token_B_Address = addressesConfig.FXD_ADDRESS// SET AS Necessary
