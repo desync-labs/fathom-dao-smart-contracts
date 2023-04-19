@@ -2,7 +2,8 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);

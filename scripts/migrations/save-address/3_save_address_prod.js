@@ -2,7 +2,7 @@ const StakingProxyAdmin = artifacts.require('./common/proxy/StakingProxyAdmin.so
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const StakingGettersHelper = artifacts.require('./dao/staking/helpers/StakingGettersHelper.sol')
 const fs = require('fs')
-let env = process.env.NODE_ENV || 'dev';
+let env = process.env.NODE_ENV || 'demo';
 let addressesFilePath = `../../../addresses.${env}.json`;
 
 const rawdata = fs.readFileSync(addressesFilePath);
@@ -19,7 +19,7 @@ module.exports = async function(deployer) {
         ...addresses
     }
 
-    let env = process.env.NODE_ENV || 'dev';
+    let env = process.env.NODE_ENV || 'demo';
     let filePath = `./addresses.${env}.json`;
     
     let data = JSON.stringify(newAddresses, null, " ");

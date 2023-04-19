@@ -8,7 +8,8 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 const SLIPPAGE = 0.05
 
 const Token_A_Address = addressesConfig.WETH_ADDRESS // SET AS Necessary

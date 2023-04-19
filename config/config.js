@@ -13,7 +13,7 @@ const configPaths = {
     prod: './config.prod',
   };
   
-const env = process.env.NODE_ENV;
-const configFilePath = configPaths[env] || configPaths['dev'];
+const env = process.env.NODE_ENV || 'dev';
+const configFilePath = configPaths[env];
 const config = loadConfig(configFilePath);
 module.exports = config;

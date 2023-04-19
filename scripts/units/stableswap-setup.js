@@ -9,7 +9,8 @@ const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWa
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
 const USDAddress = addressesConfig.USD_ADDRESS
 const FXDAddress = addressesConfig.FXD_ADDRESS

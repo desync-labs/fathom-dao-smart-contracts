@@ -10,7 +10,8 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const IProxyRegistry = artifacts.require("./dao/test/stablecoin/IProxyRegistry.sol");
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 const PROXY_WALLET_REGISTRY_ADDRESS = addressesConfig.PROXY_WALLET_REGISTRY_ADDRESS
 
 const _encodeBuildFunction = (_account) => {

@@ -11,7 +11,8 @@ const rawDataStablecoin = fs.readFileSync('../../config/stablecoin-addresses-pro
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
 
 const XDC_COL = web3.utils.toWei('20','ether')
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 const PROXY_WALLET = addressesStableCoin.proxyWallet
 

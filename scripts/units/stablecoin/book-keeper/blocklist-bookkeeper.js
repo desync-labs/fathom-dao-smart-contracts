@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../../../config/config.${env}`)
 
 const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
 const TO_BE_BLOCKLISTED = "0x"

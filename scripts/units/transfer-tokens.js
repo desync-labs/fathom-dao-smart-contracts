@@ -1,8 +1,8 @@
 const fs = require('fs');
 
 const constants = require('./helpers/constants')
-const T_TO_TRANSFER_PLACEHOLDER = web3.utils.toWei('10000000','ether') //SET AS NEEDED
-const TRANSFER_TO_ACCOUNT_PLACEHOLDER = "0x0Eb7DEE6e18Cce8fE839E986502d95d47dC0ADa3" //SET AS NEEDED
+const T_TO_TRANSFER_PLACEHOLDER = web3.utils.toWei('100000000','ether') //SET AS NEEDED
+const TRANSFER_TO_ACCOUNT_PLACEHOLDER = "0xFFdc66881bC4A375a542CB0f416EF371fF4D8C3f" //SET AS NEEDED
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);

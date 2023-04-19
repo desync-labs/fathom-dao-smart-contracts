@@ -19,7 +19,7 @@ module.exports = async function(deployer) {
         rewardsCalculator: RewardsCalculator.address,
     }
     
-    let env = process.env.NODE_ENV || 'dev';
+    let env = process.env.NODE_ENV || 'demo';
     let filePath = `./addresses.${env}.json`;
 
     let data = JSON.stringify(addresses, null, " ");

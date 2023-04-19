@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../../../config/config.${env}`)
 
 const PRICE_ORACLE_ADDRESS =addressesConfig.PRICE_ORACLE_ADDRESS
 
