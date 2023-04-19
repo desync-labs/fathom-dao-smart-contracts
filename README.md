@@ -48,10 +48,25 @@ $ npm run test
 # Deploy to the local node
 $ npm run migrate-reset
 
+# Before Deployment - execute following scripts
+# For Dev Environment
+$ node scripts/units/helpers/create-config-dev.js
+# For DEMO Environment
+$ node scripts/units/helpers/create-config-demo.js
+# For PROD Environment
+$ node scripts/units/helpers/create-config-prod.js
+
 # Deploy to the public testnet
 # For a deployment to the public testnet make sure that you have testnet coins
-# Deploy to the apothem
-$ npm run migrate-reset-apothem
+# Deploy to the apothem - dev environment
+$ npm run migrate-reset-apothem-dev
+
+# Deploy to the apothem - demo environment
+$ npm run migrate-reset-apothem-demo
+
+# Deploy to the xdc - prod environment
+$ npm run migrate-reset-xdc
+
 
 # Deploy to the sepolia
 $ npm run migrate-reset-sepolia

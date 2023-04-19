@@ -19,10 +19,14 @@ module.exports = async function(deployer) {
         rewardsCalculator: RewardsCalculator.address,
     }
     
+    let env = process.env.NODE_ENV || 'dev';
+    let filePath = `./addresses.${env}.json`;
+
     let data = JSON.stringify(addresses, null, " ");
-    fs.writeFileSync('./addresses.json',data, function(err){
-        if(err){
-            console.log(err)
+    fs.writeFileSync(filePath, data, function (err) {
+        if (err) {
+            console.log(err);
         }
-    })
+    });
+
 }

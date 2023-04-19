@@ -10,4 +10,10 @@ yarn.lock
 package-lock.json
 bin
 addresses.json
-/config
+addresses.prod.json
+addresses.dev.json
+addresses.demo.json
+/config/*
+!/config/config.js
+
+
