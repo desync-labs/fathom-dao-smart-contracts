@@ -39,7 +39,7 @@ So basically you need to end up with config/config.env.js file path in your root
 Please be aware that each unit scripts need adjustment as per need and must be checked before performing execution
 3. Finally create a .env file And setup the environment you want to work on:
 
-So write either of following:
+So setup by writing either of following in the .env file
 
 ```
 NODE_ENV=dev
@@ -73,7 +73,7 @@ In file in scripts/units/setup_council_stakes.js
 4. Execute:
 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/setup_council_stakes.js --network apothem||xdc
+coralX execute --path scripts/units/setup_council_stakes.js --network apothem||xdc
 ```
 
 ## How to transfer tokens
@@ -84,7 +84,7 @@ Hardcode:
 3. Execute:
 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/transfer-tokens.js --network apothem||xdc
+coralX execute --path scripts/units/transfer-tokens.js --network apothem||xdc
 ```
 
 
@@ -92,7 +92,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/transfer-tokens.js --net
 1. In scripts/units/setup-multisig-owners.js 
 2. COUNCIL_2 and COUNCIL_3 are from config.js
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/setup-multisig-owners.js --network apothem||xdc
+coralX execute --path scripts/units/setup-multisig-owners.js --network apothem||xdc
 ```
 
 ## How to create dex pool with Native Token
@@ -107,7 +107,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/setup-multisig-owners.js
 2. Execute:
 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/create_pool_dex_xdc.js --network apothem||xdc
+coralX execute --path scripts/units/create_pool_dex_xdc.js --network apothem||xdc
 ```
 
 
@@ -124,7 +124,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/create_pool_dex_xdc.js -
 2. Execute:
 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/create_pool_dex.js --network apothem||xdc
+coralX execute --path scripts/units/create_pool_dex.js --network apothem||xdc
 ```
 
 ## How to create Proxy Wallet
@@ -137,7 +137,7 @@ Calling from multisig, will create a proxy wallet whose address will be stored i
 1. PROXY_WALLET_REGISTRY_ADDRESS will be taken from config.js
 2. Execute: 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/create_stablecoin_proxy_wallet.js --network apothem||xdc
+coralX execute --path scripts/units/create_stablecoin_proxy_wallet.js --network apothem||xdc
 ```
 
 ## How to Open Position
@@ -148,7 +148,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/create_stablecoin_proxy_
 
 2. Execute: 
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/create_stablecoin_open_position.js --network apothem||xdc
+coralX execute --path scripts/units/create_stablecoin_open_position.js --network apothem||xdc
 ```
 
 ## How to propose a proposal
@@ -163,7 +163,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/create_stablecoin_open_p
     
 2. Execute
 ```
-set NODE_ENV=env && coralX execute --path 'scripts/units/propose-proposal.js --network apothem||xdc
+coralX execute --path 'scripts/units/propose-proposal.js --network apothem||xdc
 ```
 
 ## Queue Proposal
@@ -178,7 +178,7 @@ set NODE_ENV=env && coralX execute --path 'scripts/units/propose-proposal.js --n
     
 2. Execute:
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/queue-proposal.js --network apothem||xdc
+coralX execute --path scripts/units/queue-proposal.js --network apothem||xdc
 ```
 
 ## Execute Proposal
@@ -194,7 +194,7 @@ set NODE_ENV=env && coralX execute --path scripts/units/queue-proposal.js --netw
     
 Execute:
 ```
-set NODE_ENV=env && coralX execute --path scripts/units/execute-proposal, --network apothem||xdc
+coralX execute --path scripts/units/execute-proposal, --network apothem||xdc
 ```
 
 Note: There are other tons of scripts as well to execute different contracts through multisig
