@@ -11,6 +11,7 @@ const configPaths = {
     dev: './config.dev',
     demo: './config.demo',
     prod: './config.prod',
+    qa: './config.qa',
   };
   
 const env = process.env.NODE_ENV || 'dev';

@@ -15,6 +15,7 @@
     "migrate-reset-sepolia": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deploySepolia",
     "migrate-reset-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
+    "migrate-reset-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-xdc": "export NODE_ENV=prod && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC"
   },
   "author": "fathom.fi",
