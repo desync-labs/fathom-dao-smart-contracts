@@ -16,10 +16,10 @@ const addressesConfig = require(`../../config/config.${env}`)
 const Token_A_Address = addressesConfig.USD_ADDRESS //USD
 const Token_B_Address =  addressesConfig.WETH_ADDRESS //WXDC
 // SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('2', 'ether')
-const Amount_B_Desired = web3.utils.toWei('38', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('1', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('1', 'ether')
+const Amount_A_Desired = web3.utils.toWei('100000', 'ether')
+const Amount_B_Desired = web3.utils.toWei('95000', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('100000', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('95000', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
