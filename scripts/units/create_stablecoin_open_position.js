@@ -2,6 +2,7 @@ const fs = require('fs');
 const constants = require('./helpers/constants') 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const txnSaver = require('./helpers/transactionSaver')
+const txnHelper = require('./helpers/submitAndExecuteTransaction')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const env = process.env.NODE_ENV || 'dev';
@@ -11,7 +12,7 @@ const addresses = JSON.parse(rawdata);
 const rawDataStablecoin = fs.readFileSync(`../../config/stablecoin-addresses-proxy-wallet.${env}.json`);
 const addressesStableCoin = JSON.parse(rawDataStablecoin);
 
-const XDC_COL = web3.utils.toWei('20','ether')
+const XDC_COL = web3.utils.toWei('2000','ether')
 const addressesConfig = require(`../../config/config.${env}`)
 
 const PROXY_WALLET = addressesStableCoin.proxyWallet
@@ -22,7 +23,7 @@ const xdcAdapter = addressesConfig.COLLATERAL_TOKEN_ADAPTER_ADDRESS
 const stablecoinAdapter = addressesConfig.STABLE_COIN_ADAPTER_ADDRESS
 const collateralPoolId = addressesConfig.collateralPoolId
 
-const stablecoinAmount = web3.utils.toWei('5')
+const stablecoinAmount = web3.utils.toWei('3','ether')
 const data  = "0x00"
 
 
@@ -96,18 +97,10 @@ module.exports = async function(deployer) {
         stablecoinAmount,
         data
     )
-    
-    let resultExecute = await multiSigWallet.submitTransaction(
-        PROXY_WALLET,
-        XDC_COL,
+    await txnHelper.submitAndExecute(
         _encodeExecute(openPostionCallEncoded),
-        0,
-        {gas: 8000000}
-    )
-
-    let txExecute = eventsHelper.getIndexedEventArgs(resultExecute, constants.SUBMIT_TRANSACTION_EVENT)[0];
-    await multiSigWallet.confirmTransaction(txExecute, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txExecute, {gas: 8000000});
-
-    await txnSaver.saveTxnIndex("openPositionTransaction", txExecute)   
+        PROXY_WALLET,
+        "openPositionTransaction",
+        XDC_COL
+    )   
 }

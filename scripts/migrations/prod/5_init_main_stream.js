@@ -52,7 +52,7 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
 
 
 module.exports = async function(deployer) {
-    const startTime =  1681920000 //EIGHT_PM_UAE_TIME_19_April_2023
+    const startTime =  1682392500 //EIGHT_PM_UAE_TIME_19_April_2023
     const oneMonth = 2628288
     const scheduleTimes = [
         startTime,

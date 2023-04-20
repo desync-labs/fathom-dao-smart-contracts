@@ -21,7 +21,7 @@ if (fs.existsSync(filePath)) {
 }
 
 
-async function saveTxnIndex(
+async function saveTransaction(
     TransactionName,
     txnIndex,
     submitTransactionHash,
@@ -83,7 +83,7 @@ async function saveTxnIndex(
 }
 
 module.exports = {
-    saveTxnIndex
+    saveTransaction
 }
 
 //The above code will give output like below:

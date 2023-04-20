@@ -48,7 +48,7 @@ $ npm run test
 # Deploy to the local node
 $ npm run migrate-reset
 
-# Before Deployment - execute following scripts
+# Following scripts create the config files. These files are not necessary for deployment but will be necessary to execute multisig scripts
 # For Dev Environment
 $ node scripts/units/helpers/create-config-dev.js
 # For DEMO Environment
