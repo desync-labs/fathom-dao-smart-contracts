@@ -21,7 +21,7 @@ module.exports = {
       gasPrice: '0x3b9aca00',
     },
     xdc: {
-      host: "https://rpc.xinfin.network/",
+      host: "https://erpc.xinfin.network",
       private_key: fs.readFileSync("./privateKey").toString(),
       gasPrice: '0x3b9aca00',
     },

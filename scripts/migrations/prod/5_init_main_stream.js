@@ -52,16 +52,16 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
 
 
 module.exports = async function(deployer) {
-    const startTime =  1682949600 //SIX_PM_MAY_1_2023
+    const startTime = 1682949600 //SIX_PM_MAY_1_2023_UTC+4
     const oneMonth = 2628288
     const scheduleTimes = [
         startTime,
         startTime + 48 * oneMonth
     ];
-    const tau = 432000;//FIVE DAYS
+    const tau = 432000;//FIVE DAYS Cooldown for withdraw
 
     const scheduleRewards = [
-        web3.utils.toWei('400000000', 'ether'),
+        web3.utils.toWei('200000000', 'ether'),
         web3.utils.toWei('0', 'ether')
     ];
     
