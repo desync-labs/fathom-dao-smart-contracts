@@ -9,7 +9,8 @@ const addresses = JSON.parse(rawdata);
 const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 const WETH_ADDRESS = addressesConfig.WETH_ADDRESS
 const TOKEN_ADDRESS = addressesConfig.USD_ADDRESS 
 

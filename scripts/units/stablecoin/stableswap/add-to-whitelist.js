@@ -4,26 +4,26 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const _destination = ""
+const whitelistAddress = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
 const STABLE_SWAP_ADDRESS =addressesConfig.STABLE_SWAP_ADDRESS
 
-const _encodeWithdrawFees = (_destination) => {
+const _encodeAddToWhitelist = (_whitelistAddress) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'withdrawFees',
+        name: 'addToWhitelist',
         type: 'function',
         inputs: [{
             type: 'address',
-            name: '_destination'
+            name: '_user'
         }]
-    }, [_destination]);
+    }, [_whitelistAddress]);
 
     return toRet;
 }
 
 module.exports = async function(deployer) {
     await txnHelper.submitAndExecute(
-        _encodeWithdrawFees(_destination),
+        _encodeAddToWhitelist(whitelistAddress),
         STABLE_SWAP_ADDRESS,
-        "StableswapWithdrawFees"
+        "Add-To-Whitelist-Stableswap"
     )
 }

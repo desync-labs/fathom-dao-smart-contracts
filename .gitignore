@@ -9,5 +9,8 @@ privateKey
 yarn.lock
 package-lock.json
 bin
-addresses.json
-/config
+addresses.*.json
+/config/*
+!/config/config.js
+
+

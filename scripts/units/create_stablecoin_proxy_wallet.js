@@ -6,11 +6,12 @@ const eventsHelper = require("../tests/helpers/eventsHelper");
 const txnSaver = require('./helpers/transactionSaver')
 
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
-const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
+let rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 const IProxyRegistry = artifacts.require("./dao/test/stablecoin/IProxyRegistry.sol");
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 const PROXY_WALLET_REGISTRY_ADDRESS = addressesConfig.PROXY_WALLET_REGISTRY_ADDRESS
 
 const _encodeBuildFunction = (_account) => {
@@ -37,17 +38,38 @@ module.exports = async function(deployer) {
         0,
         {gas: 8000000}
     )
+
+    if (!resultBuild) {
+        console.log(`Transaction failed to submit for Creating Proxy Wallet`);
+        return;
+    } else {
+        console.log(`Transaction submitted successfully for Creating Proxy Wallet. TxHash: ${resultBuild.transactionHash}`);
+    }
     
     let txIndexBuild = eventsHelper.getIndexedEventArgs(resultBuild, constants.SUBMIT_TRANSACTION_EVENT)[0];
-    await multiSigWallet.confirmTransaction(txIndexBuild, {gas: 8000000});
-    await multiSigWallet.executeTransaction(txIndexBuild, {gas: 8000000});
+    let resultConfirmTransaction = await multiSigWallet.confirmTransaction(txIndexBuild, {gas: 8000000});
+    if (!resultConfirmTransaction) {
+        console.log(`Transaction failed to confirm for Creating Proxy Wallet`);
+        return;
+    } else {
+        console.log(`Transaction confirmed successfully for Creating Proxy Wallet. TxHash: ${resultConfirmTransaction.transactionHash}`);
+    }
+    
+    let resultExecuteTransaction = await multiSigWallet.executeTransaction(txIndexBuild, {gas: 8000000});
+    
+    if (!resultExecuteTransaction) {
+        console.log(`Transaction failed to execute for Creating Proxy Wallet`);
+        return;
+    } else {
+        console.log(`Transaction executed successfully for Creating Proxy Wallet. TxHash: ${resultExecuteTransaction.transactionHash}`);
+    }
     const proxyWalletAddress = await proxyRegistry.proxies(multiSigWallet.address)
     let addressesStableCoin = {
         proxyWallet: proxyWalletAddress
     }
     let data = JSON.stringify(addressesStableCoin);
 
-    const filePath = ('./config/stablecoin-addresses-proxy-wallet.json')
+    const filePath = (`./config/stablecoin-addresses-proxy-wallet.${env}.json`)
     const dirPath = path.dirname(filePath)
 
     if (fs.existsSync(filePath)) {

@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const addressesConfig = require('../../../../config/config')
 
 const PRICE_ORACLE_ADDRESS =addressesConfig.PRICE_ORACLE_ADDRESS
 

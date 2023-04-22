@@ -2,13 +2,14 @@
 const fs = require('fs');
 const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 const COUNCIL_2_PLACEHOLDER = addressesConfig.COUNCIL_2;
-const COUNCIL_3_PLACEHOLDER = addressesConfig.COUNCIL_2;
+const COUNCIL_3_PLACEHOLDER = addressesConfig.COUNCIL_3;
 
 const _encodeAddOwnersFunction = (_accounts) => {
     
