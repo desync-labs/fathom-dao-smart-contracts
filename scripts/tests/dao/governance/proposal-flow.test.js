@@ -1429,5 +1429,22 @@ describe('Proposal flow', () => {
             );
         })
     })
+
+    describe("#Vote Tokens delegatable", async() => {
+        it("#Vote Tokens delegatable", async() => {
+            const voteBalanceOfStaker_1 = await vMainToken.getVotes(STAKER_1)
+            const voteBalanceOfStaker_2 = await vMainToken.getVotes(STAKER_2)
+
+
+            await vMainToken.delegate(STAKER_2, {from: STAKER_1});
+
+            const voteBalanceOfStaker_1_AfterDelegating = await vMainToken.getVotes(STAKER_1)
+            const voteBalanceOfStaker_2_AfterDelegating = await vMainToken.getVotes(STAKER_2)
+
+            expect(voteBalanceOfStaker_1_AfterDelegating.toString()).to.equal("0")
+            expect(voteBalanceOfStaker_2_AfterDelegating.toString()).to.equal(voteBalanceOfStaker_1.add(voteBalanceOfStaker_2).toString())
+        })
+       
+    })
 });
 
