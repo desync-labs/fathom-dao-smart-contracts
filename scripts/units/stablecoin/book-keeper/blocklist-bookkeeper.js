@@ -1,8 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const env = process.env.NODE_ENV || 'dev';
-const addressesConfig = require(`../../../../config/config.${env}`)
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
 const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
 const TO_BE_BLOCKLISTED = "0x"

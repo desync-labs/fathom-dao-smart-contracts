@@ -1,7 +1,7 @@
 const fs = require('fs');
 const txnHelper = require('../helpers/submitAndExecuteTransaction')
-const env = process.env.NODE_ENV || 'dev';
-const addressesConfig = require(`../../../config/config.${env}`)
+const constants = require('../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_DEX_FOLDER)
 
 const DEX_FACTORY_ADDRESS =addressesConfig.DEX_FACTORY_ADDRESS
 const TO_BE_WHITELISTED = "0x"

@@ -1,8 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const env = process.env.NODE_ENV || 'dev';
-const addressesConfig = require(`../../../../config/config.${env}`)
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
 const whitelistAddress = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
 const STABLE_SWAP_ADDRESS =addressesConfig.STABLE_SWAP_ADDRESS

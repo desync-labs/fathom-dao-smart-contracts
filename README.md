@@ -1,3 +1,5 @@
+# README
+
 # Fathom DAO Smart Contracts
 
 Fathom project staking, governance and treasury smart contracts for EVM compatible chains.
@@ -55,6 +57,13 @@ $ node scripts/units/helpers/create-config-dev.js
 $ node scripts/units/helpers/create-config-demo.js
 # For PROD Environment
 $ node scripts/units/helpers/create-config-prod.js
+
+# Each environment will have different config files attached to it
+# Create .env file with either of the following environment setup
+
+# NODE_ENV=dev
+# NODE_ENV=prod
+# NODE_ENV=demo
 
 # Deploy to the public testnet
 # For a deployment to the public testnet make sure that you have testnet coins

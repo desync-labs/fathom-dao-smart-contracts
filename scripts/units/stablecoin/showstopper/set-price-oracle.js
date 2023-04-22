@@ -1,8 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const env = process.env.NODE_ENV || 'dev';
-const addressesConfig = require(`../../../../config/config.${env}`)
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
 const PRICE_ORACLE = ""
 const SHOW_STOPPER_ADDRESS =addressesConfig.SHOW_STOPPER_ADDRESS

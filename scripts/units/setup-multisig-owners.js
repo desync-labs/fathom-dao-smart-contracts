@@ -9,7 +9,7 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 const COUNCIL_2_PLACEHOLDER = addressesConfig.COUNCIL_2;
-const COUNCIL_3_PLACEHOLDER = addressesConfig.COUNCIL_2;
+const COUNCIL_3_PLACEHOLDER = addressesConfig.COUNCIL_3;
 
 const _encodeAddOwnersFunction = (_accounts) => {
     
