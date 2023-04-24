@@ -6,27 +6,14 @@ interface IStakingPosition {
     function initialize(
         address _admin,
         address _stakingContract,
-        address _mainToken
+        address _mainToken,
+        address _stakingFactory
     ) external;
 
-    function createStream(
-        uint256 streamId,
-        address owner,
-        address manager,
-        address rewardToken
-    ) external;
-
-    function updateStream(
-        uint256 streamId,
-        address owner,
-        address manager,
-        address rewardToken
-    ) external;
-
-    function createLock(uint256 amount) external;
+    function createLock(uint256 amount, uint256 end) external;
     function claimAllStreamRewardsForLock(uint256 lockId) external;
     function claimAllStreamRewardsForAllLocksNotExpired() external;
     function withdrawStream(uint256 streamId) external;
     function withdrawMainStream() external;
-
+    function unlock(uint256 lockId) external;
 }
