@@ -25,6 +25,7 @@ const stream_rewarder_1 = accounts[8];
 const stream_rewarder_2 = accounts[9];
 const percentToTreasury = 50;
 const EMPTY_BYTES = constants.EMPTY_BYTES;
+const IStakingPosition = artifacts.require('./dao/staking/staking-position/interfaces/IStakingPosition.sol');
 // event
 const SUBMIT_TRANSACTION_EVENT = constants.SUBMIT_TRANSACTION_EVENT
 
@@ -146,6 +147,20 @@ const _encodeAddSupportedTokenFunction = (_token) => {
     return toRet;
 }
 
+const _encodeCreateStakingPositionContract = (_account) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'createStakingPositionContract',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_account'
+        }
+    ]
+    }, [_account]);
+
+    return toRet;
+}
+
 const _encodeAdminPause = (flag) => {
     let toRet = web3.eth.abi.encodeFunctionCall({
         name: 'adminPause',
@@ -157,6 +172,7 @@ const _encodeAdminPause = (flag) => {
 
     return toRet;
 }
+
 
 const _encodeProposeStreamFunction = (
     _owner,
@@ -211,6 +227,57 @@ const _encodeProposeStreamFunction = (
     return toRet;
 }
 
+const _encodeApproveFunction = (_account, _amount) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'approve',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'spender'
+        },{
+            type: 'uint256',
+            name: 'amount'
+        }]
+    }, [_account, _amount]);
+
+    return toRet;
+}
+
+const _encodeCreateLockFunction = (_amount, _periodToLock) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'createLock',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'amount'
+        },{
+            type: 'uint256',
+            name: 'periodToLock'
+        }]
+    }, [_amount, _periodToLock]);
+
+    return toRet;
+}
+
+
+const _encodeUpdateStreamRewardToken=(
+    _streamId,
+    _rewardToken
+) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'updateStreamRewardToken',
+        type: 'function',
+        inputs: [{
+            type: 'uint256',
+            name: 'streamId'
+        },{
+            type: 'address',
+            name: 'rewardToken'
+        }]
+    }, [_streamId, _rewardToken]);
+
+    return toRet;
+}
 
 
 describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
@@ -237,11 +304,12 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
     let vMainTokenCoefficient;
     let lockingVoteWeight;
     let rewardsCalculator;
-    let proxyAddress;
     let vaultProxyAdmin;
     let stakingProxyAdmin;
     let vaultMigrateService;
     let snapshotToRevertTo;
+    let stakingPositionAndFactoryProxyAdmin;
+    let stakingPositionFactoryProxy;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
     const sumToTransfer = web3.utils.toWei('2000', 'ether');
@@ -308,13 +376,34 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             "VaultProxyMigrate"
         )
 
+        stakingPositionFactory = await artifacts.initializeInterfaceAt(
+            "StakingPositionFactory",
+            "StakingPositionFactory"
+        )
+
+        stakingPositionAndFactoryProxyAdmin = await artifacts.initializeInterfaceAt(
+            "StakingPositionAndFactoryProxyAdmin",
+            "StakingPositionAndFactoryProxyAdmin"
+        )
+
+        stakingPositionFactoryProxy = await artifacts.initializeInterfaceAt(
+            "IStakingPositionFactory",
+            "StakingPositionFactoryProxy"
+        )
+
+        stakingPosition = await artifacts.initializeInterfaceAt(
+            "StakingPosition",
+            "StakingPosition"
+        )
+        
+
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
         streamReward2 = await artifacts.initializeInterfaceAt("ERC20Rewards2","ERC20Rewards2");
         multiSigWallet = await artifacts.initializeInterfaceAt("MultiSigWallet", "MultiSigWallet");
         
-        await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
-        await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000","ether"),{from: SYSTEM_ACC});
+        await streamReward1.transfer(stream_rewarder_1,web3.utils.toWei("10000000","ether"),{from: SYSTEM_ACC});
+        await streamReward2.transfer(stream_rewarder_2,web3.utils.toWei("10000000","ether"),{from: SYSTEM_ACC});
         
         vMainToken = await artifacts.initializeInterfaceAt("VMainToken", "VMainToken");
 
@@ -493,7 +582,9 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await stakingService.unlock(1, {from : staker_1});
             console.log(".........Unlocking All The Lock Positions created till Now..........")
         })
+    })
 
+    describe("#Upgrade Test", async() => {
         it('Should upgrade Staking by mulitsig and call new function getLockInfo', async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const _proposeUpgrade = async (
@@ -562,7 +653,9 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             console.log((await vaultService.getIsSupportedToken(FTHMToken.address)).toString())
             await blockchain.mineBlock(await _getTimeStamp() + 20);
         })
-        
+    })
+
+    describe("#Unlocking", async() => {
         it("Should unlock completely locked positions for user - staker_2", async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_2});
@@ -586,8 +679,6 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             console.log(".........total amount of Staked Protocol Tokens Amount: ", totalAmountOfStakedToken.toString());
             console.log(".........total Amount Of Stream Shares: ", totalAmountOfStreamShares.toString());
         });
-
-        
     });
     
     describe('Creating Streams and Rewards Calculations', async() => {
@@ -595,18 +686,18 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             console.log("A protocol wanting to collaborate with us, proposes a stream")
             console.log("They provide us their native tokens that they want to distribute to the community")
             console.log(".........Creating a Proposal for a stream..........")
-            const maxRewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
+            const maxRewardProposalAmountForAStream = web3.utils.toWei('10000000', 'ether');
             const minRewardProposalAmountForAStream = web3.utils.toWei('200', 'ether');
             
             const startTime = await _getTimeStamp() + 20;
             const scheduleRewards = [
-                web3.utils.toWei('1000', 'ether'),
+                web3.utils.toWei('10000000', 'ether'),
                 web3.utils.toWei("0", 'ether')
             ];
             
             const scheduleTimes = [
                 startTime,
-                startTime + oneYear
+                startTime + oneYear * 4
             ];
 
             const _proposeStreamFromMultiSigTreasury = async (
@@ -661,7 +752,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const streamId = 1
             console.log(".........Creating the stream proposed.........")
             console.log("Once create stream is called, the proposal will become live once start time is reached")
-            const RewardProposalAmountForAStream = web3.utils.toWei('1000', 'ether');
+            const RewardProposalAmountForAStream = web3.utils.toWei('10000000', 'ether');
             await streamReward1.approve(stakingService.address, RewardProposalAmountForAStream, {from:stream_rewarder_1})
             await stakingService.createStream(streamId,RewardProposalAmountForAStream, {from: stream_rewarder_1});
         })
@@ -692,8 +783,266 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         })
     })
 
+    describe("#Staking Position", async() => {
+        const _transferFromMultiSigTreasury = async (_account, _value) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account, _value),
+                0,
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
+        it("Should not initialize twice - staking position factory", async() => {
+            const errorMessage = "Initializable: contract is already initialized";
+
+            await shouldRevert(
+                stakingPositionFactoryProxy.initialize(
+                    multiSigWallet.address,
+                    stakingService.address, 
+                    FTHMToken.address,
+                    stakingPosition.address,
+                    vMainToken.address,
+                    stakingPositionAndFactoryProxyAdmin.address,
+                    {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+
+        it("Should create a staking position contract with staking position factory", async() =>{
+            const _createStakingPositionContract = async(
+                _account,
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingPositionFactoryProxy.address,
+                    EMPTY_BYTES,
+                    _encodeCreateStakingPositionContract(
+                        _account
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _createStakingPositionContract(
+                staker_1,
+            )
+
+            await _createStakingPositionContract(
+                staker_2,
+            )
+        })
+
+        it("Should not initialize twice - staking position", async() => {
+            const errorMessage = "Initializable: contract is already initialized";
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+
+            await shouldRevert(
+                stakingPositionContract.initialize(
+                    multiSigWallet.address,
+                    FTHMToken.address,
+                    stakingPositionFactoryProxy.address,
+                    staker_1,
+                    {gas: 8000000}),
+                errTypes.revert,
+                errorMessage
+            );
+        })
+
+        it("Should create a lock position for staker_1", async() => {
+            await _transferFromMultiSigTreasury(staker_1, web3.utils.toWei('100000','ether'));
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            console.log("Staking Position Contract Address: ", stakingPositionContract.address);
+            await FTHMToken.approve(stakingPositionContract.address, web3.utils.toWei('100000','ether'), {from: staker_1});
+            const lockingPeriod = 2 * 365 * 24 * 60 * 60;
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingPositionContract.createLock(web3.utils.toWei('100000','ether'), lockingPeriod, {from: staker_1});
+        })
+
+        it("Should create a lock position for staker_2 from admin", async() => {
+            
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_2));
+            console.log("Staking Position Contract Address: ", stakingPositionContract.address);
+
+            const _approveStakingPositionContract = async (_account, _amount) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address,
+                    EMPTY_BYTES,
+                    _encodeApproveFunction(
+                        _account,
+                        _amount
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+
+            await _approveStakingPositionContract(
+                stakingPositionContract.address,
+                web3.utils.toWei('100000','ether')
+            )
+
+            const _createLockPosition = async(_amount,_periodToLock) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingPositionContract.address,
+                    EMPTY_BYTES,
+                    _encodeCreateLockFunction(
+                        _amount,
+                        _periodToLock
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            const lockingPeriod = 2 * 365 * 24 * 60 * 60;
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await _createLockPosition(
+                web3.utils.toWei('100000','ether'),
+                lockingPeriod
+            )
+        })
+
+        it("Should update stream reward token address for stream id 1", async() => {
+            const _updateStreamRewardToken = async (streamId, rewardToken) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingPositionFactoryProxy.address,
+                    EMPTY_BYTES,
+                    _encodeUpdateStreamRewardToken(
+                        streamId,
+                        rewardToken
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            console.log(streamReward1Address)
+            await _updateStreamRewardToken(1, streamReward1Address)
+        })
+
+
+        it("Should not unlock before lock period expires - staker -1 and staker - 2", async() => {
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            const mineOneYearToCheckIfItCanBeUnlockedBeforeLockPeriod = 1 * 365 * 24 * 60 * 60 + 20;
+            await blockchain.mineBlock(await _getTimeStamp() + mineOneYearToCheckIfItCanBeUnlockedBeforeLockPeriod)
+            const errorMessage = "Staking Position: Locking period has not expired yet";
+            await shouldRevert(
+                stakingPositionContract.unlock(1,{from: staker_1}),
+                errTypes.revert,
+                errorMessage,
+            )
+
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const stakingPositionContract2 = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_2));
+            await shouldRevert(
+                stakingPositionContract2.unlock(1,{from: staker_2}),
+                errTypes.revert,
+                errorMessage
+            )
+        })
+
+        it("Should not claim rewards before lock period expires - staker -1 and staker - 2", async() => {
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            const errorMessage = "Staking Position: Locking period has not expired yet";
+            await blockchain.mineBlock(await _getTimeStamp() + 20)
+            await shouldRevert(
+                stakingPositionContract.claimAllStreamRewardsForLock(1,{from: staker_1}),
+                errTypes.revert,
+                errorMessage,
+            )
+
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const stakingPositionContract2 = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_2));
+            await shouldRevert(
+                stakingPositionContract2.claimAllStreamRewardsForLock(1,{from: staker_2}),
+                errTypes.revert,
+                errorMessage
+            )
+        })
+
+        it("Should unlock after lock period expires - staker_1", async() => {
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            const lockingPeriodToMineForUnlocking = 1 * 365 * 24 * 60 * 60 + 20;
+            await blockchain.mineBlock(await _getTimeStamp() + lockingPeriodToMineForUnlocking);
+            
+            await stakingPositionContract.unlock(1,{from: staker_1});
+            const tau = 10;
+            await blockchain.mineBlock(await _getTimeStamp() +  tau);
+            const mainTokenBalanceBefore = _convertToEtherBalance((await FTHMToken.balanceOf(staker_1)).toString());
+            console.log("balance of staker_1 before withdraw main stream", mainTokenBalanceBefore)
+            await stakingPositionContract.withdrawMainStream({from: staker_1});
+            const mainTokenBalanceAfter = _convertToEtherBalance((await FTHMToken.balanceOf(staker_1)).toString())
+            console.log("balance of staker_1 after withdraw main stream", mainTokenBalanceAfter)
+            await blockchain.mineBlock(await _getTimeStamp() +  tau);
+            const streamId = 1
+
+            const streamTokenBalanceBefore = _convertToEtherBalance((await streamReward1.balanceOf(staker_1)).toString());
+            console.log("balance of stream reward of staker_1 before withdraw stream rewards", streamTokenBalanceBefore)
+            await stakingPositionContract.withdrawStream(streamId, {from: staker_1})
+            const streamTokenBalanceAfter = _convertToEtherBalance((await streamReward1.balanceOf(staker_1)).toString());
+            console.log("balance of stream reward of staker_1 after withdraw stream rewards", streamTokenBalanceAfter)
+        })
+
+        it("Should unlock after lock period expires - staker_2", async() => {
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_2));
+            await blockchain.mineBlock(await _getTimeStamp() + 10);
+            await stakingPositionContract.unlock(1,{from: staker_2});
+            const tau = 10;
+            await blockchain.mineBlock(await _getTimeStamp() +  tau);
+            await stakingPositionContract.withdrawMainStream({from: staker_2});
+            await blockchain.mineBlock(await _getTimeStamp() +  tau);
+            const streamId = 1
+            await stakingPositionContract.withdrawStream(streamId, {from: staker_2})
+        })
+    })
     describe('Scenario - to pause staking service in case of emergency shutdown, let users to withdraw using emergencyUnlockAndWithdraw and then pause the Vault Contract as well', async() => {
-        
+        const _transferFromMultiSigTreasury = async (_account, _value) => {
+            const result = await multiSigWallet.submitTransaction(
+                FTHMToken.address, 
+                EMPTY_BYTES, 
+                _encodeTransferFunction(_account, _value),
+                0,
+                {"from": accounts[0]}
+            );
+            txIndex4 = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[0]});
+            await multiSigWallet.confirmTransaction(txIndex4, {"from": accounts[1]});
+
+            await multiSigWallet.executeTransaction(txIndex4, {"from": accounts[1]});
+        }
+
         it('Should make lock position staker_4 - here we create snapshot', async() => {
             snapshotToRevertTo = await blockchain.createSnapshot()
             await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_4})
@@ -745,6 +1094,17 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
+        it("Should create a lock position for staker_1 - lock position contract", async() => {
+            await _transferFromMultiSigTreasury(staker_1, web3.utils.toWei('100000','ether'));
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            console.log("Staking Position Contract Address: ", stakingPositionContract.address);
+            await FTHMToken.approve(stakingPositionContract.address, web3.utils.toWei('100000','ether'), {from: staker_1});
+            const lockingPeriod = 2 * 365 * 24 * 60 * 60;
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingPositionContract.createLock(web3.utils.toWei('100000','ether'), lockingPeriod, {from: staker_1});
+        })
+
+
 
         it("Should pause the staking in case of emergency", async() => {
             const toPauseFlag = 1
@@ -770,8 +1130,16 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         
 
         it("Should emergency unlock locked position for staker_3 - emergency unlock will be available for certain time", async() => {
+            
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             await stakingService.emergencyUnlockAndWithdraw({"from": staker_3, gas: 30000000});
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+        })
+
+        it("Should emergency unlock locked position in staking position contract", async() => {
+            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await stakingPositionContract.emergencyUnlockAndWithdraw({"from": staker_1, gas: 30000000});
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
 
@@ -1103,6 +1471,5 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100);
         })
     })
-
 });
    

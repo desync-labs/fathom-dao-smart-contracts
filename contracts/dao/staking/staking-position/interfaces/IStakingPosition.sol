@@ -5,15 +5,15 @@ import "../../StakingStructs.sol";
 interface IStakingPosition {
     function initialize(
         address _admin,
-        address _stakingContract,
         address _mainToken,
-        address _stakingFactory
+        address _stakingFactory,
+        address _userAccount
     ) external;
 
     function createLock(uint256 amount, uint256 end) external;
     function claimAllStreamRewardsForLock(uint256 lockId) external;
-    function claimAllStreamRewardsForAllLocksNotExpired() external;
     function withdrawStream(uint256 streamId) external;
     function withdrawMainStream() external;
     function unlock(uint256 lockId) external;
+    function emergencyUnlockAndWithdraw() external;
 }
