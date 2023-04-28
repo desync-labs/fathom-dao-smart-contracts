@@ -46,7 +46,7 @@ contract MultiSigWallet is IMultiSigWallet {
     error OwnerNotFound();
     error LifetimeMinimumNotMet();
     error InsufficientBalance();
-    error InsufficientValue();
+    error InsufficientValueAndBadCalldata();
     error InvalidTargetCode();
     error OwnersLimitReached();
     error OwnersRequired();
@@ -129,7 +129,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         if (!_to.isContract()) {
             if (_data.length > 0 || _value == 0) {
-                revert InsufficientValue();
+                revert InsufficientValueAndBadCalldata();
             }
         }
         if (address(this).balance < _value) {
@@ -189,9 +189,10 @@ contract MultiSigWallet is IMultiSigWallet {
             uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i);
             Transaction storage transaction = transactions[_txIndex];
             transaction.numConfirmations -= 1;
-            confirmedTransactionsByOwner[owner].remove(_txIndex);
             emit RevokeConfirmation(owner, _txIndex);
         }
+        
+        delete confirmedTransactionsByOwner[owner];
         emit OwnerRemoval(owner);
     }
 
@@ -212,7 +213,6 @@ contract MultiSigWallet is IMultiSigWallet {
             owners.add(owner);
             emit OwnerAddition(owner);
         }
-
         changeRequirement(numConfirmationsRequired + _owners.length);
     }
 
@@ -316,6 +316,9 @@ contract MultiSigWallet is IMultiSigWallet {
         return (transaction.to, transaction.value, transaction.data, transaction.executed, transaction.numConfirmations, transaction.expireTimestamp);
     }
 
+    function isConfirmedByOwner(uint256 _txIndex, address _owner) external view override returns (bool) {
+        return confirmedTransactionsByOwner[_owner].contains(_txIndex);
+    }
     function changeRequirement(uint256 _required) public override onlyWallet validRequirement(owners.length(), _required) {
         numConfirmationsRequired = _required;
         emit RequirementChange(_required);
@@ -326,7 +329,6 @@ contract MultiSigWallet is IMultiSigWallet {
             revert OwnerAlreadyExists();
         }
     }
-
     function _requireTargetCodeNotChanged(address target) internal view {
         if (allowlistedBytesCode[target] != target.getExtCodeHash()) {
             revert TargetCodeChanged();

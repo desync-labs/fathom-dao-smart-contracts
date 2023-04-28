@@ -48,6 +48,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
     error ZeroAmount();
     error NotLockOwner();
     error BadRewardsAmount();
+    error NoLocks();
 
     constructor() {
         _disableInitializers();
@@ -391,6 +392,9 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         //unlock all locks
         uint256 numberOfLocks = locks[msg.sender].length;
+        if(numberOfLocks == 0){
+            revert NoLocks();
+        }
         for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
             uint256 stakeValue = locks[msg.sender][lockId - 1].amountOfToken;
             _unlock(stakeValue, stakeValue, lockId, msg.sender);

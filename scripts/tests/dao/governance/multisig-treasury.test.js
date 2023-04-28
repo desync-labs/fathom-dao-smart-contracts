@@ -18,6 +18,21 @@ const oneYr = 365 * 24 * 60 * 60;
 
 const BENEFICIARY = accounts[0];
 
+
+const _encodeRemoveOwner = (_account) => {
+    let toRet =  web3.eth.abi.encodeFunctionCall({
+        name: 'removeOwner',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: 'owner'
+            }   
+        ]
+    }, [_account]);
+
+    return toRet;
+}
+
 describe('MultiSig Wallet', () => {
 
     let mainToken
@@ -285,6 +300,26 @@ describe('MultiSig Wallet', () => {
             expect((await mainToken.balanceOf(BENEFICIARY, 
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
+
+        it("Should remove accounts[1] as owner", async() => {
+            const _removeOwner = async (_account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    multiSigWallet.address, 
+                    EMPTY_BYTES, 
+                    _encodeRemoveOwner(_account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[0]});
+            }
+            await _removeOwner(accounts[1])
+        })
+        
     });
 
     describe("Maximum Lifetime", async() => {

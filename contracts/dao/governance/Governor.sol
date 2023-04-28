@@ -49,6 +49,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
     event MaxTargetUpdated(uint256 newMaxTargets, uint256 oldMaxTargets);
     event ProposalTimeDelayUpdated(uint256 newProposalTimeDelay, uint256 oldProposalTimeDelay);
     event ProposalLifetimeUpdated(uint256 newProposalLifetime, uint256 oldProposalLifetime);
+    event BlocklistStatusUpdated(address indexed account, bool isBlocklisted);
     event EmergencyStop();
 
     error NotLive();
@@ -375,6 +376,7 @@ abstract contract Governor is Context, ERC165, EIP712, IGovernor {
      */
     function setBlocklistStatusForProposer(address account, bool blocklistStatus) public onlyMultiSig {
         isBlocklisted[account] = blocklistStatus;
+        emit BlocklistStatusUpdated(account, blocklistStatus);
     }
 
     function getProposals(uint256 _numIndexes)

@@ -49,4 +49,6 @@ interface IMultiSigWallet {
             uint256 numConfirmations,
             uint256 expireTimestamp
         );
+
+    function isConfirmedByOwner(uint256 _txIndex, address _owner) external view  returns (bool);
 }
