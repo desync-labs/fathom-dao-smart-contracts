@@ -301,6 +301,23 @@ describe('MultiSig Wallet', () => {
                 {"from": BENEFICIARY})).toString()).to.equal(AMOUNT_OUT_TREASURY);
         });
 
+        it("Should create and confirm multiple transactions", async() => {
+            const _toTestConfirmTransaction = async (_account) => {
+                const result = await multiSigWallet.submitTransaction(
+                    multiSigWallet.address, 
+                    EMPTY_BYTES, 
+                    _encodeRemoveOwner(_account),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+            }
+            await _toTestConfirmTransaction(accounts[1])
+            await _toTestConfirmTransaction(accounts[0])
+            await _toTestConfirmTransaction(accounts[0])
+            await _toTestConfirmTransaction(accounts[1])
+        })
         it("Should remove accounts[1] as owner", async() => {
             const _removeOwner = async (_account) => {
                 const result = await multiSigWallet.submitTransaction(
