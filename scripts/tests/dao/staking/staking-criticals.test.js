@@ -395,6 +395,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             "StakingPosition",
             "StakingPosition"
         )
+
         
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
@@ -922,10 +923,16 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             }
             const lockingPeriod = 2 * 365 * 24 * 60 * 60;
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const balanceOfVoteTokensBeforeCreatingLock = await vMainToken.getVotes(staker_2);
             await _createLockPosition(
                 web3.utils.toWei('100000','ether'),
                 lockingPeriod
             )
+            const VoteTokensThatShouldBeReleased = web3.utils.toWei('100000','ether')
+            const balanceOfVoteTokensAfterCreatingLock = await vMainToken.getVotes(staker_2);
+            assert.equal(
+                balanceOfVoteTokensAfterCreatingLock.sub(balanceOfVoteTokensBeforeCreatingLock).toString()
+                ,VoteTokensThatShouldBeReleased.toString())
         })
 
         it("Should update stream reward token address for stream id 1", async() => {
@@ -1001,10 +1008,10 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() +  tau);
             const mainTokenBalanceBefore = _convertToEtherBalance((await FTHMToken.balanceOf(staker_1)).toString());
             console.log("balance of staker_1 before withdraw main stream", mainTokenBalanceBefore)
+            
             await stakingPositionContract.withdrawMainStream({from: staker_1});
             const mainTokenBalanceAfter = _convertToEtherBalance((await FTHMToken.balanceOf(staker_1)).toString())
             console.log("balance of staker_1 after withdraw main stream", mainTokenBalanceAfter)
-            await blockchain.mineBlock(await _getTimeStamp() +  tau);
             const streamId = 1
 
             const streamTokenBalanceBefore = _convertToEtherBalance((await streamReward1.balanceOf(staker_1)).toString());
