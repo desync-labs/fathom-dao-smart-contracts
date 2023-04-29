@@ -10,15 +10,21 @@ const COUNCIL_1 = constants.COUNCIL_1
 
 const NEW_MULTISIG_REQUIREMENT = 2;
 
-const _encodeAddOwnersFunction = (_accounts) => {
+const _encodeAddOwnersFunction = (_accounts, _newNumConfirmationsRequired) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'addOwners',
         type: 'function',
-        inputs: [{
-            type: 'address[]',
-            name: '_owners'
-        }]
-    }, [_accounts]);
+        inputs: [
+            {
+                type: 'address[]',
+                name: '_owners'
+            },
+            {
+                type: 'uint256',
+                name: '_newNumConfirmationsRequired'
+            },
+        ]
+    }, [_accounts, _newNumConfirmationsRequired]);
 
     return toRet;
 }
@@ -29,7 +35,7 @@ module.exports = async function(deployer) {
     let result = await multiSigWallet.submitTransaction(
         multiSigWallet.address, 
         EMPTY_BYTES,
-        _encodeAddOwnersFunction([COUNCIL_1]),
+        _encodeAddOwnersFunction([COUNCIL_1], NEW_MULTISIG_REQUIREMENT),
         0,
         {gas: 8000000}
     );

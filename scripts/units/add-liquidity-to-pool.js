@@ -6,9 +6,12 @@ const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IMultiSigWallet = artifacts.require("./dao/treasury/interfaces/IMultiSigWallet.sol");
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
+const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
+const SLIPPAGE = 0.05
 
 const Token_A_Address = addressesConfig.WETH_ADDRESS // SET AS Necessary
 const Token_B_Address = addressesConfig.FXD_ADDRESS// SET AS Necessary
@@ -97,6 +100,7 @@ const _encodeAddLiqudityFunction = (
 
 
 module.exports = async function(deployer) {
+    const uniswapRouter = await IUniswapRouter.at(addressesConfig.DEX_ROUTER_ADDRESS)
     const multiSigWallet = await IMultiSigWallet.at(addresses.multiSigWallet);
     //Will need to change it once it expires
     const deadline =  await getDeadlineTimestamp(1000)

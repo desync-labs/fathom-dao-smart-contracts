@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config')
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
 const SYSTEM_DEBT_ENGINE_ADDRESS =addressesConfig.SYSTEM_DEBT_ENGINE_ADDRESS
 

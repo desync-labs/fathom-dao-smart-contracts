@@ -1,3 +1,5 @@
+# README
+
 # Fathom DAO Smart Contracts
 
 Fathom project staking, governance and treasury smart contracts for EVM compatible chains.
@@ -48,10 +50,32 @@ $ npm run test
 # Deploy to the local node
 $ npm run migrate-reset
 
+# Following scripts create the config files. These files are not necessary for deployment but will be necessary to execute multisig scripts
+# For Dev Environment
+$ node scripts/units/helpers/create-config-dev.js
+# For DEMO Environment
+$ node scripts/units/helpers/create-config-demo.js
+# For PROD Environment
+$ node scripts/units/helpers/create-config-prod.js
+
+# Each environment will have different config files attached to it
+# Create .env file with either of the following environment setup
+
+# NODE_ENV=dev
+# NODE_ENV=prod
+# NODE_ENV=demo
+
 # Deploy to the public testnet
 # For a deployment to the public testnet make sure that you have testnet coins
-# Deploy to the apothem
-$ npm run migrate-reset-apothem
+# Deploy to the apothem - dev environment
+$ npm run migrate-reset-apothem-dev
+
+# Deploy to the apothem - demo environment
+$ npm run migrate-reset-apothem-demo
+
+# Deploy to the xdc - prod environment
+$ npm run migrate-reset-xdc
+
 
 # Deploy to the sepolia
 $ npm run migrate-reset-sepolia
