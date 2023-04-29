@@ -392,7 +392,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         //unlock all locks
         uint256 numberOfLocks = locks[msg.sender].length;
-        if(numberOfLocks == 0){
+        if (numberOfLocks == 0) {
             revert NoLocks();
         }
         for (uint256 lockId = numberOfLocks; lockId >= 1; lockId--) {
@@ -466,11 +466,7 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         treasury = newTreasury;
     }
 
-    function _createLock(
-        uint256 amount,
-        uint256 lockPeriod,
-        address account
-    ) internal {
+    function _createLock(uint256 amount, uint256 lockPeriod, address account) internal {
         if (lockPeriod < minLockPeriod) {
             revert MinLockPeriodNotMet();
         }

@@ -74,20 +74,12 @@ contract VMainToken is IVMainToken, Pausable, AccessControl, Initializable, ERC2
         emit MemberRemovedFromAllowlist(_toRemove);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override whenNotPaused {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
         if (!isAllowListed[msg.sender]) revert VMainTokenIsIntransferableUnlessTheSenderIsAllowlisted();
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal override {
         super._afterTokenTransfer(from, to, amount);
     }
 }

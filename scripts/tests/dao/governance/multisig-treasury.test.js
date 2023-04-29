@@ -83,11 +83,17 @@ describe('MultiSig Wallet', () => {
         encoded_add_owners_function = web3.eth.abi.encodeFunctionCall({
             name: 'addOwners',
             type: 'function',
-            inputs: [{
-                type: 'address[]',
-                name: 'owner'
-            }]
-        }, [[accounts[2]]]);
+            inputs: [
+                {
+                    type: 'address[]',
+                    name: '_owners'
+                },
+                {
+                    type: 'uint256',
+                    name: '_newNumConfirmationsRequired'
+                },
+            ]
+        }, [[accounts[2]], 3]);
 
         encoded_change_requirement_function = web3.eth.abi.encodeFunctionCall({
             name: 'changeRequirement',
@@ -146,7 +152,7 @@ describe('MultiSig Wallet', () => {
             );
 
             await shouldRevertAndHaveSubstring(
-                multiSigWallet.addOwners([accounts[3]], {"from": accounts[1]}),
+                multiSigWallet.addOwners([accounts[3]], 3, {"from": accounts[1]}),
                 errTypes.revert,
                 errorMessage
             );

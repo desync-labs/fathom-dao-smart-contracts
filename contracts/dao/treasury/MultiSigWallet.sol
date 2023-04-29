@@ -27,9 +27,10 @@ contract MultiSigWallet is IMultiSigWallet {
     uint256 public numConfirmationsRequired;
     mapping(address => bool) public isOwner;
     Transaction[] public transactions;
+    uint256 public firstValidTransactionIndexAfterOwnerRemoval;
 
     EnumerableSet.AddressSet internal owners;
-    mapping(address => bytes32) internal allowlistedBytesCode;
+    mapping(address => mapping(uint256 => bytes32)) internal allowlistedBytesCode;
     mapping(address => EnumerableSet.UintSet) internal confirmedTransactionsByOwner;
 
     uint256 public constant MINIMUM_LIFETIME = 86400; //oneDay
@@ -42,20 +43,19 @@ contract MultiSigWallet is IMultiSigWallet {
     error TxAlreadyConfirmed();
     error TxExpired();
     error OnlyOwnerOrGov();
+    error OnlyOwner();
     error InvalidRequirement();
     error OwnerNotFound();
     error LifetimeMinimumNotMet();
     error InsufficientBalance();
-    error InsufficientValueAndBadCalldata();
-    error InvalidTargetCode();
-    error OwnersLimitReached();
-    error OwnersRequired();
-    error InvalidOwner();
-    error OwnerNotUnique();
+    error InsufficientValueOrBadCalldata();
     error TargetCodeChanged();
-    error OwnerAlreadyExists();
+    error ExistingOwner();
     error TxNotConfirmed();
+    error OnlyWallet();
     error LifetimeMaximumExceeded();
+    error TxNotValidBecauseOwnerWasRemoved();
+    error InvalidZeroAddress();
 
     modifier onlyOwnerOrGov() {
         if (!isOwner[msg.sender] && governor != msg.sender) {
@@ -64,9 +64,23 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
+    modifier onlyOwner() {
+        if (!isOwner[msg.sender]) {
+            revert OnlyOwner();
+        }
+        _;
+    }
+
     modifier txExists(uint256 _txIndex) {
         if (_txIndex >= transactions.length) {
             revert TxDoesNotExist();
+        }
+        _;
+    }
+
+    modifier txIndexGoesAfterLastOwnerRemoval(uint256 _txIndex) {
+        if (_txIndex < firstValidTransactionIndexAfterOwnerRemoval) {
+            revert TxNotValidBecauseOwnerWasRemoved();
         }
         _;
     }
@@ -94,14 +108,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
     modifier onlyWallet() {
         if (msg.sender != address(this)) {
-            revert OnlyOwnerOrGov();
-        }
-        _;
-    }
-
-    modifier validRequirement(uint256 ownerCount, uint256 _required) {
-        if (ownerCount == 0 || ownerCount > MAX_OWNER_COUNT || _required > ownerCount || !(ownerCount > 1 ? _required > 1 : _required > 0)) {
-            revert InvalidRequirement();
+            revert OnlyWallet();
         }
         _;
     }
@@ -129,7 +136,7 @@ contract MultiSigWallet is IMultiSigWallet {
 
         if (!_to.isContract()) {
             if (_data.length > 0 || _value == 0) {
-                revert InsufficientValueAndBadCalldata();
+                revert InsufficientValueOrBadCalldata();
             }
         }
         if (address(this).balance < _value) {
@@ -138,37 +145,12 @@ contract MultiSigWallet is IMultiSigWallet {
         _;
     }
 
-    constructor(
-        address[] memory _owners,
-        uint256 _numConfirmationsRequired,
-        address _governor
-    ) {
-        if (_owners.length > MAX_OWNER_COUNT) {
-            revert OwnersLimitReached();
-        }
-        if (_owners.length == 0) {
-            revert OwnersRequired();
-        }
-        if (_numConfirmationsRequired == 0 || _numConfirmationsRequired > _owners.length) {
-            revert InvalidRequirement();
-        }
+    constructor(address[] memory _owners, uint256 _numConfirmationsRequired, address _governor) {
+        _validRequirement(_owners.length, _numConfirmationsRequired);
 
         governor = _governor;
 
-        for (uint256 i = 0; i < _owners.length; i++) {
-            address owner = _owners[i];
-
-            if (owner == address(0)) {
-                revert InvalidOwner();
-            }
-            if (isOwner[owner]) {
-                revert OwnerNotUnique();
-            }
-
-            isOwner[owner] = true;
-            owners.add(owner);
-            emit OwnerAddition(owner);
-        }
+        _addOwners(_owners);
 
         numConfirmationsRequired = _numConfirmationsRequired;
     }
@@ -181,39 +163,31 @@ contract MultiSigWallet is IMultiSigWallet {
         isOwner[owner] = false;
         owners.remove(owner);
 
-        if (numConfirmationsRequired > owners.length()) changeRequirement(owners.length());
+        // Remove the previous statistic of transactions confirmations.
+        firstValidTransactionIndexAfterOwnerRemoval = transactions.length;
 
-        uint256 nConfirmedTxnByOwner = confirmedTransactionsByOwner[owner].length();
+        if (numConfirmationsRequired > owners.length()) _changeRequirement(owners.length());
 
-        for (uint256 i = 0; i < nConfirmedTxnByOwner; i++) {
-            uint256 _txIndex = confirmedTransactionsByOwner[owner].at(i);
-            Transaction storage transaction = transactions[_txIndex];
-            transaction.numConfirmations -= 1;
-            emit RevokeConfirmation(owner, _txIndex);
-        }
-        
-        delete confirmedTransactionsByOwner[owner];
         emit OwnerRemoval(owner);
     }
 
-    function addOwners(address[] calldata _owners)
-        external
-        override
-        onlyWallet
-        validRequirement(owners.length() + _owners.length, numConfirmationsRequired + _owners.length)
-    {
-        for (uint256 i = 0; i < _owners.length; i++) {
-            address owner = _owners[i];
-            if (owner == address(0)) {
-                revert InvalidOwner();
-            }
-            _requireNewOwner(owner);
-
-            isOwner[owner] = true;
-            owners.add(owner);
-            emit OwnerAddition(owner);
+    function addOwners(address[] calldata _owners, uint256 _newNumConfirmationsRequired) external override onlyWallet {
+        if (_newNumConfirmationsRequired < numConfirmationsRequired) {
+            revert InvalidRequirement();
         }
-        changeRequirement(numConfirmationsRequired + _owners.length);
+        _validRequirement(owners.length() + _owners.length, _newNumConfirmationsRequired);
+
+        _addOwners(_owners);
+        if (_newNumConfirmationsRequired != numConfirmationsRequired) _changeRequirement(_newNumConfirmationsRequired);
+    }
+
+    function changeRequirement(uint256 _newNumConfirmationsRequired) external override onlyWallet {
+        if (_newNumConfirmationsRequired == numConfirmationsRequired) {
+            revert InvalidRequirement();
+        }
+        _validRequirement(owners.length(), _newNumConfirmationsRequired);
+
+        _changeRequirement(_newNumConfirmationsRequired);
     }
 
     function submitTransaction(
@@ -234,23 +208,26 @@ contract MultiSigWallet is IMultiSigWallet {
             })
         );
 
-        allowlistedBytesCode[_to] = _to.getExtCodeHash();
+        allowlistedBytesCode[_to][txIndex] = _to.getExtCodeHash();
 
         emit SubmitTransaction(txIndex, msg.sender, _to, _value, _data);
     }
 
-    function confirmTransaction(uint256 _txIndex)
+    function confirmTransaction(
+        uint256 _txIndex
+    )
         external
         override
-        onlyOwnerOrGov
+        onlyOwner
         txExists(_txIndex)
+        txIndexGoesAfterLastOwnerRemoval(_txIndex)
         notExecuted(_txIndex)
         notConfirmed(_txIndex)
         notExpired(_txIndex)
     {
         Transaction storage transaction = transactions[_txIndex];
 
-        _requireTargetCodeNotChanged(transaction.to);
+        _requireTargetCodeNotChanged(transaction.to, _txIndex);
 
         transaction.numConfirmations += 1;
         confirmedTransactionsByOwner[msg.sender].add(_txIndex);
@@ -258,10 +235,12 @@ contract MultiSigWallet is IMultiSigWallet {
         emit ConfirmTransaction(msg.sender, _txIndex);
     }
 
-    function executeTransaction(uint256 _txIndex) external override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notExpired(_txIndex) {
+    function executeTransaction(
+        uint256 _txIndex
+    ) external override onlyOwnerOrGov txExists(_txIndex) txIndexGoesAfterLastOwnerRemoval(_txIndex) notExecuted(_txIndex) notExpired(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
-        _requireTargetCodeNotChanged(transaction.to);
+        _requireTargetCodeNotChanged(transaction.to, _txIndex);
 
         if (transaction.numConfirmations < numConfirmationsRequired) {
             revert TxNotConfirmed();
@@ -278,7 +257,9 @@ contract MultiSigWallet is IMultiSigWallet {
         }
     }
 
-    function revokeConfirmation(uint256 _txIndex) external override onlyOwnerOrGov txExists(_txIndex) notExecuted(_txIndex) notExpired(_txIndex) {
+    function revokeConfirmation(
+        uint256 _txIndex
+    ) external override onlyOwner txExists(_txIndex) txIndexGoesAfterLastOwnerRemoval(_txIndex) notExecuted(_txIndex) notExpired(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
 
         if (!confirmedTransactionsByOwner[msg.sender].contains(_txIndex)) {
@@ -298,18 +279,13 @@ contract MultiSigWallet is IMultiSigWallet {
         return transactions.length;
     }
 
-    function getTransaction(uint256 _txIndex)
+    function getTransaction(
+        uint256 _txIndex
+    )
         external
         view
         override
-        returns (
-            address to,
-            uint256 value,
-            bytes memory data,
-            bool executed,
-            uint256 numConfirmations,
-            uint256 expireTimestamp
-        )
+        returns (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expireTimestamp)
     {
         Transaction memory transaction = transactions[_txIndex];
 
@@ -319,19 +295,47 @@ contract MultiSigWallet is IMultiSigWallet {
     function isConfirmedByOwner(uint256 _txIndex, address _owner) external view override returns (bool) {
         return confirmedTransactionsByOwner[_owner].contains(_txIndex);
     }
-    function changeRequirement(uint256 _required) public override onlyWallet validRequirement(owners.length(), _required) {
+
+    function _changeRequirement(uint256 _required) internal {
         numConfirmationsRequired = _required;
         emit RequirementChange(_required);
     }
 
-    function _requireNewOwner(address owner) internal view {
-        if (isOwner[owner]) {
-            revert OwnerAlreadyExists();
+    function _addOwners(address[] memory _owners) internal {
+        for (uint256 i = 0; i < _owners.length; i++) {
+            address owner = _owners[i];
+
+            _notZeroAddress(owner);
+            _requireNotOwner(owner);
+
+            isOwner[owner] = true;
+            owners.add(owner);
+            emit OwnerAddition(owner);
         }
     }
-    function _requireTargetCodeNotChanged(address target) internal view {
-        if (allowlistedBytesCode[target] != target.getExtCodeHash()) {
+
+    function _requireNotOwner(address owner) internal view {
+        if (isOwner[owner]) {
+            revert ExistingOwner();
+        }
+    }
+
+    function _requireTargetCodeNotChanged(address target, uint256 txIndex) internal view {
+        if (allowlistedBytesCode[target][txIndex] != target.getExtCodeHash()) {
             revert TargetCodeChanged();
+        }
+    }
+
+    function _validRequirement(uint256 ownerCount, uint256 _required) internal pure {
+        // if owners count more than 1, then required should be more than 1 - it will protect from centralization
+        if (ownerCount == 0 || ownerCount > MAX_OWNER_COUNT || _required > ownerCount || !(ownerCount > 1 ? _required > 1 : _required > 0)) {
+            revert InvalidRequirement();
+        }
+    }
+
+    function _notZeroAddress(address _address) internal pure {
+        if (_address == address(0)) {
+            revert InvalidZeroAddress();
         }
     }
 }
