@@ -19,9 +19,6 @@ abstract contract GovernorTimelockControl is IGovernorTimelock, Governor {
     error AlreadyExecuted();
 
     constructor(TimelockController timelockAddress) {
-        if (address(timelockAddress) == address(0)) {
-            revert ZeroAddress();
-        }
         _updateTimelock(timelockAddress);
     }
 

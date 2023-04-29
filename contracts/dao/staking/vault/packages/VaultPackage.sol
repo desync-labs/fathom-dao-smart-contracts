@@ -46,11 +46,7 @@ contract VaultPackage is IVault, IVaultEvents, AdminPausable {
         _grantRole(REWARDS_OPERATOR_ROLE, _rewardsOperator);
     }
 
-    function payRewards(
-        address _user,
-        address _token,
-        uint256 _amount
-    ) external override pausable(1) {
+    function payRewards(address _user, address _token, uint256 _amount) external override pausable(1) {
         if (!hasRole(REWARDS_OPERATOR_ROLE, msg.sender)) revert NoRewardsOperatorRole();
         if (!isSupportedToken[_token]) revert UnsupportedToken();
         if (_amount == 0) revert AmountZero();

@@ -5,9 +5,5 @@ pragma solidity 0.8.16;
 import "./transparent/TransparentUpgradeableProxy.sol";
 
 contract VaultProxy is TransparentUpgradeableProxy {
-    constructor(
-        address _logic,
-        address admin_,
-        bytes memory _data
-    ) payable TransparentUpgradeableProxy(_logic, admin_, _data) {}
+    constructor(address _logic, address admin_, bytes memory _data) payable TransparentUpgradeableProxy(_logic, admin_, _data) {}
 }

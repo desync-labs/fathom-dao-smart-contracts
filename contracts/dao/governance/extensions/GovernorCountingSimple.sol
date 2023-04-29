@@ -29,16 +29,7 @@ abstract contract GovernorCountingSimple is Governor {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
-    function proposalVotes(uint256 proposalId)
-        external
-        view
-        virtual
-        returns (
-            uint256 againstVotes,
-            uint256 forVotes,
-            uint256 abstainVotes
-        )
-    {
+    function proposalVotes(uint256 proposalId) external view virtual returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
         return (proposalvote.againstVotes, proposalvote.forVotes, proposalvote.abstainVotes);
     }
