@@ -12,4 +12,5 @@ interface IStakingPosition {
     function getLockInfo(uint256 lockId) external view returns (uint256, uint256);
     function getMainStreamClaimableAmountPerLock(uint256 lockId) external view returns (uint256);
     function getStreamClaimableAmount(uint256 streamId, uint256 lockId) external view returns (uint256);
+    function totalLockPositions() external view returns (uint256);
 }

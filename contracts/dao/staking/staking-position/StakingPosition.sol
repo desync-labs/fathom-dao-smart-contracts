@@ -91,6 +91,9 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     function createLock(uint256 amount, uint256 periodToLock) external override onlyAdmin nonReentrant{
         require(periodToLock <= MAX_LOCK_PERIOD, "exceeds max lock period");
         require(amount > 0, "Amount should be greater than 0");
+        require(periodToLock >= IStakingContractRetriever(stakingContract()).minLockPeriod(),
+            "Period to lock should be greater than min lock period");
+        
         uint256 balanceBeforeRetrieivingTokens = IERC20(mainToken).balanceOf(address(this));
         IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
         IERC20(mainToken).safeApprove(stakingContract(), 0);
@@ -181,6 +184,10 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         return IStaking(stakingContract()).getStreamClaimableAmountPerLock(streamId, address(this), lockId);
     }
 
+    function totalLockPositions() external view override returns (uint256) {
+        return lockPositionData.length;
+    }
+
     //copying the logic frpm staking contract.
     function _removeLockPosition(uint256 lockId) internal {
         uint256 lastLockId = lockPositionData.length;
@@ -223,5 +230,6 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     function voteToken() internal view returns (address) {
         return IStakingContractRetriever(stakingContract()).voteToken();
     }
+
     
 }
