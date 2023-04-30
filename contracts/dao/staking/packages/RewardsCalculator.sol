@@ -111,11 +111,7 @@ contract RewardsCalculator is IRewardsHandler {
         return _getRewardsSchedule(schedule, start, end);
     }
 
-    function _getRewardsSchedule(
-        Schedule memory schedule,
-        uint256 start,
-        uint256 end
-    ) internal pure returns (uint256) {
+    function _getRewardsSchedule(Schedule memory schedule, uint256 start, uint256 end) internal pure returns (uint256) {
         uint256 startIndex;
         uint256 endIndex;
         (startIndex, endIndex) = _getStartEndScheduleIndex(schedule, start, end);

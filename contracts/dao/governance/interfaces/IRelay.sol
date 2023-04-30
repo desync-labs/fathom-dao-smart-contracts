@@ -17,9 +17,5 @@ interface IRelay {
      * in a governance proposal to recover Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relayNativeToken(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) external payable;
+    function relayNativeToken(address target, uint256 value, bytes calldata data) external payable;
 }

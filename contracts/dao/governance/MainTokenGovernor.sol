@@ -70,11 +70,7 @@ contract MainTokenGovernor is
      * in a governance proposal to recover Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
      */
-    function relayNativeToken(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) external payable virtual override onlyGovernance {
+    function relayNativeToken(address target, uint256 value, bytes calldata data) external payable virtual override onlyGovernance {
         if (isSupportedToken[target]) {
             revert TokenSupported();
         }
