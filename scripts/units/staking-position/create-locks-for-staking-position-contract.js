@@ -16,7 +16,7 @@ const ONE_YEAR = 31536000; // 365 days in seconds
 const TWO_YEARS = 2 * ONE_YEAR;
 const THREE_YEARS = 3 * ONE_YEAR;
 
-const USER_TO_CREATE_LOCK_FOR = "0x0Eb7DEE6e18Cce8fE839E986502d95d47dC0ADa3"; // set as per needed
+const USER_TO_CREATE_LOCK_FOR = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"; // set as per needed
 const AMOUNT_DESIRED_TO_LOCK = web3.utils.toWei('10000','ether'); // set as needed
 const PERIOD_TO_LOCK = 60// set as needed
 
@@ -74,7 +74,6 @@ module.exports = async function(deployer) {
         FATHOM_TOKEN_ADDRESS,
         "ApproveFathomTokenForStakingPositionFactory"
     )
-    
     
     await txnHelper.submitAndExecute(
         _encodeCreateLockFunction(

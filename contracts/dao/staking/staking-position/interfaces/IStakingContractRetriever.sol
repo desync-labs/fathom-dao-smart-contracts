@@ -7,4 +7,5 @@ interface IStakingContractRetriever {
     function maxLockPeriod() external view returns(uint256);
     function paused() external view returns(uint256);
     function voteToken() external view returns(address);
+    function minLockPeriod() external view returns(uint256);
 }
