@@ -117,7 +117,6 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     }
 
     function unlock(uint256 lockId) external override onlyUser nonReentrant{
-        //copying the logic frpm staking contract.
         _verifyUnlockOrClaim(lockId);
         LockPositionData memory lockPosition = lockPositionData[lockId - 1];
         _removeLockPosition(lockId);
@@ -182,7 +181,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         return IStaking(stakingContract()).getStreamClaimableAmountPerLock(streamId, address(this), lockId);
     }
 
-    //internal functions:
+    //copying the logic frpm staking contract.
     function _removeLockPosition(uint256 lockId) internal {
         uint256 lastLockId = lockPositionData.length;
         if (lastLockId != lockId && lastLockId > 1) {
@@ -224,6 +223,5 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     function voteToken() internal view returns (address) {
         return IStakingContractRetriever(stakingContract()).voteToken();
     }
-
     
 }

@@ -7,7 +7,7 @@ const IStakingPositionContractFactory = artifacts.require("./dao/staking/staking
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES_FOR_STAKING_POSITION_FOLDER);
 
 const addressesStakingPosition = JSON.parse(rawdata);
-const USER_TO_CREATE_STAKING_CONTRACT_FOR = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"; // set as per needed
+const USER_TO_CREATE_STAKING_CONTRACT_FOR = "0x0Eb7DEE6e18Cce8fE839E986502d95d47dC0ADa3"; // set as per needed
 
 const _encodeCreateStakingPositionContract = (_account) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
