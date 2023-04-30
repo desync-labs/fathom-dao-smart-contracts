@@ -2,15 +2,14 @@ const StakingPositionFactory = artifacts.require("./dao/staking/staking-position
 const MultiSigWallet = artifacts.require("./dao/treasury/MultiSigWallet.sol");
 const StakingProxy = artifacts.require('./common/proxy/StakingProxy.sol')
 const MainToken = artifacts.require("./dao/tokens/MainToken.sol");
-const StakingPosition = artifacts.require("./dao/staking/staking-position/StakingPosition.sol");
-const StakingPositionAndFactoryProxyAdmin = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionAndFactoryProxyAdmin.sol")
+const StakingPositionFactoryProxyAdmin = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionFactoryProxyAdmin.sol")
 const StakingPositionFactoryProxy = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionFactoryProxy.sol")
 const VMainToken = artifacts.require('./dao/tokens/VMainToken.sol');
 
 module.exports = async function(deployer) {
 
     await deployer.deploy(
-        StakingPositionAndFactoryProxyAdmin, {gas: 8000000}
+        StakingPositionFactoryProxyAdmin, {gas: 8000000}
     )
     
     let toInitialize = web3.eth.abi.encodeFunctionCall({
@@ -30,10 +29,6 @@ module.exports = async function(deployer) {
         },
         {
             type: 'address',
-            name: '_stakingPositionImplementation'
-        },
-        {
-            type: 'address',
             name: '_voteToken'
         },
         {
@@ -45,9 +40,8 @@ module.exports = async function(deployer) {
         MultiSigWallet.address,
         StakingProxy.address,
         MainToken.address,
-        StakingPosition.address,
         VMainToken.address,
-        StakingPositionAndFactoryProxyAdmin.address
+        StakingPositionFactoryProxyAdmin.address
     ])
 
     console.log("Mutlisig --", MultiSigWallet.address)
@@ -55,7 +49,7 @@ module.exports = async function(deployer) {
     await deployer.deploy(
         StakingPositionFactoryProxy, 
         StakingPositionFactory.address, 
-        StakingPositionAndFactoryProxyAdmin.address, 
+        StakingPositionFactoryProxyAdmin.address, 
         toInitialize, 
         {gas:8000000});
 }   

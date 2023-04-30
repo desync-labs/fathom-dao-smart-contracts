@@ -7,10 +7,10 @@ interface IStakingPositionFactory {
         address _admin,
         address _stakingContract,
         address _mainToken,
-        address _stakingPositionImplementation,
         address _voteToken,
         address _proxyAdmin
     ) external;
+
 
     function updateStreamRewardToken(
         uint256 streamId,
@@ -19,10 +19,6 @@ interface IStakingPositionFactory {
 
     function createStakingPositionContract(
         address _account
-    ) external;
-
-    function updateStakingPositionImplementation(
-        address _stakingPositionImplementation
     ) external;
 
     function updateStakingContract(
@@ -34,6 +30,10 @@ interface IStakingPositionFactory {
     function getStakingPositionContractAddress(
         address account
     ) external view returns (address);
+    
+    function getStreamRewardToken(
+        uint256 streamId
+    ) external view returns(address);
 
     function stakingContract() external view returns (address);
     function mainToken() external view returns (address);

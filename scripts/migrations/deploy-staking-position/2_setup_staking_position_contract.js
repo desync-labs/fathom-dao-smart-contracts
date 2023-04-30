@@ -1,6 +1,5 @@
 const StakingPositionFactory = artifacts.require("./dao/staking/staking-position/StakingPositionFactory.sol");
-const StakingPosition = artifacts.require("./dao/staking/staking-position/StakingPosition.sol");
-const StakingPositionAndFactoryProxyAdmin = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionAndFactoryProxyAdmin.sol")
+const StakingPositionFactoryProxyAdmin = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionFactoryProxyAdmin.sol")
 const StakingPositionFactoryProxy = artifacts.require("./dao/staking/staking-position/proxy/StakingPositionFactoryProxy.sol")
 const fs = require("fs")
 let env = process.env.NODE_ENV;
@@ -14,9 +13,8 @@ const MainTokenAddress = addresses.fthmToken
 const VMainTokenAddress = addresses.vFTHM
 
 module.exports = async function(deployer) {
-
     await deployer.deploy(
-        StakingPositionAndFactoryProxyAdmin, {gas: 8000000}
+        StakingPositionFactoryProxyAdmin, {gas: 8000000}
     )
     
     let toInitialize = web3.eth.abi.encodeFunctionCall({
@@ -36,10 +34,6 @@ module.exports = async function(deployer) {
         },
         {
             type: 'address',
-            name: '_stakingPositionImplementation'
-        },
-        {
-            type: 'address',
             name: '_voteToken'
         },
         {
@@ -51,9 +45,8 @@ module.exports = async function(deployer) {
         MultiSigWalletAddress,
         StakingAddress,
         MainTokenAddress,
-        StakingPosition.address,
         VMainTokenAddress,
-        StakingPositionAndFactoryProxyAdmin.address
+        StakingPositionFactoryProxyAdmin.address
     ])
 
     console.log("Mutlisig --", MultiSigWalletAddress)
@@ -61,15 +54,15 @@ module.exports = async function(deployer) {
     await deployer.deploy(
         StakingPositionFactoryProxy, 
         StakingPositionFactory.address, 
-        StakingPositionAndFactoryProxyAdmin.address, 
+        StakingPositionFactoryProxyAdmin.address, 
         toInitialize, 
         {gas:8000000});
 
+
     let addresses = {
-        StakingPositionFactoryProxy: StakingPositionFactoryProxy.address,
-        StakingPositionFactory: StakingPositionFactory.address,
-        StakingPositionAndFactoryProxyAdmin: StakingPositionAndFactoryProxyAdmin.addreess,
-        StakingPosition: StakingPosition.address
+        StakingPositionFactory: StakingPositionFactoryProxy.address,
+        StakingPositionFactoryImplementation: StakingPositionFactory.address,
+        StakingPositionAndFactoryProxyAdmin: StakingPositionFactoryProxyAdmin.address,
     }
 
     let env = process.env.NODE_ENV || 'demo';

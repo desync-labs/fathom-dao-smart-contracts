@@ -308,7 +308,6 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
     let stakingProxyAdmin;
     let vaultMigrateService;
     let snapshotToRevertTo;
-    let stakingPositionAndFactoryProxyAdmin;
     let stakingPositionFactoryProxy;
     
     const sumToDeposit = web3.utils.toWei('100', 'ether');
@@ -381,22 +380,15 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             "StakingPositionFactory"
         )
 
-        stakingPositionAndFactoryProxyAdmin = await artifacts.initializeInterfaceAt(
-            "StakingPositionAndFactoryProxyAdmin",
-            "StakingPositionAndFactoryProxyAdmin"
+        stakingPositionFactoryProxyAdmin = await artifacts.initializeInterfaceAt(
+            "StakingPositionFactoryProxyAdmin",
+            "StakingPositionFactoryProxyAdmin"
         )
 
         stakingPositionFactoryProxy = await artifacts.initializeInterfaceAt(
             "IStakingPositionFactory",
             "StakingPositionFactoryProxy"
         )
-
-        stakingPosition = await artifacts.initializeInterfaceAt(
-            "StakingPosition",
-            "StakingPosition"
-        )
-
-        
 
         FTHMToken = await artifacts.initializeInterfaceAt("MainToken","MainToken");
         streamReward1 = await artifacts.initializeInterfaceAt("ERC20Rewards1","ERC20Rewards1");
@@ -809,9 +801,8 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                     multiSigWallet.address,
                     stakingService.address, 
                     FTHMToken.address,
-                    stakingPosition.address,
                     vMainToken.address,
-                    stakingPositionAndFactoryProxyAdmin.address,
+                    stakingPositionFactoryProxy.address,
                     {gas: 8000000}),
                 errTypes.revert,
                 errorMessage
@@ -848,37 +839,73 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             )
         })
 
-        it("Should not initialize twice - staking position", async() => {
-            const errorMessage = "Initializable: contract is already initialized";
-            const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
 
-            await shouldRevert(
-                stakingPositionContract.initialize(
-                    multiSigWallet.address,
-                    FTHMToken.address,
-                    stakingPositionFactoryProxy.address,
-                    staker_1,
-                    {gas: 8000000}),
-                errTypes.revert,
-                errorMessage
-            );
-        })
-
-        it("Should create a lock position for staker_1", async() => {
-            await _transferFromMultiSigTreasury(staker_1, web3.utils.toWei('100000','ether'));
+        it("Should create a lock position for staker_1 with staking position contract", async() => {
             const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
             console.log("Staking Position Contract Address: ", stakingPositionContract.address);
-            await FTHMToken.approve(stakingPositionContract.address, web3.utils.toWei('100000','ether'), {from: staker_1});
+            const _approveStakingPositionContract = async (_account, _amount) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address,
+                    EMPTY_BYTES,
+                    _encodeApproveFunction(
+                        _account,
+                        _amount
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1], gas: 12000000});
+            }
+
+            await _approveStakingPositionContract(
+                stakingPositionContract.address,
+                web3.utils.toWei('100000','ether')
+            )
+
+            const _createLockPosition = async(_amount,_periodToLock) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingPositionContract.address,
+                    EMPTY_BYTES,
+                    _encodeCreateLockFunction(
+                        _amount,
+                        _periodToLock
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1], gas: 12000000});
+            }
+            
             const lockingPeriod = 2 * 365 * 24 * 60 * 60;
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-            await stakingPositionContract.createLock(web3.utils.toWei('100000','ether'), lockingPeriod, {from: staker_1});
+            
+            const balanceOfVoteTokensBeforeCreatingLock = await vMainToken.getVotes(staker_1);
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await _createLockPosition(
+                web3.utils.toWei('100000','ether'),
+                lockingPeriod
+            )
+
+            const VoteTokensThatShouldBeReleased = web3.utils.toWei('100000','ether')
+            const balanceOfVoteTokensAfterCreatingLock = await vMainToken.getVotes(staker_1);
+            assert.equal(
+                balanceOfVoteTokensAfterCreatingLock.sub(balanceOfVoteTokensBeforeCreatingLock).toString()
+                ,VoteTokensThatShouldBeReleased.toString())
         })
 
-        it("Should create a lock position for staker_2 from admin", async() => {
+        it("Should create a lock position for staker_2 from admin with staking position contract", async() => {
             
             const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_2));
             console.log("Staking Position Contract Address: ", stakingPositionContract.address);
-
             const _approveStakingPositionContract = async (_account, _amount) => {
                 const result = await multiSigWallet.submitTransaction(
                     FTHMToken.address,
@@ -919,15 +946,17 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
                 await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
     
-                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1],gas: 12000000});
             }
             const lockingPeriod = 2 * 365 * 24 * 60 * 60;
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
             const balanceOfVoteTokensBeforeCreatingLock = await vMainToken.getVotes(staker_2);
+            
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
             await _createLockPosition(
                 web3.utils.toWei('100000','ether'),
                 lockingPeriod
             )
+
             const VoteTokensThatShouldBeReleased = web3.utils.toWei('100000','ether')
             const balanceOfVoteTokensAfterCreatingLock = await vMainToken.getVotes(staker_2);
             assert.equal(
@@ -1102,15 +1131,66 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         })
 
         it("Should create a lock position for staker_1 - lock position contract", async() => {
-            await _transferFromMultiSigTreasury(staker_1, web3.utils.toWei('100000','ether'));
             const stakingPositionContract = await IStakingPosition.at(await stakingPositionFactoryProxy.getStakingPositionContractAddress(staker_1));
             console.log("Staking Position Contract Address: ", stakingPositionContract.address);
-            await FTHMToken.approve(stakingPositionContract.address, web3.utils.toWei('100000','ether'), {from: staker_1});
-            const lockingPeriod = 2 * 365 * 24 * 60 * 60;
-            await blockchain.mineBlock(await _getTimeStamp() + 20);
-            await stakingPositionContract.createLock(web3.utils.toWei('100000','ether'), lockingPeriod, {from: staker_1});
-        })
+            const _approveStakingPositionContract = async (_account, _amount) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address,
+                    EMPTY_BYTES,
+                    _encodeApproveFunction(
+                        _account,
+                        _amount
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1], gas: 12000000});
+            }
 
+            await _approveStakingPositionContract(
+                stakingPositionContract.address,
+                web3.utils.toWei('100000','ether')
+            )
+
+            const _createLockPosition = async(_amount,_periodToLock) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingPositionContract.address,
+                    EMPTY_BYTES,
+                    _encodeCreateLockFunction(
+                        _amount,
+                        _periodToLock
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1], gas: 12000000});
+            }
+            
+            const lockingPeriod = 2 * 365 * 24 * 60 * 60;
+            
+            const balanceOfVoteTokensBeforeCreatingLock = await vMainToken.getVotes(staker_1);
+            await blockchain.mineBlock(await _getTimeStamp() + 100);
+            await _createLockPosition(
+                web3.utils.toWei('100000','ether'),
+                lockingPeriod
+            )
+
+            const VoteTokensThatShouldBeReleased = web3.utils.toWei('100000','ether')
+            const balanceOfVoteTokensAfterCreatingLock = await vMainToken.getVotes(staker_1);
+            assert.equal(
+                balanceOfVoteTokensAfterCreatingLock.sub(balanceOfVoteTokensBeforeCreatingLock).toString()
+                ,VoteTokensThatShouldBeReleased.toString())
+        })
 
 
         it("Should pause the staking in case of emergency", async() => {
@@ -1137,7 +1217,6 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         
 
         it("Should emergency unlock locked position for staker_3 - emergency unlock will be available for certain time", async() => {
-            
             await blockchain.mineBlock(await _getTimeStamp() + 100);
             await stakingService.emergencyUnlockAndWithdraw({"from": staker_3, gas: 30000000});
             await blockchain.mineBlock(await _getTimeStamp() + 100);

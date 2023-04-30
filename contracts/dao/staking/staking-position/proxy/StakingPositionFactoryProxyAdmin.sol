@@ -4,4 +4,4 @@
 pragma solidity 0.8.16;
 import "../../../../common/proxy/transparent/ProxyAdmin.sol";
 
-contract StakingPositionAndFactoryProxyAdmin is ProxyAdmin {}
+contract StakingPositionFactoryProxyAdmin is ProxyAdmin {}
