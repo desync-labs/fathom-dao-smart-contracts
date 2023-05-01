@@ -17,4 +17,6 @@ interface IStakingGetter {
     function getStream(
         uint256 streamId
     ) external view returns (uint256 rewardDepositAmount, uint256 rewardClaimedAmount, uint256 rps, StreamStatus status);
+
+    function isProhibitedLockPosition(uint256 lockId, address account) external view returns (bool);
 }
