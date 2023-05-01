@@ -456,7 +456,6 @@ contract StakingHandlers is StakingStorage, IStakingHandler, StakingInternals, A
         }
         maxLockPositions = newMaxLockPositions;
     }
-    
 
     function setTreasuryAddress(address newTreasury) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (newTreasury == address(0)) {

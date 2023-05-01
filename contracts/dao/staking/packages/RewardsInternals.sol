@@ -30,7 +30,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
         LockedBalance storage lock = locks[account][lockId - 1];
 
-        if( prohibitedEarlyWithdraw[account][lockId] && lock.end > block.timestamp) {
+        if (prohibitedEarlyWithdraw[account][lockId] && lock.end > block.timestamp) {
             return;
         }
 
