@@ -22,6 +22,14 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/save-address/3_save_address_prod.js', '--network', 'xdc']
   ],
 
+  deployUpgradedStakingContractApothem: [
+    ['execute', '--path', 'scripts/migrations/deploy-new-staking-package', '--network', 'apothem'],
+  ],
+
+  deployUpgradedStakingContractXDC: [
+    ['execute', '--path', 'scripts/migrations/deploy-new-staking-package', '--network', 'xdc'],
+  ],
+
   transferTokenFromMultisigApothem: [
     ['execute', '--path', 'scripts/units/transfer-tokens.js', '--network', 'apothem'],
   ],

@@ -30,6 +30,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         uint256 userSharesOfLock = lock.positionStreamShares;
         return ((latestRps - userRpsPerLock) * userSharesOfLock) / RPS_MULTIPLIER;
     }
+    
 
     function getAllLocks(address account) external view override returns (LockedBalance[] memory) {
         return locks[account];
@@ -44,5 +45,11 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
     ) external view override returns (uint256 rewardDepositAmount, uint256 rewardClaimedAmount, uint256 rps, StreamStatus status) {
         Stream storage stream = streams[streamId];
         return (stream.rewardDepositAmount, stream.rewardClaimedAmount, stream.rps, stream.status);
+    }
+    /**
+     @notice this will be used by frontend to get the actual amount that can be claimed
+     */ 
+    function isProhibitedLockPosition(uint256 lockId, address account) external override view returns (bool) {
+        return prohibitedEarlyWithdraw[account][lockId];
     }
 }
