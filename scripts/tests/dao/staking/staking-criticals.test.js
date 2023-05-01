@@ -423,7 +423,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
         expectedTotalAmountOfVFTHM = new web3.utils.BN(0)
         it('Should create a lock possition with lockId = 1 for staker_1', async() => {
             // So that staker 1 can actually stake the token:
-            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1})
+            await FTHMToken.approve(stakingService.address, sumToApprove, {from: staker_1}) 
             const beforeFTHMBalance = await FTHMToken.balanceOf(staker_1);
 
             await blockchain.increaseTime(20);
@@ -432,7 +432,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const unlockTime = lockingPeriod;
             console.log(".........Creating a Lock Position for staker 1.........");
 
-            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1});
+            let result = await stakingService.createLock(sumToDeposit,unlockTime,{from: staker_1}); // staker_1 locks lock position - 1
             // Since block time stamp can change after locking, we record the timestamp, 
             // later to be used in the expectedNVFTHM calculation.  
             // This mitigates an error created from the slight change in block time.
@@ -467,7 +467,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             
             const unlockTime = lockingPeriod;
             console.log(".........Creating a second Lock Position for staker 1.........");
-            let result = await stakingService.createLock(sumToDeposit, unlockTime, {from: staker_1, gas:maxGasForTxn}); //staker_1 creates a lock position - 1
+            let result = await stakingService.createLock(sumToDeposit, unlockTime, {from: staker_1, gas:maxGasForTxn}); //staker_1 creates a lock position - 2
             
             let eventArgs = eventsHelper.getIndexedEventArgs(result, "Staked(address,uint256,uint256,uint256,uint256,uint256)");
             const lockInfo = await stakingGetterService.getLockInfo(staker_1,2)
@@ -636,6 +636,72 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 100)
         })
 
+        it('Approve FATHOM tokens to staking contract for creating 4 lock positions of 20000 each', async() => {
+            const approveAmount = web3.utils.toWei('800000', 'ether');
+
+            const _approve = async (
+                _amount,
+                _spender
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    FTHMToken.address,
+                    EMPTY_BYTES, 
+                    _encodeStakeApproveFunction(_amount, _spender),
+                    0,
+                    {"from": accounts[0]}
+                );
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            
+            await _approve(
+                approveAmount,
+                stakingService.address
+            )
+        })
+
+        it('Should create early unwithrawable lock position for staker_1 - staker_2 - staker-3 staker -4 all at once', async() => {
+            const oneYr = 365 * 24 * 60 * 60;
+            const amount = web3.utils.toWei('200000', 'ether');
+            
+            
+            const lockPositionForCommityOne = _createLockParamObject(amount,oneYr,staker_1) //staker_1 creates a lock position - 2
+            const lockPositionForCommityTwo =  _createLockParamObject(amount,oneYr,staker_2) //staker_2 creates a lock position - 4
+            const lockPositionForComityThree =  _createLockParamObject(amount,oneYr,staker_3) //staker_3 creates a lock position - 4
+            const lockPositionForCommityFour =  _createLockParamObject(amount,oneYr,staker_4) //staker_4 creates a lock position - 1
+            const allLockPositions = [lockPositionForCommityOne, lockPositionForCommityTwo, lockPositionForComityThree, lockPositionForCommityFour]
+
+            const _createLockWithoutEarlyWithdrawal = async(
+                lockParamObject
+            ) => {
+                const result = await multiSigWallet.submitTransaction(
+                    stakingService.address,
+                    EMPTY_BYTES,
+                    _encodeCreateLockWithoutEarlyWithdrawal(
+                        lockParamObject
+                    ),
+                    0,
+                    {"from": accounts[0]}
+                )
+
+                const tx = eventsHelper.getIndexedEventArgs(result, SUBMIT_TRANSACTION_EVENT)[0];
+    
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[0]});
+                await multiSigWallet.confirmTransaction(tx, {"from": accounts[1]});
+    
+                await multiSigWallet.executeTransaction(tx, {"from": accounts[1]});
+            }
+            await blockchain.mineBlock(await _getTimeStamp() + 100)
+            await _createLockWithoutEarlyWithdrawal(allLockPositions);
+            await blockchain.mineBlock(await _getTimeStamp() + 100)
+        })
+
+        
+
         it("Should Revert: early unlock not possible staker_2 - lock position -2,3", async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             const errorMessage = "revert";
@@ -653,6 +719,15 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 errTypes.revert, 
                 errorMessage
             );
+
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(4, {from: staker_2}),
+                errTypes.revert, 
+                errorMessage
+            );
+            
             
         })
 
@@ -674,6 +749,36 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 errTypes.revert, 
                 errorMessage
             );
+
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(4, {from: staker_3}),
+                errTypes.revert, 
+                errorMessage
+            );
+            
+        })
+
+        it("Should Revert: early unlock not possible - staker_1 and staker_4  - lock position -3 and lock position - 1, respectively", async() => {
+            
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            const errorMessage = "revert";
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(2, {from: staker_1}),
+                errTypes.revert, 
+                errorMessage
+            );
+
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+
+            await shouldRevertAndHaveSubstring(
+                stakingService.earlyUnlock(1, {from: staker_4}),
+                errTypes.revert, 
+                errorMessage
+            );
+            
         })
 
         it('Should not claim rewards for early unlock - staker - 2', async() => {
@@ -683,6 +788,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const mineSixMonthsToCheckIfRewardsCouldBeClaimed = 6 * 30 * 24 * 60 * 60;
             await blockchain.mineBlock(await _getTimeStamp() + mineSixMonthsToCheckIfRewardsCouldBeClaimed);
             await stakingService.claimAllStreamRewardsForLock(2,{from: staker_2})
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.claimAllStreamRewardsForLock(3,{from: staker_2})
             const userPendingRewardsShouldBeZeroAfterClaim = await stakingService.getUsersPendingRewards(staker_2,MAIN_STREAM_ID)
             assert.equal(userPendingRewardsShouldBeZeroAfterClaim.toString(), "0")
@@ -699,6 +805,8 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const userPendingRewardsShouldBeZeroAfterClaim = await stakingService.getUsersPendingRewards(staker_3,MAIN_STREAM_ID)
             assert.equal(userPendingRewardsShouldBeZeroAfterClaim.toString(), "0")
         })
+
+        
 
         it("Should be able to claim after lock period expires - staker_2", async() => {
             const MAIN_STREAM_ID = 0
@@ -723,6 +831,8 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const userPendingRewardsShouldBeMoreThanZeroAfterClaim = await stakingService.getUsersPendingRewards(staker_3,MAIN_STREAM_ID)
             console.log("usersPendingRewards: ", _convertToEtherBalance(userPendingRewardsShouldBeMoreThanZeroAfterClaim.toString()));
         })
+        
+        
 
         it('Should upgrade Staking by mulitsig and call new function getLockInfo', async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
@@ -801,6 +911,8 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_2});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.unlock(1, {from: staker_2});
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
         }) 
         
         it("Should unlock completely locked positions for user - staker_3", async() => {
@@ -809,15 +921,22 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             await stakingService.unlock(1, {from: staker_3});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_3});
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.unlock(1, {from: staker_3});
         });
 
 
-        
 
+        it("Should unlock completely locked positions for user - staker_4", async() => {
+            await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.unlock(1, {from: staker_4});
+        })
+        
         it("Should unlock completely for locked position 1 - staker_1", async() => {
             await blockchain.mineBlock(await _getTimeStamp() + 20);
             await stakingService.unlock(1, {from: staker_1});
             await blockchain.mineBlock(await _getTimeStamp() + 20);
+            await stakingService.unlock(1, {from: staker_1});
             const totalAmountOfStakedToken = await stakingService.totalAmountOfStakedToken()
             const totalAmountOfStreamShares = await stakingService.totalStreamShares()
             assert.equal(totalAmountOfStakedToken.toString(),"0")
