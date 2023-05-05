@@ -11,7 +11,8 @@ const IUniswapFactory = artifacts.require("./dao/test/dex/IUniswapV2Factory.sol"
 const IUniswapRouter = artifacts.require("./dao/test/dex/IUniswapV2Router01.sol");
 const IUniswapV2Pair = artifacts.require("./dao/test/dex/IUniswapV2Pair.sol");
 
-const addressesConfig = require('../../config/config');
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`);
 const { default: BigNumber } = require('bignumber.js');
 
 const Token_A_Address =  "0xD033b52657F3580092914e1976715e0cbC622855" //USD

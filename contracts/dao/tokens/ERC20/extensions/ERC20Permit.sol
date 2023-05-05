@@ -26,15 +26,7 @@ abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712 {
 
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) EIP712(name_, "1") {}
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external virtual override {
         // solhint-disable-next-line not-rely-on-time
         if (block.timestamp > deadline) {
             revert ExpiredDeadline();

@@ -52,7 +52,7 @@ const _encodeInitMainStreamFunction = (_owner, _scheduleTimes, _scheduleRewards,
 
 
 module.exports = async function(deployer) {
-    const startTime =  1681740000 //SIX_PM_UAE_TIME_17_April_2023
+    const startTime =  1683302400 //EIGHT_PM_UAE_TIME_5th_May_+4GMT
     const oneMonth = 2628288
     const scheduleTimes = [
         startTime,
@@ -61,7 +61,7 @@ module.exports = async function(deployer) {
     const tau = 60;// SIXTEEN
 
     const scheduleRewards = [
-        web3.utils.toWei('400000000', 'ether'),
+        web3.utils.toWei('200000000', 'ether'),
         web3.utils.toWei('0', 'ether')
     ];
     

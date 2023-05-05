@@ -2,18 +2,16 @@ const fs = require('fs');
 const path = require('path');
 
 const configDir = path.join(path.resolve(), 'config');
-const configPath = path.join(configDir, 'config.js')
+const configPath = path.join(configDir, 'config.demo.js')
 
 if (fs.existsSync(configPath)) {
-    console.log(`config.js file already exists in ${configDir} directory!`);
+    console.log(`config.demo.js file already exists in ${configDir} directory!`);
 }
 else 
 {
     if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir);
     }
-
-    const configPath = path.join(configDir, 'config.js');
 
     const constants = `module.exports = {
         POSITION_MANAGER_ADDRESS: "",
@@ -42,6 +40,6 @@ else
 
     fs.writeFile(configPath, constants, (err) => {
         if (err) throw err;
-        console.log(`config.js file has been created in ${configDir} directory!`);
+        console.log(`config.demo.js file has been created in ${configDir} directory!`);
     });
 }

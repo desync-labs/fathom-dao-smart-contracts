@@ -43,11 +43,7 @@ contract StakingInternals is RewardsInternals {
         voteLockCoef = _voteLockCoef;
     }
 
-    function _lock(
-        address account,
-        uint256 amount,
-        uint256 lockPeriod
-    ) internal {
+    function _lock(address account, uint256 amount, uint256 lockPeriod) internal {
         uint256 nVoteToken;
         User storage userAccount = users[account];
         if (lockPeriod > 0) {
@@ -81,12 +77,7 @@ contract StakingInternals is RewardsInternals {
      * @notice If the lock position is completely unlocked then the last lock is swapped with current locked
      * and last lock is popped off.
      */
-    function _unlock(
-        uint256 stakeValue,
-        uint256 amount,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unlock(uint256 stakeValue, uint256 amount, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
 
@@ -124,12 +115,7 @@ contract StakingInternals is RewardsInternals {
      * @notice the amount of stream shares you receive decreases from 100% to 25%
      * @notice the amount of stream shares you receive depends upon when in the timeline you have staked
      */
-    function _stake(
-        address account,
-        uint256 amount,
-        uint256 nVoteToken,
-        uint256 lockId
-    ) internal {
+    function _stake(address account, uint256 amount, uint256 nVoteToken, uint256 lockId) internal {
         User storage userAccount = users[account];
         LockedBalance storage lock = locks[account][lockId - 1];
 
@@ -148,12 +134,7 @@ contract StakingInternals is RewardsInternals {
         emit Staked(account, amount, weightedAmountOfSharesPerStream, nVoteToken, lockId, lock.end);
     }
 
-    function _unstake(
-        uint256 amount,
-        uint256 stakeValue,
-        uint256 lockId,
-        address account
-    ) internal {
+    function _unstake(uint256 amount, uint256 stakeValue, uint256 lockId, address account) internal {
         User storage userAccount = users[account];
         LockedBalance storage updateLock = locks[account][lockId - 1];
         totalAmountOfStakedToken -= stakeValue;
@@ -177,12 +158,7 @@ contract StakingInternals is RewardsInternals {
         }
     }
 
-    function _restakeThePosition(
-        uint256 amountToRestake,
-        uint256 lockId,
-        LockedBalance storage updateLock,
-        User storage userAccount
-    ) internal {
+    function _restakeThePosition(uint256 amountToRestake, uint256 lockId, LockedBalance storage updateLock, User storage userAccount) internal {
         totalAmountOfStakedToken += amountToRestake;
         updateLock.amountOfToken += BoringMath.to128(amountToRestake);
         ///@notice if you unstake, early or partial or complete,
@@ -222,11 +198,7 @@ contract StakingInternals is RewardsInternals {
         totalPenaltyBalance += penalty;
     }
 
-    function _removeLockPosition(
-        User storage userAccount,
-        address account,
-        uint256 lockId
-    ) internal {
+    function _removeLockPosition(User storage userAccount, address account, uint256 lockId) internal {
         uint256 streamsLength = streams.length;
         uint256 lastLockId = locks[account].length;
         if (lastLockId != lockId && lastLockId > 1) {
@@ -257,11 +229,7 @@ contract StakingInternals is RewardsInternals {
         IVault(vault).payRewards(accountTo, mainToken, pendingPenalty);
     }
 
-    function _weightedShares(
-        uint256 amountOfTokenShares,
-        uint256 nVoteToken,
-        uint256 timestamp
-    ) internal view returns (uint256) {
+    function _weightedShares(uint256 amountOfTokenShares, uint256 nVoteToken, uint256 timestamp) internal view returns (uint256) {
         ///@notice Shares accomodate vote the amount of  tokenShares and vote Tokens to be released
         ///@notice This formula makes it so that both the time locked for Main token and the amount of token locked
         ///        is used to calculate rewards

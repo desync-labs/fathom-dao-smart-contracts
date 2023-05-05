@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
-const addressesConfig = require('../../../../config/config')
+const constants = require('../../helpers/constants')
+const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
 const PROXY_ACTION_STORAGE_ADDRESS =addressesConfig.PROXY_ACTION_STORAGE_ADDRESS
 const PROXY_ACTION_ADDRESS = "0x"

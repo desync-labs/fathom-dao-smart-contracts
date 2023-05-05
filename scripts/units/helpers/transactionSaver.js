@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const constants = require('./constants')
 
-const filePath = '../../../config/newly-generated-transaction-index.json';
+const filePath = path.join(__dirname, '..', '..', '..', constants.PATH_TO_NEWLY_GENERATED_TRANSACTION_INDEX);
 const dirPath = path.dirname(filePath);
 
 let rawdata;
@@ -19,9 +20,8 @@ if (fs.existsSync(filePath)) {
   rawdata = fs.readFileSync(filePath);
 }
 
-const constants = require('./constants')
 
-async function saveTxnIndex(
+async function saveTransaction(
     TransactionName,
     txnIndex,
     submitTransactionHash,
@@ -83,7 +83,7 @@ async function saveTxnIndex(
 }
 
 module.exports = {
-    saveTxnIndex
+    saveTransaction
 }
 
 //The above code will give output like below:

@@ -15,6 +15,7 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
     error InsufficientRewardsError();
     error NoLockError();
     error NoSharesError();
+    error ClaimingOfRewardsUnfeasibleForLockWithoutEarlyWithdraw();
 
     function _updateStreamsRewardsSchedules(uint256 streamId, uint256 rewardTokenAmount) internal {
         uint256 streamScheduleRewardLength = streams[streamId].schedule.reward.length;
@@ -23,15 +24,16 @@ contract RewardsInternals is StakingStorage, IStakingEvents {
         }
     }
 
-    function _moveRewardsToPending(
-        address account,
-        uint256 streamId,
-        uint256 lockId
-    ) internal {
+    function _moveRewardsToPending(address account, uint256 streamId, uint256 lockId) internal {
         if (streams[streamId].status != StreamStatus.ACTIVE) {
             revert InactiveStreamError();
         }
         LockedBalance storage lock = locks[account][lockId - 1];
+
+        if (prohibitedEarlyWithdraw[account][lockId] && lock.end > block.timestamp) {
+            return;
+        }
+
         if (lock.amountOfToken == 0) {
             revert NoStakeError();
         }

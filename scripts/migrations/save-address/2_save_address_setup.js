@@ -1,7 +1,11 @@
 const VaultProxyAdmin = artifacts.require('./common/proxy/VaultProxyAdmin.sol');
 const VaultProxy = artifacts.require('./common/proxy/VaultProxy.sol')
 const fs = require('fs')
-const rawdata = fs.readFileSync('../../../addresses.json');
+
+let env = process.env.NODE_ENV || 'demo';
+let addressesFilePath = `../../../addresses.${env}.json`;
+const rawdata = fs.readFileSync(addressesFilePath);
+
 let daoAddress = JSON.parse(rawdata)
 module.exports = async function(deployer) {
     let addresses = {
@@ -14,12 +18,13 @@ module.exports = async function(deployer) {
         ...addresses
     }
 
+    let env = process.env.NODE_ENV || 'demo';
+    let filePath = `./addresses.${env}.json`;
     
     let data = JSON.stringify(newAddresses, null, " ");
-    fs.writeFileSync('./addresses.json',data, function(err){
-        if(err){
-            console.log(err)
+    fs.writeFileSync(filePath, data, function (err) {
+        if (err) {
+            console.log(err);
         }
-    })
-
+    });
 }

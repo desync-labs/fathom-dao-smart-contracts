@@ -5,15 +5,18 @@ const constants = require('./helpers/constants')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
 const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED
 // NOT MAX UINT for security as its not good to approve max for Multisig
+
 // this is how much to stake for one council . Right now 10KK
 const T_TO_STAKE = web3.utils.toWei('10000000', 'ether');
+const T_TO_APPROVE = web3.utils.toWei('10000000', 'ether');
 
-const ACCOUNT_TO_STAKE_FOR = addressesConfig.COUNCIL_1;
+const ACCOUNT_TO_STAKE_FOR = "0x9a337088801B30a3eB715937BCDE27A34BC62841";
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
@@ -66,16 +69,16 @@ module.exports = async function(deployer) {
     const stakingService = await IStaking.at(addresses.staking);
     
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(stakingService.address,T_TO_STAKE),
+        _encodeApproveFunction(stakingService.address,T_TO_APPROVE),
         addresses.fthmToken,
         "ApproveFathomTxn"
     )
-    
-    const LockPositionForStaker =  [_createLockParamObject(T_TO_STAKE,LOCK_PERIOD,ACCOUNT_TO_STAKE_FOR)]
+    const lockPositionForUser = _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,ACCOUNT_TO_STAKE_FOR)
+    const allLockPositions =  [lockPositionForUser]
    
     await txnHelper.submitAndExecute(
-        _encodeCreateLocksForCouncils(LockPositionForStaker),
+        _encodeCreateLocksForCouncils(allLockPositions),
         stakingService.address,
-        "createLocksForCouncilTxn"
+        "createLocksForUserTxn"
     )
 }

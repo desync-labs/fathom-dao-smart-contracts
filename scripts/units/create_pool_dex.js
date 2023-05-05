@@ -9,17 +9,17 @@ const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
 
 
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 
-const Token_A_Address = "0xfbf03b959b9836ac1cC13a8B30f228056dBa7b9a" //fthm
-const Token_B_Address =  "0xCBB5e38427F102Fdb08d76Bb592e85d454A31d05" //fxd
-
+const Token_A_Address = "0xf31146956Cb3be9EFD6Cfd665Cb4Cb5Aeeb5cA3e" //FTHM
+const Token_B_Address = "0x0Cc79883b6FF52B857bDA7D5Df9214eE0bb28839" //WXDC
 // SET AS Necessary
 const Amount_A_Desired = web3.utils.toWei('100000', 'ether')
 const Amount_B_Desired = web3.utils.toWei('100000', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('95000', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('95000', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('100000', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('100000', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
@@ -131,7 +131,11 @@ module.exports = async function(deployer) {
             deadline
         ),
         DEX_ROUTER_ADDRESS,
+<<<<<<< HEAD
         "CreatePoolLiquidty",
+=======
+        "AddLiquidity",
+>>>>>>> dev
         0
     )
 }

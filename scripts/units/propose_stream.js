@@ -1,7 +1,8 @@
 const fs = require('fs');
 const txnSaver = require('./helpers/transactionSaver')
 const txnHelper = require('./helpers/submitAndExecuteTransaction')
-const addressesConfig = require('../../config/config')
+const env = process.env.NODE_ENV || 'dev';
+const addressesConfig = require(`../../config/config.${env}`)
 
 const eventsHelper = require("../tests/helpers/eventsHelper");
 const constants = require('./helpers/constants')

@@ -16,11 +16,7 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return users[account].pendings[streamId];
     }
 
-    function getStreamClaimableAmountPerLock(
-        uint256 streamId,
-        address account,
-        uint256 lockId
-    ) external view override returns (uint256) {
+    function getStreamClaimableAmountPerLock(uint256 streamId, address account, uint256 lockId) external view override returns (uint256) {
         if (streams[streamId].status != StreamStatus.ACTIVE) {
             revert StreamInactiveError();
         }
@@ -43,18 +39,17 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         return (streams[streamId].schedule.time, streams[streamId].schedule.reward);
     }
 
-    function getStream(uint256 streamId)
-        external
-        view
-        override
-        returns (
-            uint256 rewardDepositAmount,
-            uint256 rewardClaimedAmount,
-            uint256 rps,
-            StreamStatus status
-        )
-    {
+    function getStream(
+        uint256 streamId
+    ) external view override returns (uint256 rewardDepositAmount, uint256 rewardClaimedAmount, uint256 rps, StreamStatus status) {
         Stream storage stream = streams[streamId];
         return (stream.rewardDepositAmount, stream.rewardClaimedAmount, stream.rps, stream.status);
+    }
+
+    /**
+     @notice this will be used by frontend to get the actual amount that can be claimed
+     */
+    function isProhibitedLockPosition(uint256 lockId, address account) external view override returns (bool) {
+        return prohibitedEarlyWithdraw[account][lockId];
     }
 }
