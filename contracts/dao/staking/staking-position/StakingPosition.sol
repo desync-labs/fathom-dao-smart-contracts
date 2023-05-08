@@ -188,7 +188,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         return lockPositionData.length;
     }
 
-    //copying the logic frpm staking contract.
+    //copying the logic from staking contract.
     function _removeLockPosition(uint256 lockId) internal {
         uint256 lastLockId = lockPositionData.length;
         if (lastLockId != lockId && lastLockId > 1) {

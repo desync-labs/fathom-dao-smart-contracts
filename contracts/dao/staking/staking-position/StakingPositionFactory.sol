@@ -3,11 +3,15 @@
 
 pragma solidity 0.8.16;
 import "../../../common/security/AdminPausable.sol";
+import "../../../common/SafeERC20.sol";
+
 import "../interfaces/IStaking.sol";
 import "./StakingPosition.sol";
 import "./interfaces/IStakingPositionFactory.sol";
 import "./interfaces/IStakingPosition.sol";
 contract StakingPositionFactory is AdminPausable,IStakingPositionFactory {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant STAKING_POSITION_MANAGER_ROLE = keccak256("STAKING_POSITION_MANAGER_ROLE");
     mapping(address => address) public stakingPositionContract;
     
@@ -75,6 +79,39 @@ contract StakingPositionFactory is AdminPausable,IStakingPositionFactory {
         );
         
         stakingPositionContract[_account] = address(newStakingPositionContract);
+        
+        emit LogCreateStakingPositionContract(
+            _account,
+            address(newStakingPositionContract)
+        );
+    }
+
+    function createStakingPositionContractAndLock(
+        address _account,
+        uint256 amount,
+        uint256 periodToLock
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(stakingPositionContract[_account] == address(0), "Staking position already created");
+        require(_account != address(0), "bad account");
+        
+        StakingPosition newStakingPositionContract = new StakingPosition(
+            admin, 
+            mainToken,
+            address(this), 
+            _account
+        );
+        
+        stakingPositionContract[_account] = address(newStakingPositionContract);
+        uint256 balanceBeforeRetrieivingTokens = IERC20(mainToken).balanceOf(address(this));
+        
+        IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(mainToken).safeApprove(address(newStakingPositionContract), 0);
+        IERC20(mainToken).safeApprove(address(newStakingPositionContract), amount);
+        newStakingPositionContract.createLock(amount,periodToLock);
+
+        uint256 balanceAfterRetrievingTokens = IERC20(mainToken).balanceOf(address(this));
+        require(balanceAfterRetrievingTokens - balanceBeforeRetrieivingTokens == amount, "Main Token Amount not retrieved");
+
         
         emit LogCreateStakingPositionContract(
             _account,
