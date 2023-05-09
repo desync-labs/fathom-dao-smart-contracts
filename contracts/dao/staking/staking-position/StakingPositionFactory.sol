@@ -21,7 +21,6 @@ contract StakingPositionFactory is AdminPausable,IStakingPositionFactory {
     address public admin;
     address public proxyAdmin;
 
-
     mapping(uint256 => address) public override streamRewardToken; 
 
     uint256 constant public MAIN_STREAM_ID = 0;
@@ -85,40 +84,6 @@ contract StakingPositionFactory is AdminPausable,IStakingPositionFactory {
             address(newStakingPositionContract)
         );
     }
-
-    function createStakingPositionContractAndLock(
-        address _account,
-        uint256 amount,
-        uint256 periodToLock
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(stakingPositionContract[_account] == address(0), "Staking position already created");
-        require(_account != address(0), "bad account");
-        
-        StakingPosition newStakingPositionContract = new StakingPosition(
-            admin, 
-            mainToken,
-            address(this), 
-            _account
-        );
-        
-        stakingPositionContract[_account] = address(newStakingPositionContract);
-        uint256 balanceBeforeRetrieivingTokens = IERC20(mainToken).balanceOf(address(this));
-        
-        IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
-        IERC20(mainToken).safeApprove(address(newStakingPositionContract), 0);
-        IERC20(mainToken).safeApprove(address(newStakingPositionContract), amount);
-        newStakingPositionContract.createLock(amount,periodToLock);
-
-        uint256 balanceAfterRetrievingTokens = IERC20(mainToken).balanceOf(address(this));
-        require(balanceAfterRetrievingTokens - balanceBeforeRetrieivingTokens == amount, "Main Token Amount not retrieved");
-
-        
-        emit LogCreateStakingPositionContract(
-            _account,
-            address(newStakingPositionContract)
-        );
-    }
-
 
     function updateStreamRewardToken(
         uint256 streamId,

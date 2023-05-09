@@ -21,12 +21,6 @@ interface IStakingPositionFactory {
         address _account
     ) external;
 
-    function createStakingPositionContractAndLock(
-        address _account,
-        uint256 amount,
-        uint256 periodToLock
-    ) external;
-
     function updateStakingContract(
         address _stakingContract
     ) external;

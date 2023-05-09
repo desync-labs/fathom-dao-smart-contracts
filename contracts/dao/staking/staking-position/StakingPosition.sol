@@ -27,7 +27,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     LockPositionData[] public lockPositionData;
     
     uint32 internal constant ONE_YEAR = 31536000;
-    uint256 constant public MAIN_STREAM_ID = 0;
+    uint256 internal constant MAIN_STREAM_ID = 0;
     uint256 internal constant MAX_LOCK_PERIOD = 5 * ONE_YEAR;
 
     event LogCreateLock(
@@ -135,7 +135,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     }
     /**
      * @dev withdraws the stream reward from the staking contract
-     * @notice can only withdraw after the cooldown period of the stream
+     * @notice can only withdraw after the cooldown period of the stream, enforced by the staking contract
      */
     function withdrawStream(uint256 streamId) external override onlyUser nonReentrant{
         address rewardToken = IStakingPositionFactory(stakingFactory).getStreamRewardToken(streamId);
@@ -146,7 +146,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
 
     /**
      * @dev withdraws the stream reward from the staking contract
-     * @notice can only withdraw after the cooldown period of the stream
+     * @notice can only withdraw after the cooldown period of the stream, enforced by the staking contract
      */
     function withdrawMainStream() external override onlyUser nonReentrant{
         IStaking(stakingContract()).withdrawStream(MAIN_STREAM_ID);
@@ -163,6 +163,7 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
             IERC20(mainToken).balanceOf(address(this))
         );
     }
+
     //getters:
     function getLockInfo(uint256 lockId) external view override returns (uint256, uint256){
         require(lockId > 0, "LockId should be greater than 0");
@@ -230,6 +231,4 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
     function voteToken() internal view returns (address) {
         return IStakingContractRetriever(stakingContract()).voteToken();
     }
-
-    
 }

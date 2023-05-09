@@ -963,7 +963,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
                 balanceOfVoteTokensAfterCreatingLock.sub(balanceOfVoteTokensBeforeCreatingLock).toString()
                 ,VoteTokensThatShouldBeReleased.toString())
         })
-
+        
         it("Should update stream reward token address for stream id 1", async() => {
             const _updateStreamRewardToken = async (streamId, rewardToken) => {
                 const result = await multiSigWallet.submitTransaction(
@@ -1042,7 +1042,7 @@ describe("Staking Test, Upgrade Test and Emergency Scenarios", () => {
             const mainTokenBalanceAfter = _convertToEtherBalance((await FTHMToken.balanceOf(staker_1)).toString())
             console.log("balance of staker_1 after withdraw main stream", mainTokenBalanceAfter)
             const streamId = 1
-
+            await blockchain.mineBlock(await _getTimeStamp() +  20);
             const streamTokenBalanceBefore = _convertToEtherBalance((await streamReward1.balanceOf(staker_1)).toString());
             console.log("balance of stream reward of staker_1 before withdraw stream rewards", streamTokenBalanceBefore)
             await stakingPositionContract.withdrawStream(streamId, {from: staker_1})
