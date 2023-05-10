@@ -27,7 +27,14 @@ module.exports = {
   ],
 
   deployXDCtakingPosition: [
-    ['execute', '--path', 'scripts/migrations/deploy-staking-position', '--network', 'xdc'],
+    ['execute', '--path', 'scripts/migrations/deploy-staking-position', '--network', 'xdc']
+  ],
+  deployUpgradedStakingContractApothem: [
+    ['execute', '--path', 'scripts/migrations/deploy-new-staking-package', '--network', 'apothem'],
+  ],
+
+  deployUpgradedStakingContractXDC: [
+    ['execute', '--path', 'scripts/migrations/deploy-new-staking-package', '--network', 'xdc'],
   ],
 
   transferTokenFromMultisigApothem: [

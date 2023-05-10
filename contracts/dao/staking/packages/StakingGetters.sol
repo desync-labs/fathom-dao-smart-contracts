@@ -45,4 +45,11 @@ contract StakingGetters is StakingStorage, IStakingGetter, StakingInternals {
         Stream storage stream = streams[streamId];
         return (stream.rewardDepositAmount, stream.rewardClaimedAmount, stream.rps, stream.status);
     }
+
+    /**
+     @notice this will be used by frontend to get the actual amount that can be claimed
+     */
+    function isProhibitedLockPosition(uint256 lockId, address account) external view override returns (bool) {
+        return prohibitedEarlyWithdraw[account][lockId];
+    }
 }

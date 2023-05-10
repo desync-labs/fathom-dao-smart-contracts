@@ -38,7 +38,7 @@ async function submitAndExecute(encodedFunction, targetAddress, TransactionName,
             targetAddress,
             ETH_AMOUNT==0?constants.EMPTY_BYTES:ETH_AMOUNT,
             encodedFunction
-            ,0,{gas:8000000}
+            ,0,{gas:20000000}
         )
         if (!resultSubmitTransaction) {
             console.log(`Transaction failed to submit for ${TransactionName}`);
