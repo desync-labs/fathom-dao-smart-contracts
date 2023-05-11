@@ -131,12 +131,7 @@ module.exports = async function(deployer) {
             deadline
         ),
         DEX_ROUTER_ADDRESS,
-<<<<<<< HEAD
-        "CreatePoolLiquidty",
-=======
-        "AddLiquidity",
->>>>>>> dev
-        0
+        "add liquidity function"
     )
 }
   
