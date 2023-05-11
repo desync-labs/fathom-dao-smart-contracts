@@ -21,9 +21,9 @@ contract StakingPositionFactory is AdminPausable,IStakingPositionFactory {
     address public admin;
     address public proxyAdmin;
 
+    uint256 constant public MAIN_STREAM_ID = 0;
     mapping(uint256 => address) public override streamRewardToken; 
 
-    uint256 constant public MAIN_STREAM_ID = 0;
 
     event LogCreateStakingPositionContract(
         address indexed account,

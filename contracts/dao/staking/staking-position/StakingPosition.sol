@@ -93,6 +93,8 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         require(amount > 0, "Amount should be greater than 0");
         require(periodToLock >= IStakingContractRetriever(stakingContract()).minLockPeriod(),
             "Period to lock should be greater than min lock period");
+        require(lockPositionData.length < IStakingContractRetriever(stakingContract()).maxLockPositions(),
+            "Max number of locks reached");
         
         uint256 balanceBeforeRetrieivingTokens = IERC20(mainToken).balanceOf(address(this));
         IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
@@ -153,7 +155,9 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         //balance of the contract after withdrawing from staking contract
         _withdrawToken(mainToken, MAIN_STREAM_ID);
     }
-
+    /**
+     * @dev Checks that the staking contract is in pause state before it can emergency unlock and withdraw
+     */
     function emergencyUnlockAndWithdraw() external override onlyUser nonReentrant{
         require(IStakingContractRetriever(stakingContract()).paused() != 0, "Staking contract not paused to do emergency unlock and withdraw");
         IStakingHandler(stakingContract()).emergencyUnlockAndWithdraw();
@@ -220,7 +224,6 @@ contract StakingPosition is AccessControl, ReentrancyGuard, IStakingPosition {
         require(lockPosition.expiryTime <= block.timestamp, 
             "Staking Position: Locking period has not expired yet");
     }
-
     function maxLockPeriod() internal view returns (uint256){
         return IStakingContractRetriever(stakingContract()).maxLockPeriod();
     }
