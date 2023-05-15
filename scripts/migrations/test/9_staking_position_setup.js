@@ -44,8 +44,6 @@ module.exports = async function(deployer) {
         StakingPositionFactoryProxyAdmin.address
     ])
 
-    console.log("Mutlisig --", MultiSigWallet.address)
-    
     await deployer.deploy(
         StakingPositionFactoryProxy, 
         StakingPositionFactory.address, 
