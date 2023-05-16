@@ -24,7 +24,7 @@ const _encodeSetLiquidationRatio = (_collateralPoolId, _data) => {
 
 module.exports = async function(deployer) {
     await txnHelper.submitAndExecute(
-        _encodeSetDebtFloor(COLLATERAL_POOL_ID,DATA),
+        _encodeSetLiquidationRatio(COLLATERAL_POOL_ID,DATA),
         COLLATERAL_POOL_CONFIG_ADDRESS,
         "setLiquidationRatio"
     )
