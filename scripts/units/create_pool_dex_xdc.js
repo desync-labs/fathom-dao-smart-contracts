@@ -9,10 +9,10 @@ const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`)
 
 const TOKEN_ADDRESS = addresses.fthmToken //FTHM address
-const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2', 'ether')
-const AMOUNT_TOKEN_MIN = web3.utils.toWei('0', 'ether')
-const AMOUNT_TOKEN_ETH = web3.utils.toWei('3', 'ether')
-const AMOUNT_ETH_MIN = web3.utils.toWei('1', 'ether')
+const AMOUNT_TOKEN_DESIRED = web3.utils.toWei('2.144', 'ether')
+const AMOUNT_TOKEN_MIN = web3.utils.toWei('2.144', 'ether')
+const AMOUNT_TOKEN_ETH = web3.utils.toWei('50', 'ether')
+const AMOUNT_ETH_MIN = web3.utils.toWei('50', 'ether')
 
 //const DEX_ROUTER_ADDRESS = "0x05b0e01DD9737a3c0993de6F57B93253a6C3Ba95"//old router
 const DEX_ROUTER_ADDRESS = addressesConfig.DEX_ROUTER_ADDRESS

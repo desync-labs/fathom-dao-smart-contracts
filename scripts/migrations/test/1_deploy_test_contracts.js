@@ -23,8 +23,8 @@ module.exports =  async function(deployer) {
     let promises = [
         deployer.deploy(Box, { gas: 12000000 }),
         deployer.deploy(ERC20Factory, { gas: 12000000 }),
-        deployer.deploy(ERC20TokenReward1, "Reward2 Tokens", "R2T", web3.utils.toWei("1000000","ether"), accounts[0], { gas: 3600000 }),
-        deployer.deploy(ERC20TokenReward2, "Reward2 Tokens", "R3T", web3.utils.toWei("1000000","ether"), accounts[0], { gas: 3600000 }),deployer.deploy(
+        deployer.deploy(ERC20TokenReward1, "Reward2 Tokens", "R2T", web3.utils.toWei("100000000","ether"), accounts[0], { gas: 3600000 }),
+        deployer.deploy(ERC20TokenReward2, "Reward2 Tokens", "R3T", web3.utils.toWei("100000000","ether"), accounts[0], { gas: 3600000 }),deployer.deploy(
             TokenTimelock,
             MainToken.address,
             accounts[0], // beneficiary
