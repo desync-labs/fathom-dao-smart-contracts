@@ -28,3 +28,21 @@ module.exports = async function(deployer) {
         "setAllowlistedAddressBookkeeper"
     )
 }
+
+//TODO:
+
+// function setTotalDebtCeiling(uint256 _totalDebtCeiling) external onlyOwner {
+//     _requireLive();
+//     totalDebtCeiling = _totalDebtCeiling;
+//     emit LogSetTotalDebtCeiling(msg.sender, _totalDebtCeiling);
+// }
+
+// function setAccessControlConfig(address _accessControlConfig) external onlyOwner {
+//     accessControlConfig = _accessControlConfig;
+//     emit LogSetAccessControlConfig(msg.sender, _accessControlConfig);
+// }
+
+// function setCollateralPoolConfig(address _collateralPoolConfig) external onlyOwner {
+//     collateralPoolConfig = _collateralPoolConfig;
+//     emit LogSetCollateralPoolConfig(msg.sender, _collateralPoolConfig);
+// }

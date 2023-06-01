@@ -4,14 +4,19 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const STABILITY_FEE_COLLECTOR_ADDRESS =addressesConfig.STABILITY_FEE_COLLECTOR_ADDRESS
+const POOL_ID = ''
+const DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS =addressesConfig.DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS
 
-const _encodePause = () => {
+const _encodeSetPoolId = (_poolId) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'pause',
+        name: 'setPoolId',
         type: 'function',
-        inputs: []
-    }, []);
+        inputs: [{
+            type: 'bytes32',
+            name: '_poolId'
+        }]
+    }, [_poolId]);
+
     return toRet;
 }
 
@@ -19,10 +24,8 @@ const _encodePause = () => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodePause(),
-        STABILITY_FEE_COLLECTOR_ADDRESS,
-        "pauseStabilityFeeCollector"
+        _encodeSetPoolId(POOL_ID),
+        DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS,
+        "setPoolId"
     )
 }
-
-//TODO: Wrapper

@@ -7,7 +7,7 @@ const addressesFilePath = `../../../addresses.${env}.json`;
 const rawdata = fs.readFileSync(addressesFilePath);
 const addresses = JSON.parse(rawdata);
 
-const MIN_LOCK_PERIOD_NEW = 60
+const MIN_LOCK_PERIOD_NEW = 120
 const STAKING_CONTRACT = addresses.staking
 
 const _encodeSetMinLockPeriod = (_minLockPeriod) => {
@@ -24,9 +24,10 @@ const _encodeSetMinLockPeriod = (_minLockPeriod) => {
 }
 
 module.exports = async function(deployer) {
-    await txnHelper.submitAndExecute(
-        _encodeSetMinLockPeriod(MIN_LOCK_PERIOD_NEW),
-        STAKING_CONTRACT,
-        "Set min lock period to 60 seconds"
-    )
+    console.log(_encodeSetMinLockPeriod(MIN_LOCK_PERIOD_NEW))
+    // await txnHelper.submitAndExecute(
+    //     _encodeSetMinLockPeriod(MIN_LOCK_PERIOD_NEW),
+    //     STAKING_CONTRACT,
+    //     "Set min lock period to 60 seconds"
+    // )
 }

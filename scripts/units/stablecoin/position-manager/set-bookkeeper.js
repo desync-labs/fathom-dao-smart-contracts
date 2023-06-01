@@ -4,14 +4,19 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const STABILITY_FEE_COLLECTOR_ADDRESS =addressesConfig.STABILITY_FEE_COLLECTOR_ADDRESS
+const BOOKKEEPER = ""
+const POSITION_MANAGER_ADDRESS =addressesConfig.POSITION_MANAGER_ADDRESS
 
-const _encodePause = () => {
+const _encodeSetBookkeeper = (_bookkeeper) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'pause',
+        name: 'setBookKeeper',
         type: 'function',
-        inputs: []
-    }, []);
+        inputs: [{
+            type: 'address',
+            name: '_bookkeeper'
+        }]
+    }, [_bookkeeper]);
+
     return toRet;
 }
 
@@ -19,10 +24,8 @@ const _encodePause = () => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodePause(),
-        STABILITY_FEE_COLLECTOR_ADDRESS,
-        "pauseStabilityFeeCollector"
+        _encodeSetBookkeeper(BOOKKEEPER),
+        POSITION_MANAGER_ADDRESS,
+        "setBookeeper-Position-manager"
     )
 }
-
-//TODO: Wrapper
