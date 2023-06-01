@@ -24,5 +24,3 @@ module.exports = async function(deployer) {
         "pauseStabilityFeeCollector"
     )
 }
-
-//TODO: Wrapper

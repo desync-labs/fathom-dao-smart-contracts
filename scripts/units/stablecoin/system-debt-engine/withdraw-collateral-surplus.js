@@ -9,8 +9,7 @@ const COLLATERAL_POOL_ID = ''
 const ADAPTER = ''
 const TO = ''
 const AMOUNT = web3.utils.toWei('1','ether');
-//TODO ssubik
-//TODO ssubik: Withdraw - CollateralTokenAdapter
+
 const _encodeWithdrawCollateralSurplus = (_collateralPoolId,_adapter,_to,_amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
         name: 'withdrawCollateralSurplus',
