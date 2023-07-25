@@ -20,11 +20,6 @@
     "migrate-reset-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-xdc": "export NODE_ENV=prod && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC",
     
-    "migrate-reset-staking-position-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
-    "migrate-reset-staking-position-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
-    "migrate-reset-staking-position-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
-    "migrate-reset-staking-position-xdc": "export NODE_ENV=prod && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDCtakingPosition",
-    
     "migrate-reset-staking-upgrade-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
     "migrate-reset-staking-upgrade-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
     "migrate-reset-staking-upgrade-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
