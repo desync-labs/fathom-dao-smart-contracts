@@ -9,9 +9,10 @@ const COLLATERAL_POOL_ID = ''
 const ADAPTER = ''
 const TO = ''
 const AMOUNT = web3.utils.toWei('1','ether');
+
 const _encodeWithdrawCollateralSurplus = (_collateralPoolId,_adapter,_to,_amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'setBookKeeper',
+        name: 'withdrawCollateralSurplus',
         type: 'function',
         inputs: [{
             type: 'bytes32',

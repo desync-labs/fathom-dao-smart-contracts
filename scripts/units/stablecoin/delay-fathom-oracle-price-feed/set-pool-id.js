@@ -4,17 +4,18 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
-const TO_BE_ALLOWLISTED = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
-const _encodeAllowlist = (toBeAllowlistedAddress) => {
+const POOL_ID = ''
+const DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS =addressesConfig.DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS
+
+const _encodeSetPoolId = (_poolId) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'allowlist',
+        name: 'setPoolId',
         type: 'function',
         inputs: [{
-            type: 'address',
-            name: 'toBeAllowlistedAddress'
+            type: 'bytes32',
+            name: '_poolId'
         }]
-    }, [toBeAllowlistedAddress]);
+    }, [_poolId]);
 
     return toRet;
 }
@@ -23,8 +24,8 @@ const _encodeAllowlist = (toBeAllowlistedAddress) => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodeAllowlist(TO_BE_ALLOWLISTED),
-        BOOK_KEEPER_ADDRESS,
-        "setAllowlistedAddressBookkeeper"
+        _encodeSetPoolId(POOL_ID),
+        DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS,
+        "setPoolId"
     )
 }

@@ -3,28 +3,26 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
+const isDecentralizedState = true
+const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
 
-const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
-const TO_BE_ALLOWLISTED = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
-const _encodeAllowlist = (toBeAllowlistedAddress) => {
+const _encodeSetIsDecentralizedState = (_isDecentralizedState) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'allowlist',
+        name: 'setIsDecentralizedState',
         type: 'function',
         inputs: [{
-            type: 'address',
-            name: 'toBeAllowlistedAddress'
+            type: 'bool',
+            name: '_isDecentralizedState'
         }]
-    }, [toBeAllowlistedAddress]);
+    }, [_isDecentralizedState]);
 
     return toRet;
 }
 
-
 module.exports = async function(deployer) {
-
     await txnHelper.submitAndExecute(
-        _encodeAllowlist(TO_BE_ALLOWLISTED),
-        BOOK_KEEPER_ADDRESS,
-        "setAllowlistedAddressBookkeeper"
+        _encodeSetIsDecentralizedState(isDecentralizedState),
+        STABLE_SWAP_ADDRESS,
+        "set Is Decentralized State"
     )
 }

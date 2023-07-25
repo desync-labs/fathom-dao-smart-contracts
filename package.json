@@ -7,16 +7,24 @@
     "test-with-timeout": "coralX test --params TIMEOUT=100000",
     "test-skip-compile": "coralX test skip_compile true",
     "test-use-snapshot": "coralX test skip_compile true use_snapshot true",
+    
     "compile": "npm run prettier && npm run lint && coralX compile",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "lint": "solhint 'contracts/**/*.sol'",
     "pre-release": "npm run prettier && npm run lint && npm run test-with-timeout",
+    
     "migrate-reset": "coralX scenario --run migrateAndConfigureForTests",
     "migrate-reset-sepolia": "rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deploySepolia",
     "migrate-reset-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothem",
     "migrate-reset-xdc": "export NODE_ENV=prod && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDC",
+    
+    "migrate-reset-staking-position-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
+    "migrate-reset-staking-position-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
+    "migrate-reset-staking-position-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployApothemStakingPosition",
+    "migrate-reset-staking-position-xdc": "export NODE_ENV=prod && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployXDCtakingPosition",
+    
     "migrate-reset-staking-upgrade-apothem-dev": "export NODE_ENV=dev && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
     "migrate-reset-staking-upgrade-apothem-demo": "export NODE_ENV=demo && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
     "migrate-reset-staking-upgrade-apothem-qa": "export NODE_ENV=qa && rm -rf build/contracts && rm -rf build/job-logs && coralX compile && coralX scenario --run deployUpgradedStakingContractApothem",
