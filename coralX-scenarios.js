@@ -22,9 +22,6 @@ module.exports = {
     ['execute', '--path', 'scripts/migrations/save-address/3_save_address_prod.js', '--network', 'xdc']
   ],
 
-  deployApothemStakingPosition: [
-    ['execute', '--path', 'scripts/migrations/deploy-staking-position', '--network', 'apothem'],
-  ],
 
   deployXDCtakingPosition: [
     ['execute', '--path', 'scripts/migrations/deploy-staking-position', '--network', 'xdc']
