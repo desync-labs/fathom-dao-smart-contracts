@@ -4,7 +4,7 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const SHOW_STOPPER_ADDRESS =addressesConfig.SHOW_STOPPER_ADDRESS
+const SHOW_STOPPER_ADDRESS = addressesConfig.SHOW_STOPPER_ADDRESS
 
 const CAGE_COOL_DOWN = 100;
 const _encodeCage = (_cageCoolDown) => {
