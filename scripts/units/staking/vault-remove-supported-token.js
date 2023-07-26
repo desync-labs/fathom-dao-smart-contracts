@@ -4,7 +4,7 @@ const txnHelper = require('../helpers/submitAndExecuteTransaction')
 const constants = require('../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_DEX_FOLDER)
 const FEE_TO_SETTER = ""
-const STAKING_ADDRESS = addressesConfig.STAKING_ADDRESS
+const VAULT_ADDRESS = addressesConfig.VAULT_ADDRESS
 const TOKEN_ADDRESS = ""
 
 const _encodeRemoveSupportedToken = (_token) => {
@@ -25,7 +25,7 @@ module.exports = async function(deployer) {
     
     await txnHelper.submitAndExecute(
         _encodeRemoveSupportedToken(TOKEN_ADDRESS),
-        STAKING_ADDRESS,
+        VAULT_ADDRESS,
         "remove-supported-token"
     )
 }

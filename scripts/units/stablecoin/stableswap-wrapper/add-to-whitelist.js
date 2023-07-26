@@ -4,7 +4,7 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const whitelistAddress = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
+const whitelistAddress = "0xE82C380C6Ca0306C61454569e84e020d68B063EF"
 const STABLE_SWAP_WRAPPER_ADDRESS =addressesConfig.STABLE_SWAP_WRAPPER_ADDRESS
 
 const _encodeAddToWhitelist = (_whitelistAddress) => {

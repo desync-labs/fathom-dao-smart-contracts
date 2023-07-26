@@ -4,8 +4,8 @@ const txnHelper = require('../helpers/submitAndExecuteTransaction')
 const constants = require('../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_DEX_FOLDER)
 const FEE_TO_SETTER = ""
-const STAKING_ADDRESS = addresses.STAKING_ADDRESS
-const MIN_LOCK_PERIOD = 100
+const STAKING_ADDRESS = addressesConfig.STAKING_ADDRESS
+const MIN_LOCK_PERIOD = 86400/2
 
 const _encodeSetMinLockPeriod = (_minLockPeriod) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
