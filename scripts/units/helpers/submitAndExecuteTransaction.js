@@ -67,7 +67,6 @@ async function submitAndExecute(encodedFunction, targetAddress, TransactionName,
                 console.log(`Transaction executed successfully for ${TransactionName}. TxHash: ${resultExecuteTransaction.transactionHash}`);
             }
         }
-        console.log(`encoded function for the transaction --${TransactionName} is: ${encodedFunction}`)
         return createTransactionObject(TransactionName, tx, resultSubmitTransaction, resultConfirmTransaction, resultExecuteTransaction);
     }
 

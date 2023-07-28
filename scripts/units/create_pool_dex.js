@@ -13,13 +13,13 @@ const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`)
 
 
-const Token_A_Address = "0xa96792e0745B7E676a96148124A0caaF265733C8" //FTHM
-const Token_B_Address = "0xf31146956Cb3be9EFD6Cfd665Cb4Cb5Aeeb5cA3e" //FXD
+const Token_A_Address = "0xDf29cB40Cb92a1b8E8337F542E3846E185DefF96" //FTHM
+const Token_B_Address = "0x916D9BFa4480418bE7b653f4808106709a38b4fc" //FXD
 // SET AS Necessary
-const Amount_A_Desired = web3.utils.toWei('99999', 'ether')
-const Amount_B_Desired = web3.utils.toWei('99999', 'ether')
-const Amount_A_Minimum = web3.utils.toWei('99999', 'ether')
-const Amount_B_Minimum = web3.utils.toWei('99999', 'ether')
+const Amount_A_Desired = web3.utils.toWei('100000', 'ether')
+const Amount_B_Desired = web3.utils.toWei('100000', 'ether')
+const Amount_A_Minimum = web3.utils.toWei('100000', 'ether')
+const Amount_B_Minimum = web3.utils.toWei('100000', 'ether')
 
 // const Amount_A_Desired = web3.utils.toWei('250000', 'ether')
 // const Amount_B_Desired = web3.utils.toWei('9347335', 'ether')
