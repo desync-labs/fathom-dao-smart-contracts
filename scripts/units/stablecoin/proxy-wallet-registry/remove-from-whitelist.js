@@ -4,17 +4,17 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const BOOK_KEEPER_ADDRESS =addressesConfig.BOOK_KEEPER_ADDRESS
-const TO_BE_ALLOWLISTED = "0x2B3691065A78F5fb02E9BF54A197b95da2B26AF7"
-const _encodeAllowlist = (toBeAllowlistedAddress) => {
+const PROXY_WALLET_REGISTRY_ADDRESS =addressesConfig.PROXY_WALLET_REGISTRY_ADDRESS
+const WHITELIST_ADDRESS = ""
+const _encodeRemoveFromWhitelist = (_usr) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'allowlist',
+        name: 'removeFromWhitelist',
         type: 'function',
         inputs: [{
             type: 'address',
-            name: 'toBeAllowlistedAddress'
+            name: '_usr'
         }]
-    }, [toBeAllowlistedAddress]);
+    }, [_usr]);
 
     return toRet;
 }
@@ -23,8 +23,8 @@ const _encodeAllowlist = (toBeAllowlistedAddress) => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodeAllowlist(TO_BE_ALLOWLISTED),
-        BOOK_KEEPER_ADDRESS,
-        "setAllowlistedAddressBookkeeper"
+        _encodeRemoveFromWhitelist(WHITELIST_ADDRESS),
+        PROXY_WALLET_REGISTRY_ADDRESS,
+        "remove whitelist-proxy-wallet-registry"
     )
 }

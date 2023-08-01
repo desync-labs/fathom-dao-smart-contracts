@@ -34,6 +34,9 @@ else
         COLLATERAL_POOL_CONFIG_ADDRESS: "",
         DEX_FACTORY_ADDRESS: "",
         WETH_ADDRESS: "",
+        STABLE_SWAP_WRAPPER_ADDRESS:"",
+        STAKING_ADDRESS:"",
+        VAULT_ADDRESS:"",
         COUNCIL_1:"",
         COUNCIL_2:"",
         COUNCIL_3:""

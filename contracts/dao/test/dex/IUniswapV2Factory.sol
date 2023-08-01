@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Original Copyright Uniswap
+// Copyright Fathom 2022
 pragma solidity >=0.6.2;
 
 interface IUniswapV2Factory {

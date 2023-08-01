@@ -4,26 +4,23 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS =addressesConfig.DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS
+const ACCOUNT_DESTINATION = ""
+const STABLE_SWAP_WRAPPER_ADDRESS =addressesConfig.STABLE_SWAP_WRAPPER_ADDRESS
 
-const _encodePause = () => {
+const _encodeEmergencyWithdraw = (_destination) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'pause',
+        name: 'emergencyWithdraw',
         type: 'function',
         inputs: []
     }, []);
+
     return toRet;
 }
 
-
 module.exports = async function(deployer) {
-
     await txnHelper.submitAndExecute(
-        _encodePause(),
-        DELAY_FATHOM_ORACLE_PRICE_FEED_ADDRESS,
-        "pausePriceFeed"
+        _encodeEmergencyWithdraw(),
+        STABLE_SWAP_WRAPPER_ADDRESS,
+        "StableswapWrapperEmergencyWithdraw"
     )
 }
-
-//TODO:
-//PRICE PLUGIN, FEED

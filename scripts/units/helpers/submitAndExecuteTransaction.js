@@ -27,7 +27,8 @@ const createTransactionObject = (TransactionName, tx, resultSubmitTransaction, r
   };
   return transactionObject;
 }
-  
+//@note: We can use this to generate encoded function as required
+//@note: To do it comment out this line: await _submitExecuteAndSaveTransaction();
 async function submitAndExecute(encodedFunction, targetAddress, TransactionName, ETH_AMOUNT=0, shouldExecute = true) {
     
     const MULTISIG_WALLET_ADDRESS = addresses.multiSigWallet;
@@ -79,7 +80,9 @@ async function submitAndExecute(encodedFunction, targetAddress, TransactionName,
             transactionObject.confirmationTransactionHash,
             transactionObject.executeTransactionHash)
     }
+    console.log(`encoded function for the transaction --${TransactionName} is: ${encodedFunction}`)
 
+    //@note:  comment out this line: await _submitExecuteAndSaveTransaction(); to only have console of the encodings
     await _submitExecuteAndSaveTransaction();
     
 }

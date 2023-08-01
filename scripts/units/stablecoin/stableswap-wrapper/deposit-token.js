@@ -4,9 +4,10 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const STABLE_SWAP_ADDRESS = addressesConfig.STABLE_SWAP_ADDRESS
+const STABLE_SWAP_WRAPPER_ADDRESS = addressesConfig.STABLE_SWAP_WRAPPER_ADDRESS
 const TokenAddress = addressesConfig.USD_ADDRESS
-//const STABLE_SWAP_ADDRESS = "";
+const FXDAddress = addressesConfig.FXD_ADDRESS
+//const STABLE_SWAP_WRAPPER_ADDRESS = "";
 const TokenDepositAmount = web3.utils.toWei('10000','ether')
 // const USDAddress = ""
 // const FXDAddress = ""
@@ -26,18 +27,15 @@ const _encodeApproveFunction = (_account, _amount) => {
     return toRet;
 }
 
-const _encodeDepositFunction = (_token, _amount) => {
+const _encodeDepositFunction = (_amount) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'depositToken',
+        name: 'depositTokens',
         type: 'function',
         inputs: [{
-            type: 'address',
-            name: '_token'
-        },{
             type: 'uint256',
             name: '_amount'
         }]
-    }, [_token, _amount]);
+    }, [_amount]);
 
     return toRet;
 }
@@ -45,14 +43,20 @@ const _encodeDepositFunction = (_token, _amount) => {
 module.exports = async function(deployer) {
 
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(STABLE_SWAP_ADDRESS,TokenDepositAmount),
+        _encodeApproveFunction(STABLE_SWAP_WRAPPER_ADDRESS,TokenDepositAmount),
         TokenAddress,
-        "ApproveStableSwapToken"
+        "ApproveStableSwapWrapperToken"
     )
 
     await txnHelper.submitAndExecute(
-        _encodeDepositFunction(TokenAddress,TokenDepositAmount),
-        STABLE_SWAP_ADDRESS,
-        "DepositToStableswap"
+        _encodeApproveFunction(STABLE_SWAP_WRAPPER_ADDRESS,TokenDepositAmount),
+        FXDAddress,
+        "ApproveStableSwapWrapperToken"
+    )
+
+    await txnHelper.submitAndExecute(
+        _encodeDepositFunction(TokenDepositAmount),
+        STABLE_SWAP_WRAPPER_ADDRESS,
+        "DepositToStableswapWrapper"
     )
 }
