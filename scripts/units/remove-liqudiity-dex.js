@@ -15,8 +15,8 @@ const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`);
 const { default: BigNumber } = require('bignumber.js');
 
-const Token_A_Address =  "0xD033b52657F3580092914e1976715e0cbC622855" //USD
-const Token_B_Address =  "0x603B972D894bF754B63103ECB4b70b024096451D" //WXDC
+const Token_A_Address = addressesConfig.FXD_ADDRESS //USD
+const Token_B_Address =  addresses.fthmToken //WXDC
 
 // SET AS Necessary
 const LIQUIDITY = web3.utils.toWei('99999.999999999999999', 'ether')
@@ -106,7 +106,6 @@ module.exports = async function(deployer) {
     const uniswapFactory = await IUniswapFactory.at(addressesConfig.DEX_FACTORY_ADDRESS)
     const pairAddress = await uniswapFactory.getPair(Token_A_Address, Token_B_Address)
     const pairToken = await IUniswapV2Pair.at(pairAddress)
-    
     const balance = (await pairToken.balanceOf(multiSigWallet.address)).toString()
     const reserves = await pairToken.getReserves();
     const token0 = await pairToken.token0();
@@ -120,15 +119,15 @@ module.exports = async function(deployer) {
     const minAmountA = new BigNumber(amountADesired - amountADesired * SLIPPAGE)
     const minAmountB = new BigNumber(amountBDesired - amountBDesired * SLIPPAGE)
     
-    // await txnHelper.submitAndExecute(
-    //     _encodeApproveFunction(
-    //         addressesConfig.DEX_ROUTER_ADDRESS,
-    //         balance
-    //     )
-    //     ,pairAddress,
-    //     "ApproveTxn",
-    //     0
-    // )
+    await txnHelper.submitAndExecute(
+        _encodeApproveFunction(
+            addressesConfig.DEX_ROUTER_ADDRESS,
+            balance
+        )
+        ,pairAddress,
+        "ApproveTxn",
+        0
+    )
     
     await txnHelper.submitAndExecute(
         _encodeRemoveLiquidity(

@@ -8,18 +8,18 @@ const IStaking = artifacts.require('./dao/staking/interfaces/IStaking.sol');
 const env = process.env.NODE_ENV || 'dev';
 const addressesConfig = require(`../../config/config.${env}`)
 
-
 const LOCK_PERIOD = 365 * 24 * 60 * 60;
 //SET AS NEEDED
-// this needs to be sum of all the stakes. Right now 10KK * 3. 
 // NOT MAX UINT for security as its not good to approve max for Multisig
-const T_TOTAL_TO_APPROVE = web3.utils.toWei('30000000', 'ether');
-// this is how much to stake for one council . Right now 10KK
-const T_TO_STAKE = web3.utils.toWei('10000000', 'ether');
 
-const COUNCIL_1 = addressesConfig.COUNCIL_1;
-const COUNCIL_2 = addressesConfig.COUNCIL_2;
-const COUNCIL_3 = addressesConfig.COUNCIL_3;
+// this is how much to stake for one council . Right now 10KK
+const T_TO_STAKE_USER_1 = web3.utils.toWei('1000000', 'ether'); //set as needed
+const T_TO_STAKE_USER_2 = web3.utils.toWei('1000000', 'ether'); //set as needed
+
+const T_TO_APPROVE = web3.utils.toWei('20000000', 'ether');
+
+const USER_1 = "0x9a337088801B30a3eB715937BCDE27A34BC62841";
+const USER_2 = "0xAD2c9625Fe6c88fcAf3E0D488543d51528d4a30D";
 
 const rawdata = fs.readFileSync(constants.PATH_TO_ADDRESSES);
 const addresses = JSON.parse(rawdata);
@@ -71,26 +71,19 @@ const _encodeCreateLocksForCouncils = (_createLockParam) => {
 module.exports = async function(deployer) {
     const stakingService = await IStaking.at(addresses.staking);
     
-
     await txnHelper.submitAndExecute(
-        _encodeApproveFunction(stakingService.address,T_TOTAL_TO_APPROVE),
+        _encodeApproveFunction(stakingService.address,T_TO_APPROVE),
         addresses.fthmToken,
         "ApproveFathomTxn"
     )
-    
-    const LockPositionForCouncil_1 =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_1)
-    const LockPositionForCouncil_2 =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_2)
-    const LockPositionForCouncil_3 =  _createLockParamObject(T_TO_STAKE,LOCK_PERIOD,COUNCIL_3)
+    const LockPositionForUser1 =  _createLockParamObject(T_TO_STAKE_USER_1,LOCK_PERIOD,USER_1)
+    const LockPositionForUser2 =  _createLockParamObject(T_TO_STAKE_USER_2,LOCK_PERIOD,USER_2)
+
+    const allLockPositions =  [LockPositionForUser1,LockPositionForUser2]
    
-    const LockParamObjectForAllCouncils = [
-        LockPositionForCouncil_1,
-        LockPositionForCouncil_2,
-        LockPositionForCouncil_3
-    ]
-    
     await txnHelper.submitAndExecute(
-        _encodeCreateLocksForCouncils(LockParamObjectForAllCouncils),
+        _encodeCreateLocksForCouncils(allLockPositions),
         stakingService.address,
-        "createLocksForCouncilTxn"
+        "createLocksForUserTxn"
     )
 }

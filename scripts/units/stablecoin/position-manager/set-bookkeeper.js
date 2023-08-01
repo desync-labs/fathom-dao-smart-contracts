@@ -4,26 +4,28 @@ const txnHelper = require('../../helpers/submitAndExecuteTransaction')
 const constants = require('../../helpers/constants')
 const addressesConfig = require(constants.PATH_TO_ADDRESSES_FOR_STABLECOIN_FOLDER)
 
-const _destination = ""
-const STABLE_SWAP_ADDRESS =addressesConfig.STABLE_SWAP_ADDRESS
+const BOOKKEEPER = ""
+const POSITION_MANAGER_ADDRESS =addressesConfig.POSITION_MANAGER_ADDRESS
 
-const _encodeWithdrawFees = (_destination) => {
+const _encodeSetBookkeeper = (_bookkeeper) => {
     let toRet =  web3.eth.abi.encodeFunctionCall({
-        name: 'withdrawFees',
+        name: 'setBookKeeper',
         type: 'function',
         inputs: [{
             type: 'address',
-            name: '_destination'
+            name: '_bookkeeper'
         }]
-    }, [_destination]);
+    }, [_bookkeeper]);
 
     return toRet;
 }
 
+
 module.exports = async function(deployer) {
+
     await txnHelper.submitAndExecute(
-        _encodeWithdrawFees(_destination),
-        STABLE_SWAP_ADDRESS,
-        "StableswapWithdrawFees"
+        _encodeSetBookkeeper(BOOKKEEPER),
+        POSITION_MANAGER_ADDRESS,
+        "setBookeeper-Position-manager"
     )
 }
